@@ -48,15 +48,15 @@ def find_toolchain(args: argparse.Namespace) -> tuple[str, dict[str, str]]:
     if args.msvc_root:
         msvc = Path(args.msvc_root).resolve()
         compiler = msvc / "bin/Hostx64/x64/cl.exe"
-        sdk_arg = args.windows_sdk_root or env.get("WindowsSdkDir")
+        sdk_arg = args.windows_sdk_root or os.environ.get("WindowsSdkDir")
         if not sdk_arg:
-            program_files = env.get("ProgramFiles(x86)")
+            program_files = os.environ.get("ProgramFiles(x86)")
             if program_files:
                 sdk_arg = str(Path(program_files) / "Windows Kits/10")
         if not sdk_arg:
             raise ValueError("Pass --windows-sdk-root or set WindowsSdkDir")
         sdk = Path(sdk_arg).resolve()
-        version = args.sdk_version or env.get("WindowsSDKVersion", "").strip("\\/")
+        version = args.sdk_version or os.environ.get("WindowsSDKVersion", "").strip("\\/")
         if not version:
             versions = [p.name for p in (sdk / "Include").glob("*")
                         if (p / "um/Windows.h").is_file()]
