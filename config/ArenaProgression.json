@@ -1,0 +1,42 @@
+{
+  "playerDefault": 6,
+  "enemyDefault": 0,
+  "enemyMax": 6,
+  "tiers": [
+    {
+      "cycle": 0,
+      "weaponLevel": 30,
+      "skillCap": 0
+    },
+    {
+      "cycle": 1,
+      "weaponLevel": 35,
+      "skillCap": 5
+    },
+    {
+      "cycle": 2,
+      "weaponLevel": 40,
+      "skillCap": 10
+    },
+    {
+      "cycle": 3,
+      "weaponLevel": 45,
+      "skillCap": 15
+    },
+    {
+      "cycle": 4,
+      "weaponLevel": 50,
+      "skillCap": 20
+    },
+    {
+      "cycle": 5,
+      "weaponLevel": 55,
+      "skillCap": 25
+    },
+    {
+      "cycle": 6,
+      "weaponLevel": 60,
+      "skillCap": 30
+    }
+  ]
+}

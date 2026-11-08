@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "defaultScene": "night",
+  "scenes": [
+    {
+      "id": "night",
+      "name": "故屋幻景·夜",
+      "map": "PBZ_Duanhun_WP",
+      "bellSaveId": "BrokenBell_TheEnd01",
+      "anchor": {
+        "X": -192742.284,
+        "Y": -113848.174,
+        "Z": 4500046.15
+      },
+      "reviveLocation": {
+        "X": -192758.823,
+        "Y": -113855.997,
+        "Z": 4500034.39
+      },
+      "rotation": {
+        "Pitch": 0,
+        "Yaw": -77.1263388,
+        "Roll": 0
+      },
+      "camera": {
+        "Pitch": 0,
+        "Yaw": 267.873657,
+        "Roll": 0
+      },
+      "gameModeOptions": "",
+      "bell": {
+        "location": {
+          "X": -192707.7,
+          "Y": -113967.25,
+          "Z": 4499904
+        },
+        "rotation": {
+          "Pitch": 0,
+          "Yaw": 147.87366,
+          "Roll": 0
+        },
+        "interactionPoint": {
+          "X": -192707.7,
+          "Y": -113967.25,
+          "Z": 4500046.15
+        }
+      },
+      "spawnTrace": {
+        "top": 4500600,
+        "bottom": 4499500
+      },
+      "spawnPoints": [
+        {
+          "X": -193050,
+          "Y": -117920
+        },
+        {
+          "X": -193950,
+          "Y": -117920
+        },
+        {
+          "X": -192150,
+          "Y": -117920
+        },
+        {
+          "X": -193050,
+          "Y": -118820
+        },
+        {
+          "X": -194850,
+          "Y": -117920
+        },
+        {
+          "X": -191250,
+          "Y": -117920
+        }
+      ]
+    },
+    {
+      "id": "lake",
+      "name": "湖畔",
+      "map": "PBZ_Zhengdaodaying_WP",
+      "bellSaveId": "BrokenBell_LJC_02",
+      "anchor": {
+        "X": -66073.625,
+        "Y": 83063.445,
+        "Z": 1056.8807
+      },
+      "reviveLocation": {
+        "X": -66073.625,
+        "Y": 83063.445,
+        "Z": 1056.8807
+      },
+      "rotation": {
+        "Pitch": 0,
+        "Yaw": -100.56727386686009,
+        "Roll": 0
+      },
+      "camera": {
+        "Pitch": 0.0,
+        "Yaw": 244.43272,
+        "Roll": 0.0
+      },
+      "gameModeOptions": "",
+      "nativeBell": true,
+      "bell": {
+        "location": {
+          "X": -66071.01,
+          "Y": 82940.93,
+          "Z": 926.5793
+        },
+        "rotation": {
+          "Pitch": 0,
+          "Yaw": 124.43273,
+          "Roll": 0
+        },
+        "interactionPoint": {
+          "X": -66073.625,
+          "Y": 83063.445,
+          "Z": 1056.8807
+        },
+        "actorName": "BP_MelodiousBell_C_UAID_60CF8480978B070103_1488601147",
+        "class": "BP_MelodiousBell_C"
+      },
+      "bellManagerPatch": {
+        "SaveBellID": "BrokenBell_LJC_02",
+        "RecentlyInteractedBellID": "BrokenBell_LJC_02",
+        "BrokenBellID": "BrokenBell_LJC_02"
+      },
+      "spawnTrace": {
+        "top": 1600,
+        "bottom": 300
+      },
+      "spawnPoints": [
+        {
+          "X": -68033.086,
+          "Y": 77466.73
+        },
+        {
+          "X": -68933.086,
+          "Y": 77466.73
+        },
+        {
+          "X": -67133.086,
+          "Y": 77466.73
+        },
+        {
+          "X": -68033.086,
+          "Y": 76566.73
+        },
+        {
+          "X": -69833.086,
+          "Y": 77466.73
+        },
+        {
+          "X": -66233.086,
+          "Y": 77466.73
+        }
+      ],
+      "scope": {
+        "minX": -75000,
+        "maxX": -60000,
+        "minY": 69000,
+        "maxY": 87500,
+        "minZ": -1000,
+        "maxZ": 3000
+      },
+      "storyActors": [
+        {
+          "class": "BP_NPCSpawner_C",
+          "name": "BP_NPCSpawner_C_UAID_BCFCE706287566FD02_1580228825",
+          "npc": true
+        },
+        {
+          "class": "BP_AICombatTriggerVolume_C",
+          "name": "BP_AICombatTriggerVolume_C_UAID_BCFCE704F725FFDA02_1116233757"
+        },
+        {
+          "class": "BP_AISpawner_C",
+          "name": "BP_AISpawner_C_UAID_74563C6BC2BD12B902_1163530142"
+        },
+        {
+          "class": "BP_AISpawner_C",
+          "name": "BP_AISpawner_C_UAID_74563C6BC2BD12B902_1168010143"
+        },
+        {
+          "class": "BP_AISpawner_C",
+          "name": "BP_AISpawner_C_UAID_E89C25A75434004502_1084590648"
+        },
+        {
+          "class": "BP_AISpawner_C",
+          "name": "BP_AISpawner_C_UAID_E89C25A75434197502_1369350133"
+        },
+        {
+          "class": "BP_AISpawnerTriggerVolume_C",
+          "name": "BP_AISpawnerTriggerVolume_C_UAID_E89C25A75434004502_1087240649"
+        },
+        {
+          "class": "BP_FlowActor_C",
+          "name": "BP_FlowActor_C_UAID_74563C6BC2BD8EBC02_1738951707"
+        },
+        {
+          "class": "BP_FlowActor_C",
+          "name": "BP_FlowActor_C_UAID_E89C25A75434854402_1102432945"
+        },
+        {
+          "class": "BP_FlowActor_C",
+          "name": "BP_FlowActor_C_UAID_E89C25A75434854402_1102470946"
+        },
+        {
+          "class": "BP_FlowInteractActor_C",
+          "name": "BP_FlowInteractActor_C_UAID_74563C6BC2BD208702_1629306963"
+        },
+        {
+          "class": "BP_FlowInteractActor_C",
+          "name": "BP_FlowInteractActor_C_UAID_BCFCE7058A98260003_1431885536"
+        },
+        {
+          "class": "BP_MobDomain_C",
+          "name": "BP_MobDomain_C_UAID_E89C25A75434FF4402_2145940471",
+          "domain": true
+        },
+        {
+          "class": "BP_NPCSpawner_C",
+          "name": "BP_NPCSpawner_C_UAID_BCFCE7B89673D4CF02_1971479597",
+          "npc": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+name: Source checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUTF8: '1'
+
+jobs:
+  source:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - run: python tools/build.py check
+      - run: python tools/data/generate_runtime_data.py --check
+      - run: python tools/data/test_generate_runtime_data.py
+      - run: python -m unittest discover -s tests -v
+      - run: python tools/test_assemble_release.py
+
+  windows-components:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Compile and test the native save barrier
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
+          $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (!$vs) { throw 'MSVC tools are unavailable' }
+          $version = (Get-Content "$vs/VC/Auxiliary/Build/Microsoft.VCToolsVersion.default.txt").Trim()
+          python tools/build.py native --component barrier --tests --msvc-root "$vs/VC/Tools/MSVC/$version"
+          if ($LASTEXITCODE -ne 0) { throw 'Native build/tests failed' }
+      - name: Compile installer host without starting it
+        run: python tools/build.py installer
+      - name: Parse installer scripts without executing them
+        shell: pwsh
+        run: |
+          Get-ChildItem src/installer/*.ps1 | ForEach-Object {
+            $tokens = $null
+            $parseErrors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$parseErrors)
+            if ($parseErrors.Count) { throw "PowerShell syntax failed: $($_.Name)" }
+          }
