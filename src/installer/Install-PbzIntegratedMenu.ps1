@@ -133,6 +133,13 @@ function Grant-OwnedWriteAccess([string] $Directory, [string] $Marker) {
 function Assert-OwnedRuntime([string] $Directory, [switch] $Integrated) {
     Assert-OrdinaryPath $Directory
     $marker = Join-Path $Directory $ownerName
+    if (!(Test-Path -LiteralPath $marker -PathType Leaf)) {
+        # An uninstaller may leave an empty ue4ss directory. Move it into the
+        # existing transaction backup; restore it on uninstall or rollback.
+        # Never infer ownership of any nonempty third-party installation.
+        if (!$Integrated -and @(Get-ChildItem -LiteralPath $Directory -Force).Count -eq 0) { return }
+        throw '检测到遗留的 UE4SS 文件夹，但缺少影境演武归属标记。尚未改动该目录或存档。请退出游戏后，将 platform/steam/ue4ss 文件夹重命名备份，再重试；如仍有其他 MOD 的加载器 DLL，也需按其原卸载说明处理。'
+    }
     Assert-OrdinaryPath $marker
     if ([IO.File]::ReadAllText($marker).Trim() -cne $owner) { throw 'An unowned UE4SS installation is present.' }
     if ($Integrated) {
