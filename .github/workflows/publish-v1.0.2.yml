@@ -1,0 +1,37 @@
+name: Publish reviewed v1.0.2 assets once
+
+on:
+  push:
+    branches:
+      - release/publish-v1.0.2
+    paths:
+      - .github/workflows/publish-v1.0.2.yml
+      - tools/publish_release_v1_0_2.py
+      - docs/releases/v1.0.2.md
+      - docs/releases/v1.0.2-SHA256SUMS.txt
+      - docs/releases/v1.0.2-assets.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: yingjing-yanwu-publish-v1.0.2
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'Serenoche/Yingjing-yanwu' && github.event_name == 'push' && github.ref == 'refs/heads/release/publish-v1.0.2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify fixed blobs and publish verified prerelease
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PYTHONUTF8: '1'
+        run: python3 tools/publish_release_v1_0_2.py

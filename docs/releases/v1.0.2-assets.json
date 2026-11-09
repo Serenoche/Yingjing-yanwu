@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "repository": "Serenoche/Yingjing-yanwu",
+  "tag": "v1.0.2",
+  "sourceCommit": "7b5d2cbb2a3beb824f92af35c8506fa4bb4cb6ab",
+  "assets": [
+    {
+      "name": "yingjing-yanwu-v1.0.2-windows-x64.zip",
+      "contentType": "application/zip",
+      "bytes": 21822827,
+      "sha256": "43e7a29a9de27f7c99045fd21689cdadb29e3d388c65e8bf5882a1dd13759f34",
+      "chunks": [
+        {
+          "gitBlobSha1": "041ec92d19e05fa9c7b9d17095f57be8cd5b38a4",
+          "bytes": 393216,
+          "sha256": "10f2640a016dd287bffa2223ab11a720929d6519d759f5ee28fdcd683faa4fdc"
+        },
+        {
+          "gitBlobSha1": "3ea61fecdcdca845419432ad4fbc326c9efa476d",
+          "bytes": 2359296,
+          "sha256": "9ba232361f1f42c975ef825153a70216fb3184014fdabf3247bc69675ceff249"
+        },
+        {
+          "gitBlobSha1": "a7af708b3f3ec798101efa223f52aca2808c5f3b",
+          "bytes": 2359296,
+          "sha256": "3723d254ac53c6b0e580d22962b07ce7e43314ba4afa5b869def2f4e80e0daf3"
+        },
+        {
+          "gitBlobSha1": "cb640c58cde7254642850256e220c1ded61577a3",
+          "bytes": 2359296,
+          "sha256": "9b4bb73592e6a3b386fa843285a2c4160d9a80063764af946ccd97f76d3aabe4"
+        },
+        {
+          "gitBlobSha1": "cce20e127919da02a497816008e22665480c6dc2",
+          "bytes": 2359296,
+          "sha256": "5b04f933b70c90bb2e2a7758c32b238d7b989a462b02d6d5c309aa3a8d3cbb9d"
+        },
+        {
+          "gitBlobSha1": "ead271c2eaca3804b6c73d1e4a71baa85962f686",
+          "bytes": 2359296,
+          "sha256": "6f058096f87ec875fe31be3153bcc804cebb9b25a36af0e76c99d4cee032f7f2"
+        },
+        {
+          "gitBlobSha1": "7f4a6a64d95544c076c0768f21644904c790a77f",
+          "bytes": 2359296,
+          "sha256": "8a10460679b5efb869523e669a4564b428411982e8da76fdb76f692f568122e5"
+        },
+        {
+          "gitBlobSha1": "30509845b300a61cfa939dbde042ccab99384654",
+          "bytes": 2359296,
+          "sha256": "c4ddc1f0d479d8742f5a081849179292e61e9f9d6e293f458524de002e0656b7"
+        },
+        {
+          "gitBlobSha1": "97d3f047821e5997ae1be641ebc4be63b4cd87d8",
+          "bytes": 2359296,
+          "sha256": "0b55df5ad1f0d8d8e105d0f819c7d73fe80a199379ecbef2cd415a744e7e9600"
+        },
+        {
+          "gitBlobSha1": "8932d17b93cd862e3c6ad714b88d8869e9241c02",
+          "bytes": 2359296,
+          "sha256": "e2233e699670d248b5bbf040b72ecf2b811546d45d06b1ea4cacc49fe6f243ec"
+        },
+        {
+          "gitBlobSha1": "a08d9d62baa97514d918aac635ccec951a02f015",
+          "bytes": 195947,
+          "sha256": "5f12240229c2b471eb731757112ae09370ef6d01cec044f25fa6f790ba06af83"
+        }
+      ]
+    },
+    {
+      "name": "ReleaseNotes-v1.0.2.md",
+      "contentType": "text/plain; charset=utf-8",
+      "bytes": 4329,
+      "sha256": "f4df35b4d921cf0e3fa8cf5fce35655f6acd92f3710ebab8a63f821c3b6db5a6",
+      "localPath": "docs/releases/v1.0.2.md"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "bytes": 195,
+      "sha256": "e6b30425f408e8523e51254fa5624de7850fa2caa137c9d0ff4507ae37903f51",
+      "localPath": "docs/releases/v1.0.2-SHA256SUMS.txt"
+    }
+  ]
+}

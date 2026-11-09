@@ -1,0 +1,2 @@
+43e7a29a9de27f7c99045fd21689cdadb29e3d388c65e8bf5882a1dd13759f34  yingjing-yanwu-v1.0.2-windows-x64.zip
+f4df35b4d921cf0e3fa8cf5fce35655f6acd92f3710ebab8a63f821c3b6db5a6  ReleaseNotes-v1.0.2.md
