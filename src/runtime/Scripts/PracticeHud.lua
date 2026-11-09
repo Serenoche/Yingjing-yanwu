@@ -67,7 +67,7 @@ function Hud.update(controller,state,target)
         end
     end
     local function value(name) return state[name] and "开启" or "关闭" end
-    local lines={"练习模式", "F5  敌人 AI　"..value("ai"),"F6  敌人回血　"..value("enemyRegen"),
+    local lines={"练习模式", "F5  敌人 AI　"..value("ai"),"F6  回血／锁血　"..value("enemyRegen"),
         "F7  玩家无敌　"..value("invulnerable"),"F8  无限大招　"..value("infiniteUltimate"),
         "F9  无限暗源　"..value("infiniteSpiritShadow")}
     for index,text in ipairs(lines) do current.labels[index]:SetText(FText(text)) end

@@ -41,7 +41,7 @@ RUNTIME_FILES = (
     "ArtAssets.lua", "NativeUiAssetsData.lua", "NativeScreen.lua", "NativeSelection.lua", "ChallengeLoadout.lua",
     "PortraitLayout.lua", "HistoryReport.lua", "ArenaLoadout.lua", "ArenaLoadoutMemory.lua", "ArenaEconomy.lua",
     "ArenaMapPolicy.lua", "LengTuArena.lua", "LengTuSummons.lua", "DayArena.lua", "SceneArena.lua", "ArenaScenes.lua",
-    "GeneratedEncounterCatalog.lua", "GeneratedArenaScenes.lua",
+    "GeneratedEncounterCatalog.lua", "GeneratedArenaScenes.lua", "LionArena.lua", "EnemyHealthGuard.lua", "StampPress.lua",
 )
 GENERATED = ("BossCatalog.lua", "GeneratedEncounterCatalog.lua", "GeneratedArenaScenes.lua")
 INSTALLER_FILES = ("Install-PbzIntegratedMenu.ps1", "Open-PbzInstaller.ps1", "PortablePaths.ps1",
@@ -374,7 +374,7 @@ def assemble(args: argparse.Namespace) -> dict:
     runtime = ROOT / "src/runtime"
     expected = generated_data(Path(args.data_dir))
     extra = {path.name for path in (runtime / "Scripts").glob("*.lua")} - set(RUNTIME_FILES) - {"ChallengeUI.lua"}
-    require(not extra and len(RUNTIME_FILES) == 49, "Unexpected runtime module set; update the release allowlist explicitly")
+    require(not extra and len(RUNTIME_FILES) == 52, "Unexpected runtime module set; update the release allowlist explicitly")
     scripts = {name: expected[name] if name in expected else read(runtime / "Scripts" / name) for name in RUNTIME_FILES}
     source_ui = read(assets_dir / "Manifest.json")
     assets, deployed_assets = load_assets(assets_dir, scripts["NativeUiAssetsData.lua"], source_ui)
@@ -389,7 +389,7 @@ def assemble(args: argparse.Namespace) -> dict:
     payload[base + "Scripts/UiAssets/Manifest.json"] = json_bytes(deployed_assets)
     payload["ue4ss/Mods/mods.txt"] = b"PBZTestArena : 1\r\n"
     payload["ue4ss/Mods/mods.json"] = b'[{"mod_name":"PBZTestArena","mod_enabled":true}]\n'
-    require(len(payload) == 75, "Incomplete native runtime payload")
+    require(len(payload) == 78, "Incomplete native runtime payload")
     files = {"NativeEnemyRuntime/Payload/" + name: data for name, data in payload.items()}
     payload_hashes = {name: digest(data) for name, data in payload.items()}
     files["NativeEnemyRuntime/PayloadHashes.json"] = json_bytes(payload_hashes)
@@ -433,7 +433,7 @@ def assemble(args: argparse.Namespace) -> dict:
         "sourceRuntime": {name: digest(data) for name, data in scripts.items()},
     }
     files["BuildProvenance.json"] = json_bytes({"schemaVersion": 1, "inputs": inputs,
-        "payloadFiles": 75, "gameLaunched": False, "installed": False, "saveDecompressed": False})
+        "payloadFiles": 78, "gameLaunched": False, "installed": False, "saveDecompressed": False})
     manifest = {"schemaVersion": 1, "owner": "PBZTestArena.PortableDistribution", "name": "影境演武",
         "version": args.version, "gameSha256": GAME_SHA256, "supportedBuild": "CL-302256_JKS-17280",
         "files": {name: {"sha256": digest(data), "bytes": len(data)} for name, data in sorted(files.items())}}
@@ -450,7 +450,7 @@ def assemble(args: argparse.Namespace) -> dict:
             stream.write(data)
         require(sha256(target) == digest(data), f"Release read-back differs: {name}")
     stage.rename(output)
-    return {"passed": True, "output": str(output), "payloadFiles": 75, "images": 13, "privateSlots": 18,
+    return {"passed": True, "output": str(output), "payloadFiles": 78, "images": 13, "privateSlots": 18,
             "gameSha256": GAME_SHA256, "presetsSha256": digest(preset_data), "installed": False,
             "gameLaunched": False, "manifestSha256": sha256(output / "PackageManifest.json")}
 

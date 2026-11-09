@@ -57,8 +57,9 @@ class SourceAndInputChecks(unittest.TestCase):
         cls.build.mkdir(exist_ok=True)
 
     def test_payload_contract(self):
-        self.assertEqual(len(release.RUNTIME_FILES), 49)
-        self.assertEqual(len(set(release.RUNTIME_FILES)), 49)
+        self.assertEqual(len(release.RUNTIME_FILES), 52)
+        self.assertEqual(len(set(release.RUNTIME_FILES)), 52)
+        self.assertTrue({"LionArena.lua", "EnemyHealthGuard.lua", "StampPress.lua"}.issubset(release.RUNTIME_FILES))
         self.assertNotIn("ChallengeUI.lua", release.RUNTIME_FILES)
         self.assertIn("ue4ss/Mods/shared/UEHelpers/UEHelpers.lua", release.LOADER_FILES)
         self.assertEqual(len(release.PRIVATE_NAMES), 18)

@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_ENCOUNTERS = ROOT / 'config/EncounterCatalog.json'
 DEFAULT_BOSSES = ROOT / 'config/BossCatalog.json'
 IDENTIFIER = re.compile(r'^[A-Za-z][A-Za-z0-9_]*$')
-PAUSED_MEMBERS = {'BP_Monster_LionDancer', 'BP_Monster_LionDancer_P2'}
+PAUSED_MEMBERS = set()  # Restored after native arena/phase validation in 1.0.3.
 
 
 def _require(condition, reason):

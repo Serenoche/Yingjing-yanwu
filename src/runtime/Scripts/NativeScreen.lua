@@ -190,11 +190,15 @@ function Screen.open(modal, controller, options)
         self.design:SetWidthOverride(1920); self.design:SetHeightOverride(1080)
         self.canvas = self:make("CanvasPanel")
         self.design:SetContent(self.canvas); self.root:SetContent(self.design)
-        self:shade(0, 0, 1920, 1080, 1).Slot:SetZOrder(0)
-        local Art = require("ArtAssets")
-        local texture, meta = Art.background(modal)
-        self:image(texture, meta, 0, 0, 1920, 1080, nil, true).Slot:SetZOrder(0)
-        self:shade(0, 0, 1920, 1080, .67).Slot:SetZOrder(1)
+        if options.minimal then
+            self:shade(0, 0, 1920, 1080, .55).Slot:SetZOrder(0)
+        else
+            self:shade(0, 0, 1920, 1080, 1).Slot:SetZOrder(0)
+            local Art = require("ArtAssets")
+            local texture, meta = Art.background(modal)
+            self:image(texture, meta, 0, 0, 1920, 1080, nil, true).Slot:SetZOrder(0)
+            self:shade(0, 0, 1920, 1080, .67).Slot:SetZOrder(1)
+        end
         if options.title then
             self.title = self:textScaled(options.title, 100, 55, 600, 110, 2.6, true)
         end

@@ -50,16 +50,16 @@ GROUPS = [
 DUEL_NAMES = {'BP_Monster_ZuoShang_Ending': '组织冥主：左殇'}
 ENTRY_METADATA = {
     'BP_Monster_LionDancer': {
-        'enabled': False, 'status': 'disabled',
-        'notes': '舞狮尊主相关战斗暂时下架，待后续调整；保留原始名称、成员与阶段，方便恢复。',
+        'enabled': True, 'status': 'ready',
+        'notes': '舞狮尊主相关战斗已恢复。',
     },
     'BP_Monster_LionDancer_P2': {
-        'enabled': False, 'status': 'disabled',
-        'notes': '舞狮尊主相关战斗暂时下架，待后续调整；保留原始名称、成员与阶段，方便恢复。',
+        'enabled': True, 'status': 'ready',
+        'notes': '舞狮尊主相关战斗已恢复。',
     },
     'gauntlet_liondancer': {
-        'enabled': False, 'status': 'disabled',
-        'notes': '舞狮尊主相关战斗暂时下架，待后续调整；保留原始名称、成员与阶段，方便恢复。',
+        'enabled': True, 'status': 'ready',
+        'notes': '舞狮尊主相关战斗已恢复。',
     },
     'gauntlet_lengtu': {
         'enabled': False, 'status': 'disabled',

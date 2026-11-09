@@ -2,6 +2,7 @@
 local CombatSpawn = require("CombatSpawn")
 local EncounterEngage = require("EncounterEngage")
 local Health = require("Health")
+local HealthGuard = require("EnemyHealthGuard")
 local Practice = {}
 local Mode = {}
 Mode.__index = Mode
@@ -163,6 +164,37 @@ function Mode:set(name, enabled)
     assert(not self.closed and OPTIONS[name] and type(enabled) == "boolean", "invalid practice option")
     assert(self:ownsPlayer(self.pawn), "practice player changed")
     if self.state[name] == enabled then return true end
+    if name == "enemyRegen" then
+        local ok, failure = pcall(function()
+            for _, entry in pairs(self.enemies) do
+                if enabled then
+                    local _, _, dead = Health.read(entry.actor)
+                    if not dead then
+                        entry.healthGuard = entry.healthGuard or HealthGuard.new(entry.actor)
+                        entry.healthGuard:enable()
+                    end
+                elseif entry.healthGuard then
+                    entry.healthGuard:close(); entry.healthGuard = nil
+                end
+            end
+        end)
+        if not ok then
+            -- The option must never claim lethal-hit protection while its
+            -- native effect failed. Preserve any unremoved handle for cleanup.
+            if enabled then
+                for _, entry in pairs(self.enemies) do
+                    if entry.healthGuard then
+                        local removed = pcall(entry.healthGuard.close, entry.healthGuard)
+                        if removed then entry.healthGuard = nil end
+                    end
+                end
+            end
+            self.lastError = "首领回血与锁血暂不可用，详见日志"
+            print("[PBZTestArenaNative] Practice health guard: " .. tostring(failure) .. "\n")
+            return false, tostring(failure)
+        end
+        self.lastError = nil
+    end
     if RESOURCES[name] and enabled then
         -- Reject unsupported/missing native structs while the option is still
         -- off. Never fall back to rebuilding a lossy FGameplayAttribute table.
@@ -191,6 +223,9 @@ function Mode:set(name, enabled)
         else self:removeInvulnerability() end
     end
     self.state[name] = enabled
+    if name == "ai" then
+        for _, entry in pairs(self.enemies) do entry.engageRequest = nil end
+    end
     if RESOURCES[name] then
         self.resources = self.resources or {}
         self.resources[name] = nil
@@ -242,6 +277,7 @@ function Mode:refillResource(name, now)
 end
 
 function Mode:restoreEnemy(entry)
+    if entry.healthGuard then entry.healthGuard:close(); entry.healthGuard = nil end
     if valid(entry.actor) and worldOf(entry.actor) == self.world then
         local _, _, dead = Health.read(entry.actor)
         if dead then return end
@@ -250,7 +286,7 @@ function Mode:restoreEnemy(entry)
     end
 end
 
-function Mode:update(pawn, bosses, awake, now)
+function Mode:update(pawn, bosses, awake, now, externalAI)
     assert(not self.closed and type(bosses) == "table" and finite(now), "invalid practice update")
     if not self:ownsPlayer(pawn) then self:close(); return false, "practice player or world changed" end
     local seen = {}
@@ -268,16 +304,33 @@ function Mode:update(pawn, bosses, awake, now)
         if (entry.health and hp and hp < entry.health - EPSILON) or dead then self.startedCombat = true end
         entry.dead = dead
         if not dead then
+            if self.state.enemyRegen then
+                entry.healthGuard = entry.healthGuard or HealthGuard.new(actor)
+                entry.healthGuard:enable()
+            elseif entry.healthGuard then
+                entry.healthGuard:close(); entry.healthGuard = nil
+            end
             local running = self.state.ai and awake == true
-            if not running then
+            if externalAI == true and self.state.ai == true then
+                -- Continue resource/health observation, while the stage
+                -- coordinator alone starts and confirms the new phase's AI.
+                -- An explicit user AI-off remains authoritative below.
+            elseif not running then
                 if aiState(actor) then CombatSpawn.challengeAI(actor, false) end
                 entry.resumeCombat = true
+                entry.engageRequest = nil
             elseif entry.resumeCombat then
                 -- Retrying native acquisition preserves hatred; StopAI never
                 -- turns a practice toggle into a fresh encounter or a heal.
-                if EncounterEngage.start(actor, pawn) then entry.resumeCombat = nil end
+                entry.engageRequest = entry.engageRequest or {}
+                if EncounterEngage.start(actor, pawn, entry.engageRequest, now) then
+                    entry.resumeCombat, entry.engageRequest = nil, nil
+                end
             elseif not aiState(actor) then
-                if EncounterEngage.start(actor, pawn) then entry.resumeCombat = nil else entry.resumeCombat = true end
+                entry.engageRequest = entry.engageRequest or {}
+                if EncounterEngage.start(actor, pawn, entry.engageRequest, now) then
+                    entry.resumeCombat, entry.engageRequest = nil, nil
+                else entry.resumeCombat = true end
             end
             if hp and maximum then
                 if (entry.health and hp < entry.health - EPSILON) or (entry.maximum and math.abs(maximum - entry.maximum) > EPSILON) then

@@ -23,16 +23,17 @@ class PublicDataTests(unittest.TestCase):
         current = json.loads((ROOT / "config/EncounterCatalog.json").read_text(encoding="utf-8-sig"))
         self.assertEqual(make_catalog(DEFAULT_BOSSES.read_bytes()), current)
 
-    def test_current_catalog_preserves_retired_lions_and_other_combinations(self):
+    def test_current_catalog_restores_verified_lions_and_preserves_other_combinations(self):
         data = load_and_validate()
         enabled = [entry for entry in data["entries"] if entry["enabled"]]
         self.assertEqual(len(data["entries"]), 90)
-        self.assertEqual(len(enabled), 85)
+        self.assertEqual(len(enabled), 88)
         self.assertEqual([sum(entry["category"] == kind for entry in enabled)
-                          for kind in ("duel", "gauntlet", "group")], [65, 14, 6])
+                          for kind in ("duel", "gauntlet", "group")], [67, 15, 6])
         entries = {entry["id"]: entry for entry in data["entries"]}
         for identity in ("BP_Monster_LionDancer", "BP_Monster_LionDancer_P2", "gauntlet_liondancer"):
-            self.assertFalse(entries[identity]["enabled"])
+            self.assertTrue(entries[identity]["enabled"])
+            self.assertEqual(entries[identity]["status"], "ready")
             self.assertTrue(entries[identity]["stages"])
         self.assertEqual(entries["group_last_will"]["stages"][0]["members"],
                          ["BP_Monster_WuLengShuang", "BP_Monster_YuBi"])

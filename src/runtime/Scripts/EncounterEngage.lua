@@ -94,7 +94,11 @@ end
 -- not finished. A failed native target acquisition is never reported as success.
 -- Starting AI is guarded by its real bAIStarted flag, so retries do not restart
 -- the initial action or repeatedly stack AI started/stopped tags.
-function Engage.start(actor, pawn)
+function Engage.start(actor, pawn, request, now)
+    if request ~= nil then
+        assert(type(request) == "table" and type(now) == "number" and now > -math.huge and now < math.huge,
+            "invalid encounter engagement retry context")
+    end
     local ai, enemyHatred, playerHatred, reason = context(actor, pawn)
     if reason == "already-dead" then return true, reason, { dead = true } end
     if reason then return false, reason end
@@ -103,12 +107,46 @@ function Engage.start(actor, pawn)
     if not before.started then ai:StartAI() end
     assert(type(ai.bAIStarted) == "boolean", "encounter AI start state is unavailable")
     if not ai.bAIStarted then return false, "等待首领 AI 初始化后继承仇恨", before end
+    if request then
+        local identity = actor:GetAddress() .. ":" .. pawn:GetAddress() .. ":" .. actor:GetWorld():GetAddress()
+        if request.identity ~= identity then request.identity, request.nextAt = identity, nil end
+        -- Read confirmation on every poll, but leave an asynchronous transition
+        -- time to settle before issuing another native transition request.
+        if request.nextAt and now < request.nextAt then return false, "等待原生战斗状态接续", before end
+        request.nextAt = now + 1
+        request.count = (request.count or 0) + 1
+    end
     -- Exact original BP_SGameAIComponent function: requires bAIStarted,
     -- AddActorToHatredList succeeds, then Awareness=100 and ToCombat.
     ai:ForceIntoCombat(pawn)
     local after = read(actor, pawn, ai, enemyHatred, playerHatred)
     if confirmed(after) then return true, nil, after end
     return false, "原生首领仇恨或战斗状态尚未确认", after
+end
+
+-- Observation only. Every optional diagnostic getter is isolated from combat.
+function Engage.diagnose(actor, pawn)
+    local ai, enemyHatred, playerHatred, reason = context(actor, pawn)
+    if reason then return "ready=false reason=" .. tostring(reason) end
+    local details = read(actor, pawn, ai, enemyHatred, playerHatred)
+    local fields = {}
+    for _, key in ipairs({ "started", "state", "inCombat", "hasTarget", "playerThreatened", "playerInCombat" }) do
+        fields[#fields + 1] = key .. "=" .. tostring(details[key])
+    end
+    local function add(key, fn)
+        local ok, value = pcall(fn)
+        fields[#fields + 1] = key .. "=" .. (ok and tostring(value) or "unavailable")
+    end
+    add("canSenseEnemy", function() return required("/Script/SGameAI.Default__SGameAIStateUtils"):CanSense(actor) end)
+    add("canAcquirePlayer", function() return enemyHatred:CheckCanHatredTarget(pawn) end)
+    add("playerCanBeHatred", function() return playerHatred:CheckActorCanBeHatred(pawn) end)
+    add("attitude", function() return actor:GetController():BlueprintGetTeamAttitudeTowards(pawn) end)
+    for _, tagName in ipairs({ "AI.EnableState.Stopped", "AI.InitialActionNotExecuted", "AI.DisableCombatAI",
+        "AI.Hatred.CanNotHatredOthers", "AI.Hatred.CanNotBeHatred", "AI.Hatred.IgnoreByNPC" }) do
+        add("enemy." .. tagName, function() return actor.AbilitySystemComponent:GetGameplayTagCount({ TagName = FName(tagName) }) end)
+        add("player." .. tagName, function() return pawn.AbilitySystemComponent:GetGameplayTagCount({ TagName = FName(tagName) }) end)
+    end
+    return table.concat(fields, " ")
 end
 
 -- Link only the actors explicitly supplied by the current MOD stage. Native
@@ -141,9 +179,10 @@ function Engage.linkGroup(pawn, actors, state, now, enabled, engagedSignal)
         end
     end
     local identity = table.concat(keys, ":")
-    if not state or state.identity ~= identity then state = { identity = identity, confirmed = {} } end
+    if not state or state.identity ~= identity then state = { identity = identity, confirmed = {}, requests = {} } end
     if enabled ~= true then
         state.enabled, state.confirmed, state.nextAt, state.deadline, state.complete = false, {}, nil, nil, false
+        state.requests, state.nextLogAt = {}, nil
         state.triggered = false
         return state, false, "paused"
     end
@@ -171,22 +210,32 @@ function Engage.linkGroup(pawn, actors, state, now, enabled, engagedSignal)
     -- same stage. Recheck actual state, never force from an old trigger/cache.
     if not hasPlayerHatred then
         state.triggered, state.complete, state.deadline = false, false, nil
+        state.requests, state.nextLogAt = {}, nil
         return state, false, "waiting-for-player-hatred"
     end
     state.triggered = true
     state.deadline = state.deadline or now + 5
     local complete, reason = true, nil
+    state.requests = state.requests or {}
     for _, actor in ipairs(pending) do
         local address = actor:GetAddress()
         if not state.confirmed[address] then
-            local acquired, failure = Engage.start(actor, pawn)
+            local request = state.requests[address] or {}
+            state.requests[address] = request
+            local acquired, failure = Engage.start(actor, pawn, request, now)
             if acquired then state.confirmed[address] = true
             else complete, reason = false, failure end
         end
     end
-    assert(complete or now < state.deadline, "同场首领联动仇恨尚未确认：" .. tostring(reason))
+    -- Native initial actions can outlive the advisory deadline. A living peer
+    -- must never be deleted through Challenge.fail merely for taking longer.
+    -- Keep reads bounded to 250ms and each native request to once per second.
+    if not complete and now >= state.deadline and now >= (state.nextLogAt or 0) then
+        state.nextLogAt = now + 5
+        print("[PBZTestArenaNative] Group engagement pending; reason=" .. tostring(reason) .. "\n")
+    end
     state.complete = complete
-    if complete then state.deadline = nil end
+    if complete then state.deadline, state.requests, state.nextLogAt = nil, {}, nil end
     return state, complete, reason
 end
 

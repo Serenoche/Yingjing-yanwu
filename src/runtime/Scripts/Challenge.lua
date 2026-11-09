@@ -10,6 +10,7 @@ local SpawnClass = require("SpawnClass")
 local PlayerProfile = require("PlayerProfile")
 local ArenaScenes = require("ArenaScenes")
 
+local LionArena = require("LionArena")
 local Challenge = {}
 Challenge.__index = Challenge
 
@@ -445,6 +446,7 @@ function Challenge:owns(actor)
 end
 
 function Challenge:clearStage()
+    self.engageRequests, self.engageNextPoll, self.engageNextLog = nil, nil, nil
     self.groupAggro = nil
     -- Remove only this encounter's actors and owner-linked summons. Never scan
     -- by location alone: the scene's authored NPCs are not ours to destroy.
@@ -461,6 +463,14 @@ function Challenge:clearStage()
     for _, actor in ipairs(actors) do
         pcall(clearBossFlow, actor)
         pcall(function() actor:K2_DestroyActor() end)
+    end
+    if self.lionArena then
+        local cleaned,reason=pcall(self.lionArena.close,self.lionArena)
+        if cleaned then self.lionArena=nil; self.lionArenaCleanupError=nil
+        else
+            self.lionArenaCleanupError=tostring(reason)
+            print("[PBZLionArena] cleanup pending: "..tostring(reason).."\n")
+        end
     end
     if self.lengtu then
         local cleaned, reason = pcall(self.lengtu.close, self.lengtu)
@@ -505,6 +515,16 @@ end
 
 function Challenge:spawnStage(gameplay, system, pawn)
     if not self:prepareNativeEncounter(gameplay, system, pawn) then return false end
+    if self.lionArenaCleanupError then
+        assert(self.lionArena,"舞狮机制清理记录不完整")
+        self.lionArena:close()
+        self.lionArena,self.lionArenaCleanupError=nil,nil
+    end
+    if LionArena.required(self.entry.stages[self.stageIndex]) and not self.lionArena then
+        local area,reason=LionArena.new(pawn,self.scene,gameplay,system)
+        if not area then spawnWait(self,gameplay,pawn,reason); return false end
+        self.lionArena=area
+    end
     local actors, levels = {}, {}
     local ok, failure = pcall(function()
         for _, member in ipairs(self.entry.stages[self.stageIndex].members) do
@@ -585,6 +605,7 @@ function Challenge:closeTransition()
     end
     self.stageFade, self.transitionStep, self.advanceAt = nil, nil, nil
     self.engagePending, self.engageDeadline = nil, nil
+    self.engageRequests, self.engageNextPoll, self.engageNextLog = nil, nil, nil
 end
 
 function Challenge:updateTransition(gameplay, system, pawn, now, realNow)
@@ -613,15 +634,29 @@ function Challenge:updateTransition(gameplay, system, pawn, now, realNow)
             self.status, self.message = "combat", "练习目标已就位，AI 已暂停"
             return true
         end
+        if self.engageNextPoll and realNow < self.engageNextPoll then return true end
+        self.engageNextPoll = realNow + 0.25
+        self.engageRequests = self.engageRequests or {}
         local complete = true
         for _, actor in ipairs(self.bosses) do
             local address = actor:GetAddress()
             if not self.engagePending[address] then
-                local engaged, reason = EncounterEngage.start(actor, pawn)
+                local request = self.engageRequests[address] or {}
+                self.engageRequests[address] = request
+                local engaged, reason = EncounterEngage.start(actor, pawn, request, realNow)
                 if engaged then self.engagePending[address] = true
                 else
                     complete = false
-                    assert(realNow < self.engageDeadline, "下一阶段未能接续仇恨：" .. tostring(reason))
+                    -- A live, correctly owned boss waiting for its native AI is
+                    -- not an invalid encounter. A diagnostic deadline must not
+                    -- route through fail() and destroy the new phase actor.
+                    if realNow >= self.engageDeadline and realNow >= (self.engageNextLog or 0) then
+                        self.engageNextLog = realNow + 5
+                        local diagnosed, details = pcall(EncounterEngage.diagnose, actor, pawn)
+                        print("[PBZTestArenaNative] Phase engagement pending; boss=" .. address
+                            .. "; reason=" .. tostring(reason) .. "; " .. tostring(details) .. "\n")
+                        self.message = "首领已保留，正在等待原生 AI 接续战斗"
+                    end
                 end
             end
         end
@@ -827,6 +862,7 @@ function Challenge:tick(gameplay, system, pawn, now)
         self.status, self.message = "resetting", "玩家已重生，正在从首阶段重置挑战"
     end
     if not self.reloadAt then
+        if self.lionArena then self.lionArena:update(pawn,realNow) end
         if not self.difficulty then self.difficulty = require("GameplayDifficulty").new(pawn, self.difficultyMode) end
         assert(self.difficulty:update(pawn) ~= false, "挑战难度的玩家或场景已改变")
         if self.lengtu and not self.markerCleanupError and self.status ~= "won" then
@@ -838,7 +874,11 @@ function Challenge:tick(gameplay, system, pawn, now)
         if now >= (self.practiceRetryAt or 0) then
             local updated, failure = pcall(function()
                 if not self.practice then self.practice = require("PracticeMode").new(pawn, gameplay:GetPlayerController(pawn, 0)) end
-                assert(self.practice:update(pawn, self.bosses, self.awake, now) ~= false, "练习控制的角色或场景已改变")
+                -- The phase coordinator owns AI while it is acquiring the new
+                -- stage. Practice must not interpret awake=false as standby
+                -- and stop the AI that updateTransition just started.
+                local phaseOwnsAI = self.transitionStep == "engage"
+                assert(self.practice:update(pawn, self.bosses, self.awake, now, phaseOwnsAI) ~= false, "练习控制的角色或场景已改变")
                 local state = self.practice:getState()
                 if self.practiceFault and not state.lastError then state.lastError = "练习控制已复位，详见日志" end
                 require("PracticeHud").update(gameplay:GetPlayerController(pawn, 0), state, self.entry.name)

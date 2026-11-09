@@ -99,7 +99,7 @@ built with its separate `--legacy-presets` input; that old bundle is not shipped
 
 Assembly validates the component manifests and actual x64 PE files. It checks
 the three generated Lua modules against the current `config/` inputs, selects
-the explicit runtime allowlist, and creates the installer's required 75-file
+the explicit runtime allowlist, and creates the installer's required 78-file
 `NativeEnemyRuntime/Payload` plus `PayloadHashes.json`. It writes a complete
 `IntegratedMenu/Tools/Build.json` compatible with the installer while retaining
 the compiled game's and presets' fingerprints. The retired `ChallengeUI.lua`
@@ -123,7 +123,7 @@ dist/yingjing-yanwu-local/
     Tools/Build.json
     Tools/JSON-LICENSE.MIT
   NativeEnemyRuntime/
-    Payload/...75 verified files...
+    Payload/...78 verified files...
     PayloadHashes.json
   BuildProvenance.json
   PackageManifest.json

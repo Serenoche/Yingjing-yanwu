@@ -5,6 +5,7 @@ local Victory = {}
 local Art, Screen, Profile = require("ArtAssets"), require("NativeScreen"), require("PlayerProfile")
 local Portraits = require("PortraitLayout")
 local Feedback = require("ParameterFeedback")
+local StampPress = require("StampPress")
 local DESCRIPTORS = "/Script/CommonGame.Default__CommonGameDialogDescriptor"
 local CONFIRMATION = "/Script/CommonGame.Default__AsyncAction_ShowConfirmation"
 local SUBSYSTEMS = "/Script/Engine.Default__SubsystemBlueprintLibrary"
@@ -14,7 +15,7 @@ local CLICK = "/Script/UMG.Widget:ForceLayoutPrepass"
 local LABELS = { "重试", "更换目标", "退出演武" }
 local CONFIRM_KEYS = { "Gamepad_FaceButton_Bottom", "Enter", "SpaceBar" }
 local SKIP_KEYS = { "Gamepad_FaceButton_Bottom", "Enter", "SpaceBar", "LeftMouseButton" }
-local REVEAL_DURATION, STAMP_AT, BUTTONS_AT = .80, 2.80, 3.00
+local REVEAL_DURATION, STAMP_AT, BUTTONS_AT = .80, 2.36, 3.00
 local REVEAL_INTERVAL_MS = 16
 local DIRECTIONS = {
     { "Gamepad_DPad_Left", "Left", "Gamepad_DPad_Up", "Up" },
@@ -80,7 +81,7 @@ end
 local function requestModal(session)
     session.before, session.deadline = ownModals(session.controller), os.time() + 4
     local descriptor = checked(required(DESCRIPTORS):CreateConfirmationOk(session.pawn,
-        FText(session.practice and "练习结束" or session.info.header),
+        FText(session.practice and "" or session.info.header),
         FText(session.practice and "" or session.info.name .. "\n" .. session.info.time)), "无法创建原生结算描述")
     for index, label in ipairs(LABELS) do
         descriptor.ButtonActions[index] = { Result = index - 1, OptionalDisplayText = FText(session.reportOnly and(index==1 and "返回" or "")or label) }
@@ -105,6 +106,7 @@ local function stopRevealTicker(session)
 end
 local function clearSkin(session)
     stopRevealTicker(session)
+    if session.stampPress then session.stampPress:close();session.stampPress=nil end
     if session.portraits then session.portraits:close(); session.portraits = nil end
     if session.skin then session.skin:close(); session.skin = nil end
     session.reveal, session.revealRows, session.stamp, session.resultButtons,session.skipLayer = nil, nil, nil, nil,nil
@@ -186,10 +188,7 @@ local function presentResult(session,elapsed,final)
             item.widget:SetRenderTranslation({X=-48*(1-eased),Y=0})
         end
     end
-    local stampOpacity = (final or elapsed>=STAMP_AT)and 1 or 0
-    if valid(session.stamp) and session.stampOpacity ~= stampOpacity then
-        session.stampOpacity = stampOpacity; session.stamp:SetRenderOpacity(stampOpacity)
-    end
+    if session.stampPress then session.stampPress:present(elapsed-STAMP_AT,final)end
     local ready=final or elapsed>=BUTTONS_AT
     if ready~=session.resultControlsReady then
         session.resultControlsReady=ready
@@ -277,10 +276,21 @@ showResult = function(session)
     session.consumeGesture=false
     nativePage(session, false)
     if session.practice then
-        -- Keep the existing CommonUI dialog and its normal three-button
-        -- navigation. A practice result is a choice, never a report page.
-        session.title:SetText(FText("练习结束"))
+        -- Same native CommonUI modal/input owner; show only three centered
+        -- rows. Original pooled buttons remain the controller's action sinks.
+        session.title:SetText(FText(""))
         session.description:SetText(FText(""))
+        local screen=Screen.open(session.modal,session.controller,{minimal=true})
+        session.skin,session.resultButtons=screen,{}
+        for index,label in ipairs(LABELS)do
+            local button,caption=screen:button(label,760,394+(index-1)*110,400,72,function()
+                session.resultRow=index;queue(session,index,"mouse")
+            end)
+            require("ParameterStyle").scaleText(caption,1.6)
+            session.resultButtons[index]=button
+        end
+        screen.selectedButton=session.resultRow
+        session.resultControlsReady=true
         return
     end
     local screen = Screen.open(session.modal, session.controller)
@@ -322,8 +332,9 @@ showResult = function(session)
     if (not session.reportOnly or session.report.attemptResult=="success")and type(Art.missionComplete)=="function" then
         local texture,meta=Art.missionComplete(session.pawn)
         if texture then
-            session.stamp=screen:image(texture,meta,990,50,900,900)
-            session.stamp.Slot:SetZOrder(3) -- above background, behind portrait containers (5)
+            session.stampPress=StampPress.new(screen,texture,meta,{x=990,y=50,w=900,h=900},
+                not session.reportOnly and not session.hasShownResult)
+            session.stamp=session.stampPress.flat
         end
     end
     for index, label in ipairs(session.reportOnly and {"返回"}or LABELS) do
@@ -603,6 +614,7 @@ local function resultInput(session, gameplay)
         local button = session.buttons[session.resultRow]
         if not button:HasUserFocus(session.controller) and not button:HasUserFocusedDescendants(session.controller) then button:SetFocus() end
     end
+    if session.practice and session.skin then session.skin.selectedButton=session.resultRow end
 end
 local function resultAnimation(session,gameplay)
     if session.practice or not session.reveal then return false end

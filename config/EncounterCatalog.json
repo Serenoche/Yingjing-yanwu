@@ -738,8 +738,8 @@
       "id": "BP_Monster_LionDancer",
       "name": "舞狮尊主",
       "category": "duel",
-      "enabled": false,
-      "status": "disabled",
+      "enabled": true,
+      "status": "ready",
       "stages": [
         {
           "members": [
@@ -747,14 +747,14 @@
           ]
         }
       ],
-      "notes": "舞狮尊主相关战斗暂时下架，待后续调整；保留原始名称、成员与阶段，方便恢复。"
+      "notes": "舞狮尊主相关战斗已恢复。"
     },
     {
       "id": "BP_Monster_LionDancer_P2",
       "name": "舞狮尊主：烈焰",
       "category": "duel",
-      "enabled": false,
-      "status": "disabled",
+      "enabled": true,
+      "status": "ready",
       "stages": [
         {
           "members": [
@@ -762,7 +762,7 @@
           ]
         }
       ],
-      "notes": "舞狮尊主相关战斗暂时下架，待后续调整；保留原始名称、成员与阶段，方便恢复。"
+      "notes": "舞狮尊主相关战斗已恢复。"
     },
     {
       "id": "BP_Monster_MobMan_Elite",
@@ -1134,8 +1134,8 @@
       "id": "gauntlet_liondancer",
       "name": "最后的传承",
       "category": "gauntlet",
-      "enabled": false,
-      "status": "disabled",
+      "enabled": true,
+      "status": "ready",
       "stages": [
         {
           "members": [
@@ -1148,7 +1148,7 @@
           ]
         }
       ],
-      "notes": "舞狮尊主相关战斗暂时下架，待后续调整；保留原始名称、成员与阶段，方便恢复。"
+      "notes": "舞狮尊主相关战斗已恢复。"
     },
     {
       "id": "gauntlet_mboss",

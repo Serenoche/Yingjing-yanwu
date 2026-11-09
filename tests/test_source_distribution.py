@@ -16,10 +16,10 @@ ROOT_FILES = {"LICENSE", ".gitignore", ".gitattributes", ".editorconfig"}
 
 
 def distribution_files() -> list[Path]:
-    """Use the Git index when available, so ignored-but-tracked files are checked."""
+    """Check tracked and new reviewable sources, including ignored-but-tracked files."""
     if (ROOT / ".git").exists():
         result = subprocess.run(
-            ["git", "-c", "safe.directory=" + ROOT.as_posix(), "ls-files", "-z"],
+            ["git", "-c", "safe.directory=" + ROOT.as_posix(), "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
             cwd=ROOT, check=True, capture_output=True
         )
         names = [part.decode("utf-8") for part in result.stdout.split(b"\0") if part]
