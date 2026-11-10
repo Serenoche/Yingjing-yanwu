@@ -89,8 +89,8 @@
       "bytes": 1591
     },
     "src/installer/Open-PbzInstaller.ps1": {
-      "sha256": "945f853ba21c68a17ffaba9a708d505b9e37db7327773189248a67e705d97153",
-      "bytes": 9733
+      "sha256": "a206e11be5edb2e59d7e924e79c01480eaa1d0caa4fda7a35c152b7c771e37b2",
+      "bytes": 9739
     },
     "src/installer/PortablePaths.ps1": {
       "sha256": "ce25f67856ca1652ef9814accdf4eea80ed6caaaca51c966eddc68727f9ce868",
@@ -100,11 +100,11 @@
       "sha256": "134418cb933b14c12f4d748855e7abff053bc799ea27e32e07cd33b4cf1a75d5",
       "bytes": 20197
     },
-    "src/installer/卸载主菜单入口.cmd": {
+    "src/installer/\u5378\u8f7d\u4e3b\u83dc\u5355\u5165\u53e3.cmd": {
       "sha256": "4302162e8c02f830313d15b44da43699aeb0e624151bf7218a3f74137ef3499b",
       "bytes": 194
     },
-    "src/installer/安装主菜单入口.cmd": {
+    "src/installer/\u5b89\u88c5\u4e3b\u83dc\u5355\u5165\u53e3.cmd": {
       "sha256": "43f88dfab4238cdaa1247a688950652f9e3e2c6bf43989893923a8861ac8510a",
       "bytes": 192
     },
