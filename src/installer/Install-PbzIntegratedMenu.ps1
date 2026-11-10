@@ -9,6 +9,7 @@
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'PortablePaths.ps1')
+. (Join-Path $PSScriptRoot 'SharedRuntime.ps1')
 if ($Install -and $Uninstall) { throw 'Choose Install or Uninstall, not both.' }
 $owner = '7d5ad307-d21c-47eb-9584-493443190984'
 $saveOwner = 'PBZTestArena.IntegratedMenu'
@@ -64,7 +65,10 @@ function Ensure-Directory([string] $Path) {
 
 function Get-Hash([string] $Path) {
     Assert-OrdinaryPath $Path
-    return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+    $stream=[IO.File]::OpenRead($Path)
+    $sha=[Security.Cryptography.SHA256]::Create()
+    try { return [BitConverter]::ToString($sha.ComputeHash($stream)).Replace('-','').ToLowerInvariant() }
+    finally { $sha.Dispose(); $stream.Dispose() }
 }
 
 function Assert-Hash([string] $Path, [string] $Expected) {
@@ -193,7 +197,7 @@ return {
     owner = $(Lua-String $owner),
     profile = $(Lua-String $profile),
     savePath = $(Lua-String $SavePath),
-    gameSha256 = $(Lua-String $expectedGameHash),
+    gameSha256 = $(Lua-String $actualGameHash),
     loadoutMemoryPath = $(Lua-String (Join-Path $preferences 'PBZLoadout.tsv')),
     trainingSlot = "PBZArenaIntegratedTraining",
     cyclePrefix = "PBZArenaIntegratedCycle",
@@ -211,7 +215,8 @@ function Get-PreviousState {
     if (!(Test-Path -LiteralPath $readState -PathType Leaf)) { return $null }
     Assert-OrdinaryPath $readState
     $state = Get-Content -LiteralPath $readState -Raw -Encoding UTF8 | ConvertFrom-Json
-    if ($state.version -notin @(1,2) -or $state.owner -cne $owner) { throw 'Unknown integrated-menu installation state.' }
+    if ($state.version -notin @(1,2,3) -or $state.owner -cne $owner) { throw 'Unknown integrated-menu installation state.' }
+    if ($state.version -eq 3 -and $state.installKind -cne 'shared-v1') { throw 'Unknown shared-runtime installation state.' }
     if ($state.installed) {
         if ([IO.Path]::GetFullPath($state.gameExe) -ine [IO.Path]::GetFullPath($game) -or
             [IO.Path]::GetFullPath($state.savePath) -ine [IO.Path]::GetFullPath($save)) { throw 'This installation state belongs to another game or account.' }
@@ -243,6 +248,7 @@ function Assert-PreviousRuntime($State) {
 }
 
 function Invoke-SaveTool([string] $SavePath, [string] $Output, [string] $PriorManifest) {
+    Assert-Hash $game $actualGameHash
     $arguments = @('stage','--game',$game,'--source',$SavePath,'--presets',$presets,'--output',$Output)
     if ($PriorManifest) { $arguments += @('--prior',$PriorManifest) }
     $json = & $helper @arguments
@@ -251,7 +257,7 @@ function Invoke-SaveTool([string] $SavePath, [string] $Output, [string] $PriorMa
     $result = $text | ConvertFrom-Json
     if ($result.schemaVersion -ne 1 -or $result.owner -cne $saveOwner -or $result.operation -cne 'stage' -or
         $result.sourceSha256 -cnotmatch '^[a-f0-9]{64}$' -or $result.outputSha256 -cnotmatch '^[a-f0-9]{64}$' -or
-        $result.gameSha256 -cne $expectedGameHash -or $result.presetsSha256 -cne $toolBuild.presetsSha256 -or
+        $result.gameSha256 -cne $actualGameHash -or $result.presetsSha256 -cne $toolBuild.presetsSha256 -or
         $result.originalBlockIdentity -ne $true -or $result.continue.changed -ne $false -or
         $result.continue.verification -cne 'opaque-Advanced-block-identical' -or
         $result.advancedSha256Before -cnotmatch '^[a-f0-9]{64}$' -or $result.advancedSha256Before -cne $result.advancedSha256After) {
@@ -271,7 +277,7 @@ function Invoke-SaveTool([string] $SavePath, [string] $Output, [string] $PriorMa
     $verificationJson = & $helper @verificationArguments
     if ($LASTEXITCODE -ne 0) { throw 'The portable save tool rejected the candidate during independent verification.' }
     $verification = ($verificationJson -join [Environment]::NewLine) | ConvertFrom-Json
-    if ($verification.operation -cne 'verify' -or $verification.sourceSha256 -cne $result.sourceSha256 -or
+    if ($verification.operation -cne 'verify' -or $verification.gameSha256 -cne $actualGameHash -or $verification.sourceSha256 -cne $result.sourceSha256 -or
         $verification.outputSha256 -cne $result.outputSha256 -or $verification.originalBlockIdentity -ne $true -or
         $verification.advancedSha256Before -cne $result.advancedSha256Before -or
         $verification.advancedSha256After -cne $result.advancedSha256After -or
@@ -280,6 +286,7 @@ function Invoke-SaveTool([string] $SavePath, [string] $Output, [string] $PriorMa
     }
     Assert-Hash $SavePath $result.sourceSha256
     Assert-Hash $Output $result.outputSha256
+    Assert-Hash $game $actualGameHash
     return @{ report = $result; json = $text }
 }
 
@@ -361,9 +368,17 @@ function Migrate-LegacyUserData($State) {
 
 Assert-OrdinaryPath $integratedRoot
 Assert-OrdinaryPath $platform
-if ($Uninstall) { Assert-OrdinaryPath $game } else { Assert-Hash $game $expectedGameHash }
+Assert-OrdinaryPath $game
 Assert-NotRunning
 Assert-Payload
+$pendingReceipt=Join-Path $active 'Mods/PBZTestArena/.PBZTestArenaPending-install.json'
+$actualGameHash=Get-Hash $game
+if (Test-Path -LiteralPath $pendingReceipt -PathType Leaf) {
+    . (Join-Path $PSScriptRoot 'CompatibilityInstall.ps1')
+    if ($Install) {
+        throw 'Uninstall the previous pending-only internal MOD with this installer, then install again to try compatibility. UE4SS, other MODs and saves are retained.'
+    } else { Invoke-PbzPendingInstall;return }
+}
 if (!$Uninstall) { Assert-PortableTools }
 $accounts = @(Get-ChildItem -LiteralPath $saveSteamRoot -Directory | Where-Object { $_.Name -match '^\d{17}$' })
 if ($SteamAccount) {
@@ -381,6 +396,10 @@ $privatePath = Join-Path $stateRoot 'PrivateSlots.json'
 $profile = Join-Path $stateRoot 'ArenaData/Profile'
 $preferences = Join-Path $dataRoot 'ArenaPreferences'
 $prior = Get-PreviousState
+if (Test-PbzSharedRuntime $prior) {
+    Invoke-PbzSharedRuntime $prior
+    return
+}
 Assert-PreviousRuntime $prior
 if (!$Install -and !$Uninstall) {
     Write-Output 'Integrated-menu payload, game build and formal save paths verified. No files changed; no game started.'

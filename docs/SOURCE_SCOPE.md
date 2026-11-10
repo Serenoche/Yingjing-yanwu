@@ -3,7 +3,7 @@
 ## 包含
 
 - `src/runtime/Scripts`：手写 Lua 逻辑；本项目自定义配置生成的目录/场景 Lua；纯路径、尺寸与 UV 的画像元数据。
-- `src/save_barrier`：原创、固定游戏版本的保存事务保护及只读 provider 身份校验；`tests` 使用合成内存和明确虚构的账号路径。
+- `src/save_barrier`：原创、按已适配接口档案验证的保存事务保护及只读 provider 身份校验；`tests` 使用合成内存和明确虚构的账号路径。
 - `src/save_tool`：原创 Windows CNG PBZS 容器校验和暂存工具；模板哈希由本地构建输入生成。
 - `src/installer`：原创安装交易脚本、路径发现和 WinForms 宿主源码。
 - `tools`：可配置的构建入口。它不安装 MOD、不操作游戏。

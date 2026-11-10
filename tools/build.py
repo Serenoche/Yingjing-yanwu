@@ -110,7 +110,8 @@ def native(args: argparse.Namespace) -> None:
             run(base + ["/LD", str(source / "barrier.cpp"), "/Fo" + str(output / "barrier.obj"),
                         "/link", "/Brepro", "/OUT:" + str(target)], output, env)
             if args.tests:
-                for name in ("barrier_test", "provider_identity_test"):
+                for name in ("barrier_test", "provider_identity_test", "provider_dynamic_layout_test",
+                             "native_compat_test", "legacy_clone_test"):
                     test = output / (name + ".exe")
                     run(base + ["/I" + str(source), str(source / "tests" / (name + ".cpp")),
                                 "/Fo" + str(output / (name + ".obj")), "/link", "/Brepro", "/OUT:" + str(test)], output, env)

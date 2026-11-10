@@ -66,7 +66,7 @@ class SourceDistributionTests(unittest.TestCase):
         self.assertNotIn("ChallengeUI", modules, "The retired external overlay is not shipped")
         used_external = set()
         for path in scripts.glob("*.lua"):
-            for dependency in re.findall(r'\brequire\s*\(\s*[\"\']([^\"\']+)[\"\']',
+            for dependency in re.findall(r'\b(?:require\s*\(\s*|pcall\s*\(\s*require\s*,\s*)[\"\']([^\"\']+)[\"\']',
                                          path.read_text(encoding="utf-8-sig")):
                 if dependency not in modules:
                     used_external.add(dependency)

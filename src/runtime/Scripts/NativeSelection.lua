@@ -5,11 +5,48 @@ local Form = require("ParameterForm")
 local Art = require("ArtAssets")
 local Profile = require("PlayerProfile")
 local Portraits = require("PortraitLayout")
+local Custom = require("CustomChallenges")
 local Selection, View = {}, {}
 View.__index = View
 local function valid(value) return value and type(value.IsValid) == "function" and value:IsValid() end
 function View:refresh(form)
     local settings = self.model.settings
+    local custom = self.model.isCustom and self.model:isCustom() or false
+    local count = custom and self.model:customCount() or 0
+    local layout = tostring(settings.category) .. "|" .. count
+    if self.layout ~= layout then
+        local group = custom and { 3, 8 } or { 3, 4, 5, 6 }
+        if custom then
+            for index = 1, count do group[#group + 1] = 8 + index end
+            group[#group + 1], group[#group + 2] = 5, 6
+        end
+        form.groups[2] = group
+        if form.region == 2 then
+            local found = false; for _, index in ipairs(group) do if index == form.selected then found = true end end
+            if not found then form.selected = custom and 8 or 3 end
+        end
+        for index, widget in ipairs(form.widgets) do
+            local visible = index <= 7 and (not custom or index ~= 4) or custom and index >= 8 and index <= 8 + count
+            widget.root:SetVisibility(visible and 4 or 1)
+            if index > 2 and index ~= 7 then
+                local y, height = 430 + (index - 3) * 80, 76
+                if custom then
+                    local position = index == 3 and 0 or index == 8 and 1 or index >= 9 and index - 7 or index == 5 and 7 or 8
+                    y, height = 175 + position * 60, 60
+                end
+                widget.root.Slot:SetPosition({ X = 40, Y = y })
+                widget.root.Slot:SetSize({ X = 745, Y = height })
+                if index >= 9 then widget.label:SetText(FText((settings.category == "custom_gauntlet" and "第 " or "目标 ")
+                    .. (index - 8) .. (settings.category == "custom_gauntlet" and " 战" or ""))) end
+            end
+        end
+        self.layout = layout
+    end
+    if self.customNote then
+        self.customNote:SetVisibility(custom and 3 or 1)
+        self.customNote:SetText(FText(Custom.notice() or (settings.category == "custom_gauntlet"
+            and "按列表顺序逐个出战 · 进入时保存" or "列表目标同时出战 · 进入时保存")))
+    end
     local signature = tostring(settings.playerCycle) .. "|" .. tostring(settings.encounterId)
     if signature ~= self.signature then
         if valid(self.playerArt) then self.playerArt:RemoveFromParent() end
@@ -17,7 +54,7 @@ function View:refresh(form)
         local texture, meta = Art.soul(self.screen.modal, settings.playerCycle)
         self.playerArt = self.screen:image(texture, meta, 100, 165, 780, 450)
         self.enemyArt = Portraits.open(self.screen, self.screen.modal, settings.encounterId,
-            "chest", { x = 1040, y = 160, w = 760, h = 420 })
+            "chest", { x = 1040, y = 160, w = 760, h = custom and 150 or 420 })
         self.signature = signature
     end
     self.playerNote:SetText(FText(settings.playerCycle == -1 and "武器 1 级　·　未铸魂　·　饰品、药品未强化"
@@ -59,6 +96,7 @@ function Selection.open(model, modal, description, controller, confirm, options)
         self.enemyCanvas = self.screen:panel(1010, 145, 825, 750)
         self.sceneCanvas = self.screen:panel(587.5, 900, 745, 78)
         self.playerNote = self.screen:text("", 120, 805, 730, 40, false)
+        self.customNote = self.screen:text("", 1050, 865, 745, 28, false, nil, 20)
         self.screen:setFooter(function()
             local enter = self.screen.enterButton
             local nativeConfirm = self.form:syncInputMode() and (self.form:isConfirmHeld()

@@ -1,8 +1,10 @@
 #pragma once
 #include "summary_cache.hpp"
 #include <array>
+#include <iterator>
+#include <limits>
 
-// Pinned PBZSaveGameSystem cache. This reader never calls the lazy cache getter,
+// Profile-selected PBZSaveGameSystem cache. This reader never calls the lazy cache getter,
 // root initializer, account migration, path constructor, or any game UObject.
 namespace pbz_provider {
 constexpr std::uint32_t cache_rva = 0x0E013440;
@@ -141,14 +143,103 @@ inline constexpr Fingerprint signatures[]={
     {0x0484F960,32,{0x40,0x57,0x48,0x83,0xEC,0x70,0x48,0x8B,0xF9,0x33,0xC9,0x83,0xBA,0x88,0x00,0x00,
         0x00,0x01,0x7E,0x15,0x48,0x83,0xEA,0x80,0x48,0x8B,0xCF,0xE8,0xC0,0xC5,0xA2,0xFC}}
 };
+inline constexpr Fingerprint windows_signature={windows_getter_rva,32,{
+    0x40,0x57,0x48,0x83,0xEC,0x40,0x48,0x8B,0x05,0xC3,0x35,0x83,0x09,0x48,0x8B,0xF9,
+    0x48,0x85,0xC0,0x74,0x0D,0x80,0x3D,0xBC,0x35,0x83,0x09,0x00,0x0F,0x85,0xCC,0x00}};
+
+// A selected, verified host profile supplies addresses. The default retains the
+// original reference layout and its independent raw-code checks for tests and
+// callers that have not already admitted a complete native interface profile.
+enum class RegionKind { code, read_only_data, readable_data };
+using HostRegionCheck = bool (*)(const void*,std::size_t,RegionKind,void*);
+struct Layout {
+    std::uint32_t cache_rva=pbz_provider::cache_rva;
+    std::uint32_t platform_global_rva=pbz_provider::platform_global_rva;
+    std::uint32_t platform_vtable_rva=pbz_provider::platform_vtable_rva;
+    std::uint32_t windows_vtable_rva=pbz_provider::windows_vtable_rva;
+    std::uint32_t windows_getter_rva=pbz_provider::windows_getter_rva;
+    std::uint32_t windows_provider_rva=pbz_provider::windows_provider_rva;
+    std::uint32_t windows_loaded_rva=pbz_provider::windows_loaded_rva;
+    std::uint32_t save_object_rva=pbz_provider::save_object_rva;
+    std::uint32_t save_vtable_rva=pbz_provider::save_vtable_rva;
+    std::uint32_t direct_getter_rva=0x048511D0;
+    std::uint32_t static_object_thunk_rva=0x0484A730;
+    std::uint32_t cache_getter_rva=0x04850B20;
+    std::uint32_t path_getter_rva=0x0484B070;
+    std::uint32_t effective_directory_rva=0x0484F960;
+    std::uint32_t image_size=0x1E0BB000;
+    bool caller_verified_code=false;
+    bool discover_tables_from_getters=false;
+    bool read_only_cache_snapshots=false;
+    bool allow_heap_cached_provider=false;
+    // Inert fixtures can prove synthetic region roles without executable maps.
+    // Production profiles leave this null and use the real host image query.
+    HostRegionCheck host_region_check=nullptr;
+    void* host_region_context=nullptr;
+};
+inline constexpr Layout default_layout{};
+
+inline bool host_region(unsigned char* base,const void* pointer,std::size_t length,RegionKind kind,const Layout& layout) {
+    const auto image=reinterpret_cast<std::uintptr_t>(base),address=reinterpret_cast<std::uintptr_t>(pointer);
+    if(!length || !image || address<image || address-image>=layout.image_size
+        || length>layout.image_size-(address-image)
+        || address>std::numeric_limits<std::uintptr_t>::max()-length)return false;
+    if(layout.host_region_check)return layout.host_region_check(pointer,length,kind,layout.host_region_context);
+    const auto end=address+length;
+    for(auto current=address;current<end;){
+        MEMORY_BASIC_INFORMATION region{};
+        if(!VirtualQuery(reinterpret_cast<const void*>(current),&region,sizeof(region))
+            || region.State!=MEM_COMMIT || region.Type!=MEM_IMAGE || region.AllocationBase!=base
+            || (region.Protect&(PAGE_GUARD|PAGE_NOACCESS)))return false;
+        const auto protection=region.Protect&0xff;
+        const bool accepted=kind==RegionKind::code?protection==PAGE_EXECUTE_READ
+            :kind==RegionKind::read_only_data?protection==PAGE_READONLY
+            :protection==PAGE_READONLY||protection==PAGE_READWRITE||protection==PAGE_WRITECOPY;
+        if(!accepted)return false;
+        const auto start=reinterpret_cast<std::uintptr_t>(region.BaseAddress);
+        if(start>current || !region.RegionSize || region.RegionSize>std::numeric_limits<std::uintptr_t>::max()-start
+            || current>=start+region.RegionSize)return false;
+        current=(std::min)(end,start+region.RegionSize);
+    }
+    return true;
+}
+
+inline bool relative_host_address(unsigned char* base,const void* instruction,std::uint32_t instruction_size,
+    std::int32_t displacement,unsigned char*& target,const Layout& layout) {
+    const auto image=reinterpret_cast<std::uintptr_t>(base),address=reinterpret_cast<std::uintptr_t>(instruction);
+    if(address<image || address-image>=layout.image_size)return false;
+    const auto relative=static_cast<std::int64_t>(address-image)+instruction_size+displacement;
+    if(relative<0 || static_cast<std::uint64_t>(relative)>=layout.image_size)return false;
+    target=base+static_cast<std::uint32_t>(relative);return true;
+}
+
+inline bool readable_cached_object(const void* pointer,std::size_t length) {
+    const auto address=reinterpret_cast<std::uintptr_t>(pointer);
+    if(!length || !span(address,length))return false;
+    const auto end=address+length;
+    for(auto current=address;current<end;){
+        MEMORY_BASIC_INFORMATION region{};
+        if(!VirtualQuery(reinterpret_cast<const void*>(current),&region,sizeof(region))
+            ||region.State!=MEM_COMMIT||(region.Protect&(PAGE_GUARD|PAGE_NOACCESS)))return false;
+        const auto protection=region.Protect&0xff;
+        if(protection!=PAGE_READONLY&&protection!=PAGE_READWRITE&&protection!=PAGE_WRITECOPY)return false;
+        const auto start=reinterpret_cast<std::uintptr_t>(region.BaseAddress);
+        if(start>current||!region.RegionSize||region.RegionSize>std::numeric_limits<std::uintptr_t>::max()-start
+            ||current>=start+region.RegionSize)return false;
+        current=(std::min)(end,start+region.RegionSize);
+    }
+    return true;
+}
+
 inline std::string number_hex(std::uintptr_t value) {
     constexpr char digits[]="0123456789ABCDEF";std::string out(16,'0');
     for(std::size_t i=0;i<16;++i){out[15-i]=digits[value&15];value>>=4;}return out;
 }
-inline std::string pointer_diagnostic(const char* name,void* value,unsigned char* base) {
+inline std::string pointer_diagnostic(const char* name,void* value,unsigned char* base,
+    std::uint32_t image_size=default_layout.image_size) {
     const auto address=reinterpret_cast<std::uintptr_t>(value),image=reinterpret_cast<std::uintptr_t>(base);
     return std::string(";")+name+"="+number_hex(address)+";"+name+"Rva="
-        +(address>=image&&address-image<0x1E0BB000?number_hex(address-image):"external-or-null");
+        +(address>=image&&address-image<image_size?number_hex(address-image):"external-or-null");
 }
 template<typename Read> bool signature_matches(unsigned char* base,const Fingerprint& check,Read read,std::string* diagnostic) {
     unsigned char current[32]{};const bool readable=read(base+check.rva,current,check.length);
@@ -159,16 +250,18 @@ template<typename Read> bool signature_matches(unsigned char* base,const Fingerp
         +(readable?hex(std::string(reinterpret_cast<const char*>(current),check.length)):"unreadable");
     return false;
 }
-inline bool fingerprints(unsigned char* base,std::string* diagnostic=nullptr) {
+inline bool fingerprints(unsigned char* base,std::string* diagnostic=nullptr,const Layout& layout=default_layout) {
+    if(layout.caller_verified_code)return true;
     const auto read=[](const void* a,void* b,std::size_t n){return pbz_barrier::read_bytes(a,b,n);};
-    for(const auto& check:signatures) {
+    const std::uint32_t addresses[]={layout.direct_getter_rva,layout.static_object_thunk_rva,
+        layout.cache_getter_rva,layout.path_getter_rva,layout.effective_directory_rva};
+    static_assert(std::size(addresses)==std::size(signatures),"provider fingerprint address list differs");
+    for(std::size_t i=0;i<std::size(signatures);++i) {
+        auto check=signatures[i];check.rva=addresses[i];
         if(!signature_matches(base,check,read,diagnostic))return false;
     }
     return true;
 }
-inline constexpr Fingerprint windows_signature={windows_getter_rva,32,{
-    0x40,0x57,0x48,0x83,0xEC,0x40,0x48,0x8B,0x05,0xC3,0x35,0x83,0x09,0x48,0x8B,0xF9,
-    0x48,0x85,0xC0,0x74,0x0D,0x80,0x3D,0xBC,0x35,0x83,0x09,0x00,0x0F,0x85,0xCC,0x00}};
 struct Chain {
     void* platform=nullptr;void* table=nullptr;void* get_save=nullptr;
     void* actual=nullptr;void* save_table=nullptr;void* get_path=nullptr;
@@ -178,62 +271,105 @@ inline bool same(const Chain& a,const Chain& b) {
     return a.platform==b.platform&&a.table==b.table&&a.get_save==b.get_save&&a.actual==b.actual
         &&a.save_table==b.save_table&&a.get_path==b.get_path&&a.loaded==b.loaded&&a.windows==b.windows;
 }
-inline std::string chain_diagnostic(const Chain& value,unsigned char* base,const char* stage) {
+inline std::string chain_diagnostic(const Chain& value,unsigned char* base,const char* stage,
+    const Layout& layout=default_layout) {
     return std::string(";providerStage=")+stage+";providerRoute="+(value.windows?"windows-cached":"direct-or-unrecognized")
-        +pointer_diagnostic("providerModule",value.platform,base)+pointer_diagnostic("providerModuleVtable",value.table,base)
-        +pointer_diagnostic("providerGetter",value.get_save,base)+pointer_diagnostic("providerActual",value.actual,base)
-        +pointer_diagnostic("providerActualVtable",value.save_table,base)+pointer_diagnostic("providerPathMethod",value.get_path,base)
+        +pointer_diagnostic("providerModule",value.platform,base,layout.image_size)+pointer_diagnostic("providerModuleVtable",value.table,base,layout.image_size)
+        +pointer_diagnostic("providerGetter",value.get_save,base,layout.image_size)+pointer_diagnostic("providerActual",value.actual,base,layout.image_size)
+        +pointer_diagnostic("providerActualVtable",value.save_table,base,layout.image_size)+pointer_diagnostic("providerPathMethod",value.get_path,base,layout.image_size)
         +";providerCachedLoaded="+std::to_string(value.loaded);
 }
-template<typename Read> bool read_chain(unsigned char* base,Read read,Chain& value,std::string* diagnostic=nullptr) {
-    auto fail=[&](const char* stage){if(diagnostic)*diagnostic+=chain_diagnostic(value,base,stage);return false;};
-    if(!read(base+platform_global_rva,&value.platform,8)||!value.platform)return fail("platform-pointer");
+template<typename Read> bool read_chain(unsigned char* base,Read read,Chain& value,std::string* diagnostic=nullptr,
+    const Layout& layout=default_layout) {
+    auto fail=[&](const char* stage){if(diagnostic)*diagnostic+=chain_diagnostic(value,base,stage,layout);return false;};
+    if(layout.discover_tables_from_getters && !layout.caller_verified_code)return fail("profile-code-not-verified");
+    if(!read(base+layout.platform_global_rva,&value.platform,8)||!value.platform)return fail("platform-pointer");
     if(!read(value.platform,&value.table,8)||!value.table)return fail("platform-vtable-unreadable");
+    if(layout.discover_tables_from_getters && !host_region(base,value.table,0x48,RegionKind::read_only_data,layout))return fail("platform-vtable-region");
     // Safe reads only, even for diagnostics. Never invoke an unrecognized getter.
     if(!read(static_cast<unsigned char*>(value.table)+0x40,&value.get_save,8))return fail("platform-getter-unreadable");
-    if(value.table==base+platform_vtable_rva) {
-        if(value.get_save!=base+0x048511D0)return fail("direct-getter");
-        value.actual=base+save_object_rva;
-    } else if(value.table==base+windows_vtable_rva) {
+    if(layout.discover_tables_from_getters) {
+        if(!host_region(base,value.get_save,8,RegionKind::code,layout))return fail("platform-getter-region");
+        if(value.get_save==base+layout.windows_getter_rva){
+            value.windows=true;
+            if(!read(base+layout.windows_provider_rva,&value.actual,8)
+                || !read(base+layout.windows_loaded_rva,&value.loaded,1))return fail("windows-cache-unreadable");
+            if(value.loaded!=1 || !value.actual)return fail("windows-cache-not-ready");
+        }else{
+            // Direct providers either expose the static-object LEA/RET itself
+            // or jump to it. Decode only these exact shapes; never call them.
+            unsigned char jump[8]{},object[8]{};std::int32_t displacement=0;unsigned char* thunk=nullptr;
+            if(!read(value.get_save,jump,sizeof(jump)))return fail("direct-getter-shape");
+            if(jump[0]==0x48&&jump[1]==0x8D&&jump[2]==0x05&&jump[7]==0xC3){
+                thunk=static_cast<unsigned char*>(value.get_save);std::memcpy(object,jump,sizeof(object));
+            }else{
+                if(jump[0]!=0xE9||jump[5]!=0xCC||jump[6]!=0xCC||jump[7]!=0xCC)return fail("direct-getter-shape");
+                std::memcpy(&displacement,jump+1,4);
+                if(!relative_host_address(base,value.get_save,5,displacement,thunk,layout)
+                    || !host_region(base,thunk,8,RegionKind::code,layout)
+                    || !read(thunk,object,sizeof(object)) || object[0]!=0x48 || object[1]!=0x8D
+                    || object[2]!=0x05 || object[7]!=0xC3)return fail("static-object-thunk");
+            }
+            std::memcpy(&displacement,object+3,4);unsigned char* actual=nullptr;
+            if(!relative_host_address(base,thunk,7,displacement,actual,layout))return fail("static-object-address");
+            value.actual=actual;
+        }
+        if(!host_region(base,value.actual,8,RegionKind::readable_data,layout)
+            &&!(value.windows&&layout.allow_heap_cached_provider&&readable_cached_object(value.actual,8)))return fail("save-object-region");
+        if(!read(value.actual,&value.save_table,8)||!value.save_table
+            || !host_region(base,value.save_table,0x80,RegionKind::read_only_data,layout))return fail("save-vtable-region");
+    }else if(value.table==base+layout.platform_vtable_rva) {
+        if(value.get_save!=base+layout.direct_getter_rva)return fail("direct-getter");
+        value.actual=base+layout.save_object_rva;
+    } else if(value.table==base+layout.windows_vtable_rva) {
         value.windows=true;
-        if(value.get_save!=base+windows_getter_rva)return fail("windows-getter");
-        if(!signature_matches(base,windows_signature,read,diagnostic))return false;
-        if(!read(base+windows_provider_rva,&value.actual,8)||!read(base+windows_loaded_rva,&value.loaded,1))return fail("windows-cache-unreadable");
+        if(value.get_save!=base+layout.windows_getter_rva)return fail("windows-getter");
+        if(!layout.caller_verified_code) {
+            auto check=windows_signature;check.rva=layout.windows_getter_rva;
+            if(!signature_matches(base,check,read,diagnostic))return false;
+        }
+        if(!read(base+layout.windows_provider_rva,&value.actual,8)||!read(base+layout.windows_loaded_rva,&value.loaded,1))return fail("windows-cache-unreadable");
         if(value.loaded!=1||!value.actual)return fail("windows-cache-not-ready");
-        if(value.actual!=base+save_object_rva)return fail("windows-provider-pointer");
+        if(value.actual!=base+layout.save_object_rva)return fail("windows-provider-pointer");
     } else return fail("platform-vtable");
-    if(!read(value.actual,&value.save_table,8)||value.save_table!=base+save_vtable_rva)return fail("save-vtable");
+    if(!layout.discover_tables_from_getters && (!read(value.actual,&value.save_table,8)
+        ||value.save_table!=base+layout.save_vtable_rva))return fail("save-vtable");
     if(!read(static_cast<unsigned char*>(value.save_table)+0x78,&value.get_path,8)
-        ||value.get_path!=base+0x0484B070)return fail("save-path-method");
+        ||value.get_path!=base+layout.path_getter_rva)return fail("save-path-method");
+    if(layout.discover_tables_from_getters && !host_region(base,value.get_path,1,RegionKind::code,layout))return fail("save-path-method-region");
     if(value.windows) {
         void* after=nullptr;unsigned char loaded=0;
-        if(!read(base+windows_provider_rva,&after,8)||!read(base+windows_loaded_rva,&loaded,1)
+        if(!read(base+layout.windows_provider_rva,&after,8)||!read(base+layout.windows_loaded_rva,&loaded,1)
             ||after!=value.actual||loaded!=value.loaded)return fail("windows-cache-changed");
     }
     return true;
 }
-inline bool provider_chain(unsigned char* base,Chain& value,std::string* diagnostic=nullptr) {
+inline bool provider_chain(unsigned char* base,Chain& value,std::string* diagnostic=nullptr,
+    const Layout& layout=default_layout) {
     const auto read=[](const void* a,void* b,std::size_t n){return pbz_barrier::read_bytes(a,b,n);};
-    return read_chain(base,read,value,diagnostic);
+    return read_chain(base,read,value,diagnostic,layout);
 }
-inline std::string inspect(void*,unsigned char* base) {
+inline std::string inspect(void*,unsigned char* base,const Layout& layout=default_layout) {
     const auto read=[](const void* a,void* b,std::size_t n){return pbz_barrier::read_bytes(a,b,n);};
     std::string reason,path,diagnostic;
     auto fail=[&](const char* fallback){return std::string(";providerReady=0;providerReason=")+(reason.empty()?fallback:reason)+diagnostic;};
+    if(layout.read_only_cache_snapshots && (!layout.caller_verified_code || !layout.discover_tables_from_getters))return fail("snapshot-profile-not-verified");
     unsigned char initialized[4]{};Chain before;
-    if(!fingerprints(base,&diagnostic)||!provider_chain(base,before,&diagnostic))return fail("native-provider-chain-mismatch");
-    auto cache=base+cache_rva;
+    if(!fingerprints(base,&diagnostic,layout)||!provider_chain(base,before,&diagnostic,layout))return fail("native-provider-chain-mismatch");
+    auto cache=base+layout.cache_rva;
+    if(layout.discover_tables_from_getters && !host_region(base,cache,0xC0,RegionKind::readable_data,layout))return fail("cache-region-unavailable");
     if (!read(cache+0x28,initialized,sizeof(initialized))||initialized[2]!=1||initialized[3]!=1) return fail("cache-not-ready");
-    // This is the same already-initialized CRITICAL_SECTION acquired by the
-    // original path getter. Try only: never wait, initialize, or run migrations.
+    // The reference profile can try its proven initialized critical section.
+    // A selected legacy profile can instead make only bounded repeated reads:
+    // its opaque lock is never interpreted, acquired, initialized or changed.
     auto lock=reinterpret_cast<CRITICAL_SECTION*>(cache);
-    if (!TryEnterCriticalSection(lock)) return fail("cache-lock-busy");
+    if (!layout.read_only_cache_snapshots && !TryEnterCriticalSection(lock)) return fail("cache-lock-busy");
     bool copied=false;
     try { copied=copy_path(cache,read,path,reason); } catch (...) { reason="provider-copy-failed"; }
-    LeaveCriticalSection(lock);
+    if(!layout.read_only_cache_snapshots)LeaveCriticalSection(lock);
     Chain after;
     if (!copied) return fail("provider-copy-failed");
-    if(!provider_chain(base,after,&diagnostic)||!same(before,after))return fail("provider-changed-after-copy");
-    return ";providerReady=1;providerPathHex="+hex(path)+chain_diagnostic(after,base,"verified");
+    if(!provider_chain(base,after,&diagnostic,layout)||!same(before,after))return fail("provider-changed-after-copy");
+    return ";providerReady=1;providerPathHex="+hex(path)+chain_diagnostic(after,base,"verified",layout);
 }
 } // namespace pbz_provider

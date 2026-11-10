@@ -42,9 +42,13 @@ RUNTIME_FILES = (
     "PortraitLayout.lua", "HistoryReport.lua", "ArenaLoadout.lua", "ArenaLoadoutMemory.lua", "ArenaEconomy.lua",
     "ArenaMapPolicy.lua", "LengTuArena.lua", "LengTuSummons.lua", "DayArena.lua", "SceneArena.lua", "ArenaScenes.lua",
     "GeneratedEncounterCatalog.lua", "GeneratedArenaScenes.lua", "LionArena.lua", "EnemyHealthGuard.lua", "StampPress.lua",
+    "JingYeMount.lua", "ChiLianArena.lua", "PlayerDamageGuard.lua", "CustomChallenges.lua", "KryptonDemo.lua", "PendingEntry.lua",
+    "StatusBuildup.lua", "StatusBuildupHud.lua", "StatusEffectClock.lua", "PracticeBossInfo.lua", "ChallengeMedicine.lua",
 )
+EXPECTED_RUNTIME_COUNT = 63
+EXPECTED_PAYLOAD_COUNT = 89
 GENERATED = ("BossCatalog.lua", "GeneratedEncounterCatalog.lua", "GeneratedArenaScenes.lua")
-INSTALLER_FILES = ("Install-PbzIntegratedMenu.ps1", "Open-PbzInstaller.ps1", "PortablePaths.ps1",
+INSTALLER_FILES = ("Install-PbzIntegratedMenu.ps1", "Open-PbzInstaller.ps1", "PortablePaths.ps1", "SharedRuntime.ps1", "CompatibilityInstall.ps1",
                    "安装主菜单入口.cmd", "卸载主菜单入口.cmd")
 ASSET_NAMES = {"home-test.png", "home-practice.png", "home-challenge.jpg", "ink-background.png",
                "challenge-zhan.png", "soul-lao.png", *(f"soul-{index}.png" for index in range(7))}
@@ -351,6 +355,31 @@ def generated_data(directory: Path) -> dict[str, bytes]:
     return expected
 
 
+def load_runtime(directory: Path, data_directory: Path | None = None) -> tuple[dict[str, bytes], bytes, dict[str, bytes]]:
+    """Load one complete runtime; a data directory validates only its generated tables.
+
+    Never mix ordinary modules or enabled.txt from the repository into an
+    explicitly selected runtime. Generated data must also match that runtime;
+    --data-dir is not a second, partial runtime override.
+    """
+    script_directory = directory / "Scripts"
+    require(script_directory.is_dir(), "Runtime directory must contain Scripts/ and enabled.txt")
+    declared = set(RUNTIME_FILES)
+    actual = {path.name for path in script_directory.iterdir() if path.suffix.lower() == ".lua"}
+    require(len(RUNTIME_FILES) == EXPECTED_RUNTIME_COUNT and len(declared) == EXPECTED_RUNTIME_COUNT,
+            "Unexpected runtime allowlist; update the release contract explicitly")
+    require(actual == declared,
+            f"Runtime module set differs (missing: {', '.join(sorted(declared - actual)) or 'none'}; "
+            f"extra: {', '.join(sorted(actual - declared)) or 'none'})")
+    scripts = {name: read(script_directory / name) for name in RUNTIME_FILES}
+    enabled = read(directory / "enabled.txt")
+    require(len(enabled) <= 64 and not enabled.strip(), "Runtime enabled.txt must be an empty/whitespace UE4SS sentinel")
+    expected = generated_data(data_directory if data_directory is not None else script_directory)
+    for name, data in expected.items():
+        require(scripts[name] == data, f"Generated data differs from the selected runtime: {name}")
+    return scripts, enabled, expected
+
+
 def assemble(args: argparse.Namespace) -> dict:
     raw_output = Path(args.output).absolute()
     for parent in (raw_output, *raw_output.parents):
@@ -359,6 +388,9 @@ def assemble(args: argparse.Namespace) -> dict:
     dist = (ROOT / "dist").resolve()
     require(output != dist and dist in output.parents and not output.exists(), "Output must be a new child directory under this repository's dist/")
     require(re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._+-]{0,63}", args.version) is not None, "Invalid local release version")
+    runtime = Path(args.runtime_dir)
+    data_directory = Path(args.data_dir) if args.data_dir is not None else None
+    scripts, enabled, expected = load_runtime(runtime, data_directory)
     build, assets_dir, presets, archive, game = map(Path, (args.build_dir, args.assets_dir, args.presets, args.ue4ss_zip, args.game_exe))
     archive_data = read(archive)
     require(digest(archive_data) == UE4SS_SHA256, "UE4SS must be the exact pinned PBZ 1195/1ceefac8 release archive")
@@ -371,25 +403,20 @@ def assemble(args: argparse.Namespace) -> dict:
     require(legacy is None or isinstance(legacy, str) and re.fullmatch("[a-f0-9]{64}", legacy) is not None, "Invalid legacy preset pin")
     with CngGcm(derive_game_key(game)) as cipher:
         private = verify_presets(preset_data, cipher)
-    runtime = ROOT / "src/runtime"
-    expected = generated_data(Path(args.data_dir))
-    extra = {path.name for path in (runtime / "Scripts").glob("*.lua")} - set(RUNTIME_FILES) - {"ChallengeUI.lua"}
-    require(not extra and len(RUNTIME_FILES) == 52, "Unexpected runtime module set; update the release allowlist explicitly")
-    scripts = {name: expected[name] if name in expected else read(runtime / "Scripts" / name) for name in RUNTIME_FILES}
     source_ui = read(assets_dir / "Manifest.json")
     assets, deployed_assets = load_assets(assets_dir, scripts["NativeUiAssetsData.lua"], source_ui)
     with ZipFile(BytesIO(archive_data)) as zipped:
         require(len(zipped.namelist()) == len(set(zipped.namelist())), "Duplicate UE4SS ZIP entries")
         payload = {name: zipped.read(name) for name in LOADER_FILES}
     base = "ue4ss/Mods/PBZTestArena/"
-    payload[base + "enabled.txt"] = read(runtime / "enabled.txt")
+    payload[base + "enabled.txt"] = enabled
     payload.update({base + "Scripts/" + name: data for name, data in scripts.items()})
     payload[base + "Scripts/PBZSaveBarrier.dll"] = barrier
     payload.update({base + "Scripts/UiAssets/" + name: data for name, data in assets.items()})
     payload[base + "Scripts/UiAssets/Manifest.json"] = json_bytes(deployed_assets)
     payload["ue4ss/Mods/mods.txt"] = b"PBZTestArena : 1\r\n"
     payload["ue4ss/Mods/mods.json"] = b'[{"mod_name":"PBZTestArena","mod_enabled":true}]\n'
-    require(len(payload) == 78, "Incomplete native runtime payload")
+    require(len(payload) == EXPECTED_PAYLOAD_COUNT, "Incomplete native runtime payload")
     files = {"NativeEnemyRuntime/Payload/" + name: data for name, data in payload.items()}
     payload_hashes = {name: digest(data) for name, data in payload.items()}
     files["NativeEnemyRuntime/PayloadHashes.json"] = json_bytes(payload_hashes)
@@ -431,9 +458,11 @@ def assemble(args: argparse.Namespace) -> dict:
         "config": {path.name: sha256(path) for path in sorted((ROOT / "config").glob("*.json"))},
         "generatedData": {name: digest(data) for name, data in expected.items()},
         "sourceRuntime": {name: digest(data) for name, data in scripts.items()},
+        "runtimeLayout": {"scripts": "runtime-dir/Scripts", "enabled": "runtime-dir/enabled.txt",
+                          "enabledSha256": digest(enabled), "generatedDataPolicy": "validate-selected-runtime-no-overrides"},
     }
     files["BuildProvenance.json"] = json_bytes({"schemaVersion": 1, "inputs": inputs,
-        "payloadFiles": 78, "gameLaunched": False, "installed": False, "saveDecompressed": False})
+        "payloadFiles": EXPECTED_PAYLOAD_COUNT, "gameLaunched": False, "installed": False, "saveDecompressed": False})
     manifest = {"schemaVersion": 1, "owner": "PBZTestArena.PortableDistribution", "name": "影境演武",
         "version": args.version, "gameSha256": GAME_SHA256, "supportedBuild": "CL-302256_JKS-17280",
         "files": {name: {"sha256": digest(data), "bytes": len(data)} for name, data in sorted(files.items())}}
@@ -450,7 +479,7 @@ def assemble(args: argparse.Namespace) -> dict:
             stream.write(data)
         require(sha256(target) == digest(data), f"Release read-back differs: {name}")
     stage.rename(output)
-    return {"passed": True, "output": str(output), "payloadFiles": 78, "images": 13, "privateSlots": 18,
+    return {"passed": True, "output": str(output), "payloadFiles": EXPECTED_PAYLOAD_COUNT, "images": 13, "privateSlots": 18,
             "gameSha256": GAME_SHA256, "presetsSha256": digest(preset_data), "installed": False,
             "gameLaunched": False, "manifestSha256": sha256(output / "PackageManifest.json")}
 
@@ -458,7 +487,10 @@ def assemble(args: argparse.Namespace) -> dict:
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
     result.add_argument("--build-dir", default=str(ROOT / "build"))
-    result.add_argument("--data-dir", default=str(ROOT / "src/runtime/Scripts"))
+    result.add_argument("--runtime-dir", default=str(ROOT / "src/runtime"),
+                        help="Complete runtime root containing exactly the allowed Lua modules in Scripts/ plus enabled.txt")
+    result.add_argument("--data-dir", default=None,
+                        help="Optional generated-table validation directory; defaults to runtime-dir/Scripts, never overrides runtime modules")
     result.add_argument("--assets-dir", required=True, help="Local directory with original source Manifest.json and exactly thirteen images")
     result.add_argument("--presets", required=True, help="Local eighteen-private-block PBZS bundle matching the compiled SaveTool")
     result.add_argument("--ue4ss-zip", required=True, help="Locally obtained pinned PBZ 1195/1ceefac8 ZIP; never downloaded")

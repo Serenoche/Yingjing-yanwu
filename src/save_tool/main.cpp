@@ -8,13 +8,14 @@ namespace {
 using namespace pbz_save;
 using Json=nlohmann::ordered_json;
 constexpr const char* owner="PBZTestArena.IntegratedMenu";
-constexpr const char* game_sha="4415933ce33476f14c837abb61a1b60af8b78cd81783896501913a7aac69e423";
+constexpr const char* reference_game_sha="4415933ce33476f14c837abb61a1b60af8b78cd81783896501913a7aac69e423";
 constexpr const char* presets_sha=pbz_build::presets_sha;
 constexpr const char* legacy_presets_sha=pbz_build::legacy_presets_sha;
 
 Json fingerprint(const Entry& entry){return {{"sha256",sha256(entry.sealed)},{"algorithm",entry.algorithm},
     {"flag",entry.flag},{"rawSize",entry.raw_size},{"sealedSize",entry.sealed.size()}};}
 Json fingerprints(const Slots& slots){Json output=Json::object();for(const auto& entry:slots)output[entry.name]=fingerprint(entry);return output;}
+bool sha_digest(const std::string& text){return text.size()==64 && text.find_first_not_of("0123456789abcdef")==std::string::npos;}
 bool matches(const Entry& entry,const Json& expected){
     if(!expected.is_object() || !expected.contains("sha256") || !expected["sha256"].is_string())return false;
     for(const auto* key:{"algorithm","flag","rawSize","sealedSize"})if(!expected.contains(key) || !expected[key].is_number_unsigned())return false;
@@ -35,7 +36,7 @@ Json parse_manifest(const ReadOnlyFile& input){
     };
     const auto result=Json::parse(input.data(),input.data()+input.size(),callback);
     require(result.is_object() && result.value("schemaVersion",0)==1 && result.value("owner",std::string())==owner
-        && result.value("operation",std::string())=="stage" && result.value("gameSha256",std::string())==game_sha,
+        && result.value("operation",std::string())=="stage" && sha_digest(result.value("gameSha256",std::string())),
         "Unsupported ownership manifest identity");
     require(result.contains("privateSlots") && result["privateSlots"].is_object()
         && (result["privateSlots"].size()==private_names().size() || result["privateSlots"].size()==legacy_private_names().size()),
@@ -107,7 +108,11 @@ Arguments arguments(int count,wchar_t** values){
 Json run(const Arguments& command){
     const auto output_root=staging_root();
     ReadOnlyFile game(command.options.at(L"--game"),2ULL*1024*1024*1024);
-    require(sha256(game)==game_sha,"Unsupported pinned PBZ executable hash");auto key=game_key(game);Cipher cipher(key);SecureZeroMemory(key.data(),key.size());
+    game_image(game);
+    const auto actual_game_sha=sha256(game);
+    // File identity is diagnostic only. The actual key material and every
+    // authenticated container block determine whether this operation can run.
+    auto key=game_key(game);Cipher cipher(key);SecureZeroMemory(key.data(),key.size());
     const auto source_argument=command.options.at(command.operation==L"stage"?L"--source":L"--before");
     ReadOnlyFile source(source_argument),presets_file(command.options.at(L"--presets"));
     require(!equal_path(source.path,presets_file.path) && !equal_path(source.path,game.path),"Inputs must be distinct files");
@@ -132,7 +137,8 @@ Json run(const Arguments& command){
     Slots ordinary;for(const auto& entry:original)if(!private_name(entry.name))ordinary.push_back(entry);
     const auto advanced=find(original,"__Advanced__");require(advanced!=nullptr,"Account metadata is absent");
     Json report={{"schemaVersion",1},{"owner",owner},{"operation",command.operation==L"stage"?"stage":"verify"},
-        {"gameSha256",game_sha},{"presetsSha256",presets_sha},{"sourcePath",utf8(source.path)},
+        {"gameSha256",actual_game_sha},{"referenceGameMatch",actual_game_sha==reference_game_sha},
+        {"saveCompatibility","key-material-and-authenticated-container"},{"presetsSha256",presets_sha},{"sourcePath",utf8(source.path)},
         {"sourceSha256",sha256(source)},{"outputPath",utf8(candidate_path)},{"outputSha256",sha256(candidate_bytes)},
         {"originalBlockIdentity",true},{"advancedSha256Before",sha256(advanced->sealed)},{"advancedSha256After",sha256(find(candidate,"__Advanced__")->sealed)},
         {"continue",{{"changed",false},{"verification","opaque-Advanced-block-identical"}}},

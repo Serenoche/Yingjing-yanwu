@@ -3,6 +3,7 @@ local CombatSpawn = require("CombatSpawn")
 local EncounterEngage = require("EncounterEngage")
 local Health = require("Health")
 local HealthGuard = require("EnemyHealthGuard")
+local PlayerDamageGuard = require("PlayerDamageGuard")
 local Practice = {}
 local Mode = {}
 Mode.__index = Mode
@@ -127,13 +128,13 @@ function Practice.new(pawn, controller)
     end
     return setmetatable({ pawn = pawn, controller = controller, world = worldOf(pawn),
         pawnAddress = pawn:GetAddress(), asc = asc, ascAddress = asc:GetAddress(), enemies = {},
-        state = { ai = true, enemyRegen = false, invulnerable = false, infiniteUltimate = false, infiniteSpiritShadow = false },
+        state = { ai = true, enemyRegen = false, damageMode = "off", invulnerable = false, infiniteUltimate = false, infiniteSpiritShadow = false },
         startedCombat = false }, Mode)
 end
 
 function Mode:getState()
     return { ai = self.state.ai, enemyRegen = self.state.enemyRegen,
-        invulnerable = self.state.invulnerable, infiniteUltimate = self.state.infiniteUltimate,
+        damageMode = self.state.damageMode or "off", invulnerable = self.state.invulnerable, infiniteUltimate = self.state.infiniteUltimate,
         infiniteSpiritShadow = self.state.infiniteSpiritShadow, lastError = self.lastError }
 end
 
@@ -160,18 +161,87 @@ function Mode:removeInvulnerability()
     self.invulnerabilityOwned, self.invulnerabilityTag = false, nil
 end
 
+function Mode:applyInvulnerability()
+    local tag = { TagName = FName(INVULNERABLE) }
+    local before = self.asc:GetGameplayTagCount(tag)
+    -- Use the same original single-tag path as the existing invincible mode.
+    local added = required(SINGLE_TAG_LIBRARY):AddLooseGameplayTag(self.pawn, tag, false)
+    assert(added == true, "practice invulnerability tag could not be applied")
+    self.invulnerabilityOwned, self.invulnerabilityTag = true, tag
+    if self.asc:GetGameplayTagCount(tag) ~= before + 1 then
+        self:removeInvulnerability()
+        error("practice invulnerability tag count did not increase by one")
+    end
+end
+
+function Mode:removeNoDamage()
+    if self.noDamageGuard then self.noDamageGuard:close(); self.noDamageGuard = nil end
+end
+
+function Mode:setDamageMode(name)
+    assert(not self.closed and (name == "off" or name == "no_damage" or name == "invulnerable"), "invalid damage mode")
+    assert(self:ownsPlayer(self.pawn), "practice player changed")
+    -- Selection advances even if an optional native effect fails. Keep this
+    -- cursor separate from the actually active state shown by the HUD, so a
+    -- broken no-damage asset cannot trap F7 before the old invincible mode.
+    self.damageCycleCursor = name
+    if (self.state.damageMode or "off") == name then return true end
+    local ok, why = pcall(function()
+        self:removeNoDamage()
+        self:removeInvulnerability()
+        self.state.damageMode, self.state.invulnerable = "off", false
+        if name == "no_damage" then
+            self.noDamageGuard = PlayerDamageGuard.new(self.pawn)
+            self.noDamageGuard:enable()
+        elseif name == "invulnerable" then
+            self:applyInvulnerability()
+        end
+    end)
+    if not ok then
+        -- Release only our native effect/tag. Retain failed cleanup references
+        -- so close() can retry instead of silently dropping a live handle.
+        local cleaned, cleanup = pcall(function() self:removeNoDamage(); self:removeInvulnerability() end)
+        local checked, active = pcall(function() return self.noDamageGuard and self.noDamageGuard:active() end)
+        self.state.damageMode = self.invulnerabilityOwned and "invulnerable" or
+            (checked and active and "no_damage" or "off")
+        self.state.invulnerable = self.invulnerabilityOwned == true
+        self.lastError = name == "no_damage" and "无伤模式暂不可用，再按一次切换无敌" or "防护模式暂不可用，可继续切换"
+        print("[PBZTestArenaNative] Practice damage mode: " .. tostring(why) .. (cleaned and "" or "; cleanup=" .. tostring(cleanup)) .. "\n")
+        return false, tostring(why)
+    end
+    self.state.damageMode, self.state.invulnerable = name, name == "invulnerable"
+    self.lastError = nil
+    print("[PBZTestArenaNative] Practice damageMode=" .. name .. "; native binding verified\n")
+    return true
+end
+
+function Mode:cycleDamageMode()
+    local following = { off = "no_damage", no_damage = "invulnerable", invulnerable = "off" }
+    return self:setDamageMode(following[self.damageCycleCursor or self.state.damageMode or "off"])
+end
+
 function Mode:set(name, enabled)
     assert(not self.closed and OPTIONS[name] and type(enabled) == "boolean", "invalid practice option")
     assert(self:ownsPlayer(self.pawn), "practice player changed")
+    if name == "invulnerable" then
+        local ok, why = self:setDamageMode(enabled and "invulnerable" or "off")
+        assert(ok, why) -- retain the explicit binary setter's historical failure contract
+        return true
+    end
     if self.state[name] == enabled then return true end
     if name == "enemyRegen" then
         local ok, failure = pcall(function()
             for _, entry in pairs(self.enemies) do
                 if enabled then
-                    local _, _, dead = Health.read(entry.actor)
-                    if not dead then
-                        entry.healthGuard = entry.healthGuard or HealthGuard.new(entry.actor)
-                        entry.healthGuard:enable()
+                    -- A key can run after death but before the next control tick.
+                    -- Never create a guard for a retired or foreign-world actor.
+                    if valid(entry.actor) and not entry.actor:IsActorBeingDestroyed() then
+                        assert(worldOf(entry.actor) == self.world, "practice enemy belongs to another world")
+                        local _, _, dead = Health.read(entry.actor)
+                        if not dead then
+                            entry.healthGuard = entry.healthGuard or HealthGuard.new(entry.actor)
+                            entry.healthGuard:enable()
+                        end
                     end
                 elseif entry.healthGuard then
                     entry.healthGuard:close(); entry.healthGuard = nil
@@ -204,24 +274,7 @@ function Mode:set(name, enabled)
         end)
         if not ok then return self:resourceFault(name, failure) end
     end
-    if name == "invulnerable" then
-        if enabled then
-            local tag = { TagName = FName(INVULNERABLE) }
-            local before = self.asc:GetGameplayTagCount(tag)
-            -- The existing boss adapter uses this original single-tag API.
-            -- Avoid returning a tag container whose TArray wrappers can outlive
-            -- the temporary UFunction result buffer in this pinned Lua bridge.
-            local added = required(SINGLE_TAG_LIBRARY):AddLooseGameplayTag(self.pawn, tag, false)
-            assert(added == true, "practice invulnerability tag could not be applied")
-            -- Record ownership before readback, so even a failed verification
-            -- can release our one count rather than leaking an untracked tag.
-            self.invulnerabilityOwned, self.invulnerabilityTag = true, tag
-            if self.asc:GetGameplayTagCount(tag) ~= before + 1 then
-                self:removeInvulnerability()
-                error("practice invulnerability tag count did not increase by one")
-            end
-        else self:removeInvulnerability() end
-    end
+
     self.state[name] = enabled
     if name == "ai" then
         for _, entry in pairs(self.enemies) do entry.engageRequest = nil end
@@ -290,64 +343,79 @@ function Mode:update(pawn, bosses, awake, now, externalAI)
     assert(not self.closed and type(bosses) == "table" and finite(now), "invalid practice update")
     if not self:ownsPlayer(pawn) then self:close(); return false, "practice player or world changed" end
     local seen = {}
+    -- Retired group members remain in the complete challenge roster.
+    -- Only this controller filters them; victory and phase accounting retain
+    -- their original actors. A live foreign-world actor is still rejected.
     for _, actor in ipairs(bosses) do
-        assert(valid(actor) and worldOf(actor) == self.world, "practice enemy belongs to another world")
-        local address = actor:GetAddress()
-        assert(not seen[address], "duplicate practice enemy")
-        seen[address] = true
-        local entry = self.enemies[address]
-        if not entry then
-            entry = { actor = actor, originalAI = aiState(actor), lastDamage = now }
-            self.enemies[address] = entry
-        end
-        local hp, maximum, dead = Health.read(actor)
-        if (entry.health and hp and hp < entry.health - EPSILON) or dead then self.startedCombat = true end
-        entry.dead = dead
-        if not dead then
-            if self.state.enemyRegen then
-                entry.healthGuard = entry.healthGuard or HealthGuard.new(actor)
-                entry.healthGuard:enable()
-            elseif entry.healthGuard then
-                entry.healthGuard:close(); entry.healthGuard = nil
-            end
-            local running = self.state.ai and awake == true
-            if externalAI == true and self.state.ai == true then
-                -- Continue resource/health observation, while the stage
-                -- coordinator alone starts and confirms the new phase's AI.
-                -- An explicit user AI-off remains authoritative below.
-            elseif not running then
-                if aiState(actor) then CombatSpawn.challengeAI(actor, false) end
-                entry.resumeCombat = true
-                entry.engageRequest = nil
-            elseif entry.resumeCombat then
-                -- Retrying native acquisition preserves hatred; StopAI never
-                -- turns a practice toggle into a fresh encounter or a heal.
-                entry.engageRequest = entry.engageRequest or {}
-                if EncounterEngage.start(actor, pawn, entry.engageRequest, now) then
-                    entry.resumeCombat, entry.engageRequest = nil, nil
+        if valid(actor) and not actor:IsActorBeingDestroyed() then
+            assert(worldOf(actor) == self.world, "practice enemy belongs to another world")
+            -- Native death can remove the controller before destroying the
+            -- actor. Do not request AI or create a new entry for that corpse.
+            local hp, maximum, dead = Health.read(actor)
+            if dead then self.startedCombat = true
+            else
+                local address = actor:GetAddress()
+                assert(not seen[address], "duplicate practice enemy")
+                seen[address] = true
+                local entry = self.enemies[address]
+                if not entry then
+                    entry = { actor = actor, originalAI = aiState(actor), lastDamage = now }
+                    self.enemies[address] = entry
                 end
-            elseif not aiState(actor) then
-                entry.engageRequest = entry.engageRequest or {}
-                if EncounterEngage.start(actor, pawn, entry.engageRequest, now) then
-                    entry.resumeCombat, entry.engageRequest = nil, nil
-                else entry.resumeCombat = true end
-            end
-            if hp and maximum then
-                if (entry.health and hp < entry.health - EPSILON) or (entry.maximum and math.abs(maximum - entry.maximum) > EPSILON) then
-                    entry.lastDamage = now
+                if entry.health and hp and hp < entry.health - EPSILON then self.startedCombat = true end
+                entry.dead = false
+                if self.state.enemyRegen then
+                    entry.healthGuard = entry.healthGuard or HealthGuard.new(actor)
+                    entry.healthGuard:enable()
+                elseif entry.healthGuard then
+                    entry.healthGuard:close(); entry.healthGuard = nil
                 end
-                if self.state.enemyRegen and hp < maximum - EPSILON and now - entry.lastDamage >= HEAL_DELAY then
-                    local restored, reason, current, currentMax = Health.restore(actor, maximum, hp)
-                    if restored then hp, maximum = current or maximum, currentMax or maximum
-                    elseif reason == "stock full-health effect did not restore the enemy" then error(reason) end
-                    entry.lastDamage = now
+                local running = self.state.ai and awake == true
+                if externalAI == true and self.state.ai == true then
+                    -- Continue resource/health observation, while the stage
+                    -- coordinator alone starts and confirms the new phase's AI.
+                    -- An explicit user AI-off remains authoritative below.
+                elseif not running then
+                    if aiState(actor) then CombatSpawn.challengeAI(actor, false) end
+                    entry.resumeCombat = true
+                    entry.engageRequest = nil
+                elseif entry.resumeCombat then
+                    -- Retrying native acquisition preserves hatred; StopAI never
+                    -- turns a practice toggle into a fresh encounter or a heal.
+                    entry.engageRequest = entry.engageRequest or {}
+                    if EncounterEngage.start(actor, pawn, entry.engageRequest, now) then
+                        entry.resumeCombat, entry.engageRequest = nil, nil
+                    end
+                elseif not aiState(actor) then
+                    entry.engageRequest = entry.engageRequest or {}
+                    if EncounterEngage.start(actor, pawn, entry.engageRequest, now) then
+                        entry.resumeCombat, entry.engageRequest = nil, nil
+                    else entry.resumeCombat = true end
                 end
-                entry.health, entry.maximum = hp, maximum
+                if hp and maximum then
+                    if (entry.health and hp < entry.health - EPSILON) or (entry.maximum and math.abs(maximum - entry.maximum) > EPSILON) then
+                        entry.lastDamage = now
+                    end
+                    if self.state.enemyRegen and hp < maximum - EPSILON and now - entry.lastDamage >= HEAL_DELAY then
+                        local restored, reason, current, currentMax = Health.restore(actor, maximum, hp)
+                        if restored then hp, maximum = current or maximum, currentMax or maximum
+                        elseif reason == "stock full-health effect did not restore the enemy" then error(reason) end
+                        entry.lastDamage = now
+                    end
+                    entry.health, entry.maximum = hp, maximum
+                end
             end
         end
     end
     for address, entry in pairs(self.enemies) do
         if not seen[address] then self:restoreEnemy(entry); self.enemies[address] = nil end
+    end
+    if not alive(pawn) and (self.state.damageMode or "off") ~= "off" then
+        self:removeNoDamage(); self:removeInvulnerability()
+        self.state.damageMode, self.state.invulnerable = "off", false
+    elseif self.state.damageMode == "no_damage" then
+        local ok, why = pcall(self.noDamageGuard.enable, self.noDamageGuard)
+        if not ok then self:setDamageMode("off"); self.lastError = "无伤模式已关闭，详见日志"; print("[PBZTestArenaNative] No-damage verification: " .. tostring(why) .. "\n") end
     end
     if alive(pawn) then
         for _, name in ipairs({ "infiniteUltimate", "infiniteSpiritShadow" }) do
@@ -363,13 +431,16 @@ end
 function Mode:close()
     self.closed = true
     local failures = {}
+    local released, releaseError = pcall(self.removeNoDamage, self)
+    if not released then failures[#failures + 1] = tostring(releaseError) end
     local removed, reason = pcall(self.removeInvulnerability, self)
     if not removed then failures[#failures + 1] = tostring(reason) end
     for address, entry in pairs(self.enemies) do
         local restored, failure = pcall(self.restoreEnemy, self, entry)
         if restored then self.enemies[address] = nil else failures[#failures + 1] = tostring(failure) end
     end
-    self.state = { ai = false, enemyRegen = false, invulnerable = false, infiniteUltimate = false, infiniteSpiritShadow = false }
+    self.state = { ai = false, enemyRegen = false, damageMode = "off", invulnerable = false, infiniteUltimate = false, infiniteSpiritShadow = false }
+    self.damageCycleCursor = "off"
     self.startedCombat = false
     self.attributeReady = nil
     self.resources, self.lastError, self.lastErrorOption = nil, nil, nil

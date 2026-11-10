@@ -4,6 +4,7 @@
 #include "engine_clone.hpp"
 #include "summary_cache.hpp"
 #include "provider_identity.hpp"
+#include "native_binding_profiles.hpp"
 #include <mutex>
 
 #if !defined(_WIN64)
@@ -28,6 +29,19 @@ pbz_barrier::RemoveSummary remove_summary = nullptr;
 pbz_barrier::SharedJson original_master;
 struct Scalar { std::size_t offset; std::size_t length; unsigned char bytes[8]; };
 std::vector<Scalar> saved_scalars;
+pbz_compat::VerifiedIdentity verified_native_identity;
+const pbz_bindings::Profile* active_profile=nullptr;
+
+bool read_native_image(std::uintptr_t address,void* output,std::size_t length) {
+    return pbz_barrier::read_bytes(reinterpret_cast<const void*>(address),output,length);
+}
+bool query_native_image(std::uintptr_t address,pbz_compat::Region& output) {
+    MEMORY_BASIC_INFORMATION region{};
+    if(VirtualQuery(reinterpret_cast<const void*>(address),&region,sizeof(region))!=sizeof(region))return false;
+    output={reinterpret_cast<std::uintptr_t>(region.BaseAddress),region.RegionSize,
+        reinterpret_cast<std::uintptr_t>(region.AllocationBase),region.State,region.Type,region.Protect};
+    return true;
+}
 
 void* __fastcall json_failure(void* manager, unsigned char* result, void* save_parameter, void*) {
     if (result) *result = 1; // ESaveLoadResultType::Failed.
@@ -208,27 +222,30 @@ bool host_identity(unsigned char*& base, std::string& reason) {
     if (_wcsicmp(path.c_str() + (split == std::wstring::npos ? 0 : split + 1), L"PBZ.exe") != 0) {
         reason = "pinned PBZ executable name mismatch"; return false;
     }
-    IMAGE_DOS_HEADER dos{};
-    IMAGE_NT_HEADERS64 nt{};
-    if (!read_memory(base, dos) || dos.e_magic != IMAGE_DOS_SIGNATURE || dos.e_lfanew < 0
-        || dos.e_lfanew > 1024 * 1024 || !read_memory(base + dos.e_lfanew, nt)
-        || nt.Signature != IMAGE_NT_SIGNATURE || nt.FileHeader.Machine != IMAGE_FILE_MACHINE_AMD64
-        || nt.OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC
-        || nt.FileHeader.TimeDateStamp != pbz_barrier::pinned_timestamp
-        || nt.OptionalHeader.SizeOfImage != pbz_barrier::pinned_image_size) {
-        reason = "pinned PBZ PE identity mismatch"; return false;
+    pbz_compat::Image image;
+    if(!pbz_compat::image_headers(reinterpret_cast<std::uintptr_t>(base),read_native_image,image)) {
+        reason="native-runtime-incompatible:PEImage";return false;
     }
-    return true;
+    // Inspect also reads provider state and can acquire its initialized cache
+    // lock. Verify the real interface set before either Inspect or Arm does so.
+    // Only our already-armed transaction may reuse this proof: its own three
+    // entry patches would otherwise fail the original-byte digest comparison.
+    return pbz_bindings::select(image,active_profile,verified_native_identity,armed,
+        [&](){return pbz_barrier::preflight(pbz_barrier::reversed(installed),reason);},
+        read_native_image,query_native_image,reason);
 }
 
 #if !defined(PBZ_BARRIER_OFFLINE_TEST)
 bool host_targets(std::vector<pbz_barrier::Patch>& patches, std::string& reason) {
     unsigned char* base = nullptr;
     if (!host_identity(base, reason)) return false;
+    const auto& profile=*active_profile;
+    std::size_t target_index=0;
     for (const auto& spec : pbz_barrier::targets) {
-        void* address = base + spec.rva;
+        const auto rva=target_index++==0 ? profile.sync_rva : profile.write_rva;
+        void* address = base + rva;
         MEMORY_BASIC_INFORMATION region{};
-        if (spec.rva > pbz_barrier::pinned_image_size - 8
+        if (verified_native_identity.size < 8 || rva > verified_native_identity.size - 8
             || VirtualQuery(address, &region, sizeof(region)) != sizeof(region)
             || region.Type != MEM_IMAGE || region.AllocationBase != base) {
             reason = std::string("target is outside the PBZ image: ") + spec.name; return false;
@@ -238,12 +255,12 @@ bool host_targets(std::vector<pbz_barrier::Patch>& patches, std::string& reason)
     constexpr unsigned char free_prolog[8] = {0x48,0x85,0xC9,0x74,0x2E,0x53,0x48,0x83};
     constexpr unsigned char advanced_prolog[8] = {0x48,0x89,0x5C,0x24,0x10,0x48,0x89,0x6C};
     std::uint64_t current = 0;
-    if (!pbz_barrier::read_word(base + 0x012E0AF0, current) || current != pbz_barrier::word(free_prolog)
-        || !pbz_barrier::read_word(base + 0x06B66760, current) || current != pbz_barrier::word(advanced_prolog)) {
+    if (!pbz_barrier::read_word(base + profile.free_rva, current) || current != pbz_barrier::word(free_prolog)
+        || !pbz_barrier::read_word(base + profile.advanced_rva, current) || current != pbz_barrier::word(advanced_prolog)) {
         reason = "native resource cleanup prolog mismatch"; return false;
     }
-    native_free = reinterpret_cast<NativeFree>(base + 0x012E0AF0);
-    load_advanced = reinterpret_cast<NativeLoadAdvanced>(base + 0x06B66760);
+    native_free = reinterpret_cast<NativeFree>(base + profile.free_rva);
+    load_advanced = reinterpret_cast<NativeLoadAdvanced>(base + profile.advanced_rva);
     constexpr unsigned char constructor_prolog[32] = {0x48,0x89,0x5C,0x24,0x08,0x48,0x89,0x6C,0x24,0x10,0x48,0x89,0x74,0x24,0x18,0x48,
         0x89,0x7C,0x24,0x20,0x41,0x56,0x48,0x83,0xEC,0x30,0x33,0xED,0x48,0x8D,0x79,0x10};
     constexpr unsigned char copy_prolog[32] = {0x48,0x8B,0xC4,0x48,0x89,0x48,0x08,0x55,0x56,0x41,0x54,0x41,0x57,0x48,0x8D,0x68,
@@ -253,9 +270,10 @@ bool host_targets(std::vector<pbz_barrier::Patch>& patches, std::string& reason)
     constexpr unsigned char remove_prolog[32] = {0x41,0x56,0x41,0x57,0x48,0x83,0xEC,0x28,0x8B,0x41,0x08,0x4C,0x8B,0xFA,0x4C,0x8B,
         0xF1,0x3B,0x41,0x34,0x0F,0x84,0x38,0x01,0x00,0x00,0x8B,0x42,0x08,0x48,0x89,0x5C};
     struct Fingerprint { std::uint32_t rva; const unsigned char* bytes; };
-    const Fingerprint fingerprints[] = {{0x024D2AA0,constructor_prolog}, {0x06B5E620,copy_prolog},
-        {0x0126EC80,release_prolog}, {0x06B6CAC0,remove_prolog}};
+    const Fingerprint fingerprints[] = {{profile.constructor_rva,constructor_prolog}, {profile.copy_rva,copy_prolog},
+        {profile.release_rva,release_prolog}, {profile.remove_rva,remove_prolog}};
     for (const auto& fingerprint : fingerprints) {
+        if(!fingerprint.rva)continue; // Legacy initializes an empty wrapper via its admitted JSON parser.
         unsigned char bytes[32]{};
         SIZE_T amount = 0;
         if (!ReadProcessMemory(GetCurrentProcess(), base + fingerprint.rva, bytes, sizeof(bytes), &amount)
@@ -263,18 +281,21 @@ bool host_targets(std::vector<pbz_barrier::Patch>& patches, std::string& reason)
             reason = "native master clone prolog mismatch"; return false;
         }
     }
-    clone_engine.construct = reinterpret_cast<pbz_barrier::WrapperConstructor>(base + 0x024D2AA0);
-    clone_engine.deep_copy = reinterpret_cast<pbz_barrier::CopyJson>(base + 0x06B5E620);
-    clone_engine.release = reinterpret_cast<pbz_barrier::ReleaseShared>(base + 0x0126EC80);
-    remove_summary = reinterpret_cast<pbz_barrier::RemoveSummary>(base + 0x06B6CAC0);
+    clone_engine.construct = profile.constructor_rva
+        ? reinterpret_cast<pbz_barrier::WrapperConstructor>(base + profile.constructor_rva) : nullptr;
+    clone_engine.initialize_json = profile.parser_rva
+        ? reinterpret_cast<pbz_barrier::JsonParser>(base + profile.parser_rva) : nullptr;
+    clone_engine.deep_copy = reinterpret_cast<pbz_barrier::CopyJson>(base + profile.copy_rva);
+    clone_engine.release = reinterpret_cast<pbz_barrier::ReleaseShared>(base + profile.release_rva);
+    remove_summary = reinterpret_cast<pbz_barrier::RemoveSummary>(base + profile.remove_rva);
     std::string allocation_failure;
-    if (!json_relay) json_relay = pbz_barrier::allocate_near_relay(base + pbz_barrier::json_rva,
+    if (!json_relay) json_relay = pbz_barrier::allocate_near_relay(base + profile.json_rva,
         reinterpret_cast<void*>(&json_failure), nullptr, &allocation_failure);
     std::uint64_t jump = 0;
-    if (!json_relay || !pbz_barrier::relay_jump(base + pbz_barrier::json_rva, json_relay, jump)) {
+    if (!json_relay || !pbz_barrier::relay_jump(base + profile.json_rva, json_relay, jump)) {
         reason = "cannot prepare native JSON failure relay: " + allocation_failure; return false;
     }
-    patches.push_back({"JsonSaveToDisk", base + pbz_barrier::json_rva, pbz_barrier::word(pbz_barrier::json_original), jump});
+    patches.push_back({"JsonSaveToDisk", base + profile.json_rva, pbz_barrier::word(pbz_barrier::json_original), jump});
     return true;
 }
 #endif
@@ -460,6 +481,11 @@ struct EligibilityApi {
 };
 
 EligibilityApi eligibility_api(unsigned char* base) {
+    if(!active_profile || !active_profile->reference_eligibility)return {};
+    pbz_compat::Image image;std::string compatibility_reason;
+    if(!pbz_compat::image_headers(reinterpret_cast<std::uintptr_t>(base),read_native_image,image)
+        || !pbz_compat::verify(image,pbz_compat_profile::eligibility,std::size(pbz_compat_profile::eligibility),
+            nullptr,0,read_native_image,query_native_image,compatibility_reason))return {};
     constexpr unsigned char gate[32] = {0x48,0x89,0x5C,0x24,0x08,0x48,0x89,0x74,0x24,0x10,0x48,0x89,0x7C,0x24,0x18,0x4C,
         0x89,0x64,0x24,0x20,0x55,0x41,0x56,0x41,0x57,0x48,0x8D,0x6C,0x24,0xB9,0x48,0x81};
     constexpr unsigned char execute[32] = {0x40,0x53,0x48,0x83,0xEC,0x20,0x48,0x8B,0x15,0x73,0x1C,0xAC,0x07,0x48,0x8B,0xD9,
@@ -528,15 +554,19 @@ bool inspect_registry(void* manager, std::string& output, const EligibilityApi* 
 std::string inspect_manager(void* manager, unsigned char* base, bool include_eligibility = false) {
     std::string output = std::string("armed=") + (armed ? "1" : "0")
         + ";prepared=" + (prepared ? "1" : "0") + ";masterRestored=" + (master_restored ? "1" : "0");
+    const auto& profile=active_profile ? *active_profile : pbz_bindings::reference;
+    output += std::string(";nativeProfile=")+profile.id;
     bool original = true;
+    std::size_t target_index=0;
     for (const auto& spec : pbz_barrier::targets) {
+        const auto rva=target_index++==0 ? profile.sync_rva : profile.write_rva;
         std::uint64_t bytes = 0;
-        const bool readable = pbz_barrier::read_word(base+spec.rva,bytes);
+        const bool readable = pbz_barrier::read_word(base+rva,bytes);
         original = original && readable && bytes == pbz_barrier::word(spec.original);
         output += std::string(";") + spec.name + "=" + (readable ? hex_word(bytes) : "unreadable");
     }
     std::uint64_t json_bytes = 0;
-    const bool json_readable = pbz_barrier::read_word(base+pbz_barrier::json_rva,json_bytes);
+    const bool json_readable = pbz_barrier::read_word(base+profile.json_rva,json_bytes);
     original = original && json_readable && json_bytes == pbz_barrier::word(pbz_barrier::json_original);
     output += ";JsonSave=" + (json_readable ? hex_word(json_bytes) : "unreadable")
         + ";entriesOriginal=" + (original ? "1" : "0");
@@ -585,7 +615,9 @@ std::string inspect_manager(void* manager, unsigned char* base, bool include_eli
     read_memory(static_cast<unsigned char*>(manager)+0x27A,shutdown);
     output += inspect_registry(manager,registry_output,eligibility.can_save && !shutdown ? &eligibility : nullptr)
         ? ";savableRead=1" + registry_output : ";savableRead=0";
-    output += pbz_provider::inspect(manager,base);
+    const auto provider=active_profile ? pbz_bindings::admitted_provider(profile,verified_native_identity.size)
+        : pbz_provider::default_layout;
+    output += pbz_provider::inspect(manager,base,provider);
     return output;
 }
 

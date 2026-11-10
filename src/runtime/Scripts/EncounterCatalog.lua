@@ -1,6 +1,7 @@
 -- Encounter definitions own ordering; BossCatalog remains the cooked actor source.
 local Bosses = require("BossCatalog")
 local Data = require("GeneratedEncounterCatalog")
+local Custom = require("CustomChallenges")
 local Catalog = { categories = {} }
 local byId, ordered, categoryNames, exclusions = {}, {}, {}, {}
 local RETIRED = { gauntlet_lengtu = "gauntlet", BP_Monster_LengTu = "duel", group_mob_rioters = "group" }
@@ -51,8 +52,15 @@ for _, source in ipairs(Data.entries) do
     byId[entry.id], ordered[#ordered + 1] = entry, entry
 end
 
+Custom.setChoices(ordered)
+for _, category in ipairs({ { id = "custom_gauntlet", name = "自订连战" }, { id = "custom_group", name = "自订群战" } }) do
+    Catalog.categories[#Catalog.categories + 1] = category
+    categoryNames[category.id] = category.name
+end
+
 function Catalog.resolve(id)
     if type(id) ~= "string" then return nil, "挑战对象 ID 无效" end
+    if id:sub(1, 7) == "custom_" then return Custom.resolve(id) end
     if RETIRED[id] then return nil, (byId[id] and byId[id].notes) or "此挑战已撤下" end
     local entry = byId[id]
     if entry then
@@ -80,9 +88,13 @@ function Catalog.retiredCategory(id) return RETIRED[id] end
 
 function Catalog.list(category)
     if category ~= nil and not categoryNames[category] then return {}, "未知挑战分类：" .. tostring(category) end
+    if Custom.isCategory(category) then return { Custom.default(category) } end
     local result = {}
     for _, entry in ipairs(ordered) do
         if entry.selectable and (category == nil or entry.category == category) then result[#result + 1] = entry end
+    end
+    if category == nil then
+        result[#result + 1], result[#result + 2] = Custom.default("custom_gauntlet"), Custom.default("custom_group")
     end
     return result
 end

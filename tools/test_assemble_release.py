@@ -57,13 +57,22 @@ class SourceAndInputChecks(unittest.TestCase):
         cls.build.mkdir(exist_ok=True)
 
     def test_payload_contract(self):
-        self.assertEqual(len(release.RUNTIME_FILES), 52)
-        self.assertEqual(len(set(release.RUNTIME_FILES)), 52)
-        self.assertTrue({"LionArena.lua", "EnemyHealthGuard.lua", "StampPress.lua"}.issubset(release.RUNTIME_FILES))
+        self.assertEqual(release.EXPECTED_RUNTIME_COUNT, 63)
+        self.assertEqual(len(release.RUNTIME_FILES), release.EXPECTED_RUNTIME_COUNT)
+        self.assertEqual(len(set(release.RUNTIME_FILES)), release.EXPECTED_RUNTIME_COUNT)
+        self.assertTrue({"LionArena.lua", "EnemyHealthGuard.lua", "StampPress.lua",
+                         "JingYeMount.lua", "ChiLianArena.lua", "PlayerDamageGuard.lua", "CustomChallenges.lua", "KryptonDemo.lua", "PendingEntry.lua",
+                         "StatusBuildup.lua", "StatusBuildupHud.lua", "StatusEffectClock.lua", "PracticeBossInfo.lua", "ChallengeMedicine.lua"}.issubset(release.RUNTIME_FILES))
+        self.assertEqual(set(release.RUNTIME_FILES),
+                         {p.name for p in (release.ROOT / "src/runtime/Scripts").glob("*.lua")})
         self.assertNotIn("ChallengeUI.lua", release.RUNTIME_FILES)
         self.assertIn("ue4ss/Mods/shared/UEHelpers/UEHelpers.lua", release.LOADER_FILES)
         self.assertEqual(len(release.PRIVATE_NAMES), 18)
         self.assertNotIn("__Advanced__", release.PRIVATE_NAMES)
+        # The five additional files are enabled.txt, the barrier, UI metadata,
+        # and the two loader MOD lists. Check this contract before any assembly.
+        self.assertEqual(release.EXPECTED_PAYLOAD_COUNT,
+                         len(release.LOADER_FILES) + len(release.RUNTIME_FILES) + len(release.ASSET_NAMES) + 5)
 
     def test_missing_input_fails(self):
         with tempfile.TemporaryDirectory(dir=self.build) as directory:
@@ -145,6 +154,96 @@ class SourceAndInputChecks(unittest.TestCase):
                 target.write(b"-- stale synthetic modification\n")
             with self.assertRaisesRegex(ValueError, "stale"):
                 release.generated_data(output)
+
+
+class RuntimeSelectionChecks(unittest.TestCase):
+    def setUp(self):
+        (release.ROOT / "build").mkdir(exist_ok=True)
+        self.temporary = tempfile.TemporaryDirectory(dir=release.ROOT / "build")
+        self.root = Path(self.temporary.name)
+        self.generated = {name: ("return {generated=" + repr(name) + "}\n").encode("ascii")
+                          for name in release.GENERATED}
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def runtime(self, name, enabled=b"\n"):
+        runtime = self.root / name
+        (runtime / "Scripts").mkdir(parents=True)
+        for filename in release.RUNTIME_FILES:
+            data = self.generated.get(filename, ("-- selected " + name + "/" + filename + "\n").encode("ascii"))
+            (runtime / "Scripts" / filename).write_bytes(data)
+        (runtime / "enabled.txt").write_bytes(enabled)
+        return runtime
+
+    def test_parser_default_runtime_is_explicit_and_data_follows_selection(self):
+        options = release.parser().parse_args(["--assets-dir", "absent", "--presets", "absent",
+                                              "--ue4ss-zip", "absent", "--game-exe", "absent"])
+        self.assertEqual(Path(options.runtime_dir), release.ROOT / "src/runtime")
+        self.assertIsNone(options.data_dir)
+
+    def test_all_modules_and_enabled_are_from_selected_runtime(self):
+        unused = self.runtime("unused", b"\n")
+        selected = self.runtime("verified", b"\r\n")
+        with patch.object(release, "generated_data", return_value=self.generated) as generated:
+            scripts, enabled, _ = release.load_runtime(selected)
+        generated.assert_called_once_with(selected / "Scripts")
+        self.assertEqual(len(scripts), 63)
+        self.assertEqual(enabled, b"\r\n")
+        for name in release.RUNTIME_FILES:
+            self.assertEqual(scripts[name], (selected / "Scripts" / name).read_bytes())
+        self.assertNotEqual(scripts["TitleHome.lua"], (unused / "Scripts/TitleHome.lua").read_bytes())
+
+    def test_data_directory_validates_generated_only_never_selects_other_modules(self):
+        selected, other = self.runtime("selected"), self.runtime("other")
+        with patch.object(release, "generated_data", return_value=self.generated) as generated:
+            scripts, _, _ = release.load_runtime(selected, other / "Scripts")
+        generated.assert_called_once_with(other / "Scripts")
+        self.assertEqual(scripts["TitleHome.lua"], (selected / "Scripts/TitleHome.lua").read_bytes())
+
+    def test_generated_directory_cannot_mask_stale_selected_runtime(self):
+        selected = self.runtime("selected")
+        (selected / "Scripts/BossCatalog.lua").write_bytes(b"-- stale selected table\n")
+        with patch.object(release, "generated_data", return_value=self.generated), self.assertRaisesRegex(
+                ValueError, "differs from the selected runtime: BossCatalog"):
+            release.load_runtime(selected, self.root / "otherwise-current-data")
+
+    def test_missing_module_is_rejected_even_if_other_runtime_has_it(self):
+        self.runtime("other")
+        selected = self.runtime("selected")
+        (selected / "Scripts/main.lua").unlink()
+        with self.assertRaisesRegex(ValueError, "missing: main.lua"):
+            release.load_runtime(selected)
+
+    def test_extra_module_including_uppercase_extension_is_rejected(self):
+        selected = self.runtime("selected")
+        (selected / "Scripts/Unverified.LUA").write_bytes(b"-- not selected for release\n")
+        with self.assertRaisesRegex(ValueError, "extra: Unverified.LUA"):
+            release.load_runtime(selected)
+
+    def test_missing_selected_enabled_does_not_fall_back_to_repository(self):
+        selected = self.runtime("selected")
+        (selected / "enabled.txt").unlink()
+        with self.assertRaisesRegex(ValueError, "missing: enabled.txt"):
+            release.load_runtime(selected)
+
+    def test_non_sentinel_enabled_is_rejected(self):
+        selected = self.runtime("selected", b"unexpected configuration")
+        with self.assertRaisesRegex(ValueError, "empty/whitespace"):
+            release.load_runtime(selected)
+
+    def test_scripts_directory_cannot_be_mistaken_for_runtime_root(self):
+        selected = self.runtime("selected")
+        with self.assertRaisesRegex(ValueError, "must contain Scripts/"):
+            release.load_runtime(selected / "Scripts")
+
+    def test_module_named_directory_is_not_accepted_as_a_file(self):
+        selected = self.runtime("selected")
+        target = selected / "Scripts/main.lua"
+        target.unlink()
+        target.mkdir()
+        with self.assertRaisesRegex(ValueError, "missing: main.lua"):
+            release.load_runtime(selected)
 
 
 @unittest.skipUnless(os.name == "nt", "Windows CNG authentication checks")

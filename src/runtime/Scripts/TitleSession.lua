@@ -35,6 +35,9 @@ end
 
 local function failureMessage(failure, barrier)
     failure = tostring(failure)
+    if failure:find("native-runtime-incompatible", 1, true) then
+        return "已尝试兼容，但当前游戏的存档接口仍有差异，尚未进入演武。请把本次错误反馈给作者继续调整。"
+    end
     if failure:find("save provider differs", 1, true) then
         return "当前游戏的存档账号与 MOD 安装时选择的账号不同。请退出游戏，重新运行安装器选择当前账号。"
     end
@@ -146,6 +149,11 @@ function TitleSession.new(profile, log, options)
         expectedProvider=providerPath(options.savePath)
         local account=expectedProvider:match("/projectpbz/saved/savegames/steam/(%d+)/pbzsavegame%.sav$")
         assert(account and #account==17,"installed MOD save provider configuration is invalid")
+    end
+    if options.integrated then
+        local preferences = options.loadoutMemoryPath and options.loadoutMemoryPath:match("^(.*[/\\])")
+        require("EncounterCatalog") -- Install the current ready-member allowlist before reading saved IDs.
+        require("CustomChallenges").configure((preferences or (profile .. "/")) .. "PBZCustomChallenges.tsv")
     end
     return setmetatable({ phase = "title", expected = expected, log = log, options = options,
         expectedProvider=expectedProvider,

@@ -163,6 +163,83 @@ int main(){
         &&!std::memcmp(before_read.data(),native_cache+0x28,before_read.size())
         &&image[pbz_provider::windows_loaded_rva]==1,
         "successful Windows-chain inspection leaves native path cache and provider-loaded state unchanged");
+    // A different admitted host profile must never borrow the reference
+    // globals, code RVAs, vtables or cache by accident. No game code is called.
+    pbz_provider::Layout alternate;
+    alternate.cache_rva=0x10000;alternate.platform_global_rva=0x11000;
+    alternate.platform_vtable_rva=0x12000;alternate.windows_vtable_rva=0x13000;
+    alternate.windows_getter_rva=0x14000;alternate.windows_provider_rva=0x15000;
+    alternate.windows_loaded_rva=0x15008;alternate.save_object_rva=0x16000;
+    alternate.save_vtable_rva=0x17000;alternate.direct_getter_rva=0x18000;
+    alternate.static_object_thunk_rva=0x19000;alternate.cache_getter_rva=0x1A000;
+    alternate.path_getter_rva=0x1B000;alternate.effective_directory_rva=0x1C000;
+    alternate.image_size=0x1EC54000;
+    for(const auto rva:{alternate.cache_rva,alternate.platform_global_rva,alternate.platform_vtable_rva,
+        alternate.windows_vtable_rva,alternate.windows_getter_rva,alternate.windows_provider_rva,
+        alternate.save_object_rva,alternate.save_vtable_rva,alternate.direct_getter_rva,
+        alternate.static_object_thunk_rva,alternate.cache_getter_rva,alternate.path_getter_rva,
+        alternate.effective_directory_rva})page(rva);
+    std::string alternate_diagnostic;
+    check(!pbz_provider::fingerprints(image,&alternate_diagnostic,alternate),
+        "an alternate layout without caller code proof cannot silently skip provider fingerprints");
+    alternate.caller_verified_code=true;
+    check(pbz_provider::fingerprints(image,nullptr,alternate),
+        "an explicitly caller-admitted complete code profile replaces obsolete raw RIP fingerprints");
+    void* alternate_table=image+alternate.platform_vtable_rva;void* alternate_module=&alternate_table;
+    std::memcpy(image+alternate.platform_global_rva,&alternate_module,8);
+    void* alternate_getter=image+alternate.direct_getter_rva;
+    std::memcpy(image+alternate.platform_vtable_rva+0x40,&alternate_getter,8);
+    void* alternate_save_table=image+alternate.save_vtable_rva;
+    std::memcpy(image+alternate.save_object_rva,&alternate_save_table,8);
+    void* alternate_path=image+alternate.path_getter_rva;
+    std::memcpy(image+alternate.save_vtable_rva+0x78,&alternate_path,8);
+    Cache alternate_source;alternate_source.root=L"E:/legacy";alternate_source.scope=L"Steam/2";alternate_source.bind();
+    auto alternate_cache=image+alternate.cache_rva;
+    InitializeCriticalSection(reinterpret_cast<CRITICAL_SECTION*>(alternate_cache));
+    std::memcpy(alternate_cache+0x28,alternate_source.bytes+0x28,0x98);
+    const auto alternate_direct=pbz_provider::inspect(manager,image,alternate);
+    check(ready_path(alternate_direct,"E:/legacy/Steam/2/PBZSaveGame.sav")
+        &&alternate_direct.find("providerRoute=direct-or-unrecognized")!=std::string::npos,
+        "alternate direct provider uses only selected profile globals, methods, vtables and path cache");
+    void* alternate_windows_getter=image+alternate.windows_getter_rva;
+    std::memcpy(image+alternate.windows_vtable_rva+0x40,&alternate_windows_getter,8);
+    void* alternate_provider=image+alternate.save_object_rva;
+    std::memcpy(image+alternate.windows_provider_rva,&alternate_provider,8);image[alternate.windows_loaded_rva]=1;
+    alternate_table=image+alternate.windows_vtable_rva;
+    const auto alternate_windows=pbz_provider::inspect(manager,image,alternate);
+    check(ready_path(alternate_windows,"E:/legacy/Steam/2/PBZSaveGame.sav")
+        &&alternate_windows.find("providerRoute=windows-cached")!=std::string::npos,
+        "alternate Windows cache route resolves the selected old-layout provider without invoking it");
+    std::memcpy(image+alternate.windows_vtable_rva+0x40,&windows_getter,8);
+    check(pbz_provider::inspect(manager,image,alternate).find("providerStage=windows-getter")!=std::string::npos,
+        "caller code proof does not permit a reference or foreign getter in an alternate provider chain");
+    std::memcpy(image+alternate.windows_vtable_rva+0x40,&alternate_windows_getter,8);
+    std::memcpy(image+alternate.windows_provider_rva,&current_provider,8);
+    check(pbz_provider::inspect(manager,image,alternate).find("providerStage=windows-provider-pointer")!=std::string::npos,
+        "alternate Windows cache cannot borrow the reference provider object");
+    std::memcpy(image+alternate.windows_provider_rva,&alternate_provider,8);
+    std::memcpy(image+alternate.save_object_rva,&save_table,8);
+    check(pbz_provider::inspect(manager,image,alternate).find("providerStage=save-vtable")!=std::string::npos,
+        "alternate provider retains exact selected save vtable identity");
+    std::memcpy(image+alternate.save_object_rva,&alternate_save_table,8);
+    image[alternate.windows_loaded_rva]=0;
+    check(pbz_provider::inspect(manager,image,alternate).find("providerStage=windows-cache-not-ready")!=std::string::npos,
+        "alternate profile still refuses an uninitialized Windows provider without running its getter");
+    image[alternate.windows_loaded_rva]=1;alternate_cache[0x2B]=0;
+    check(pbz_provider::inspect(manager,image,alternate).find("providerReason=cache-not-ready")!=std::string::npos,
+        "alternate profile never acquires an uninitialized selected cache lock");
+    alternate_cache[0x2B]=1;
+    const auto high_pointer=reinterpret_cast<void*>(reinterpret_cast<std::uintptr_t>(image)+0x1E0CC000);
+    check(pbz_provider::pointer_diagnostic("actualExtent",high_pointer,image,alternate.image_size)
+        .find("actualExtentRva=000000001E0CC000")!=std::string::npos
+        &&pbz_provider::pointer_diagnostic("referenceExtent",high_pointer,image)
+        .find("referenceExtentRva=external-or-null")!=std::string::npos,
+        "diagnostic pointer bounds use actual selected image size instead of the reference extent");
+    pbz_provider::Header alternate_header{};std::memcpy(alternate_header.data(),alternate_cache+0x28,alternate_header.size());
+    check(ready_path(pbz_provider::inspect(manager,image,alternate),"E:/legacy/Steam/2/PBZSaveGame.sav")
+        &&!std::memcmp(alternate_header.data(),alternate_cache+0x28,alternate_header.size()),
+        "alternate successful inspection leaves its native cache unchanged");
+    DeleteCriticalSection(reinterpret_cast<CRITICAL_SECTION*>(alternate_cache));
     DeleteCriticalSection(reinterpret_cast<CRITICAL_SECTION*>(native_cache));VirtualFree(image,0,MEM_RELEASE);
     std::printf("PASS %d offline native provider identity checks\n",checks);return 0;
 }

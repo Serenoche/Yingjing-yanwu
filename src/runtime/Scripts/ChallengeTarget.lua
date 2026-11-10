@@ -10,6 +10,7 @@ local CONFIRMATION = "/Script/CommonGame.Default__AsyncAction_ShowConfirmation"
 local CLICK = "/Script/UMG.Widget:ForceLayoutPrepass"
 local MODAL = "W_ConfirmationDefault_C"
 local current
+local Custom = require("CustomChallenges")
 local function firstEntry(category)
     local entries = Catalog.list(category or "duel")
     return entries and entries[1]
@@ -54,6 +55,23 @@ function Target.form(state, baseline)
         remembered[chosen.category] = chosen.id
     end
     local model = setmetatable({ settings = settings }, Model)
+    local customDrafts = {}
+    local function customDraft()
+        local category = settings.category
+        if not Custom.isCategory(category) then return nil end
+        if not customDrafts[category] then
+            local definition = assert(Custom.parse(settings.bossId))
+            customDrafts[category] = { count = #definition.members, members = definition.members }
+        end
+        return customDrafts[category]
+    end
+    local function rebuildCustom()
+        local draft, members = assert(customDraft()), {}
+        for index = 1, draft.count do members[index] = draft.members[index] end
+        select(assert(Catalog.resolve(assert(Custom.encode(settings.category, members)))))
+    end
+    function model:isCustom() return Custom.isCategory(settings.category) end
+    function model:customCount() local draft = customDraft(); return draft and draft.count or 0 end
     model.rows = {
         { label = "挑战类型", value = function() return assert(Catalog.resolve(settings.bossId)).categoryName end,
             change = function(delta)
@@ -105,6 +123,35 @@ function Target.form(state, baseline)
                 for index, scene in ipairs(choices) do if scene.id == settings.sceneId then selected = index end end
                 settings.sceneId = choices[(selected - 1 + delta) % #choices + 1].id
             end } }
+    model.screenRows[8] = {
+        label = "数量", value = function() return model:isCustom() and tostring(model:customCount()) .. " / 5" or "-" end,
+        enabled = function() return model:isCustom() end,
+        change = function(delta)
+            local draft = customDraft(); if not draft then return end
+            draft.count = math.max(1, math.min(Custom.maximum, draft.count + delta))
+            for index = 1, draft.count do draft.members[index] = draft.members[index] or Custom.choices()[1].id end
+            rebuildCustom()
+        end,
+    }
+    for slot = 1, Custom.maximum do
+        local index = slot
+        model.screenRows[8 + index] = {
+            label = "位置 " .. index,
+            value = function()
+                local draft = customDraft()
+                if not draft or index > draft.count then return "-" end
+                return assert(Catalog.resolve(draft.members[index])).name
+            end,
+            enabled = function() return model:isCustom() and index <= model:customCount() end,
+            change = function(delta)
+                local draft = customDraft(); if not draft or index > draft.count then return end
+                local choices, selected = Custom.choices(), 1
+                for candidate, entry in ipairs(choices) do if entry.id == draft.members[index] then selected = candidate; break end end
+                draft.members[index] = choices[(selected - 1 + delta) % #choices + 1].id
+                rebuildCustom()
+            end,
+        }
+    end
     return model
 end
 function Model:getSettings()
@@ -120,7 +167,20 @@ function Model:mount(modal, description, controller, confirm, options)
 end
 function Model:update(gameplay) return self.form and self.form:update(gameplay) or false end
 function Model:canConfirm() return self.form and self.form:canConfirm() or false end
-function Model:confirm() return self.form and self.form:confirm() or false end
+function Model:confirm()
+    if not self.form or not self.form:confirm() then return false end
+    if self:isCustom() then
+        local ok, reason = Custom.remember(self.settings.bossId)
+        if not ok then
+            print("[PBZCustomChallenges] " .. tostring(reason) .. "\n")
+            -- Keep the editor open so a failed save is visible and retryable.
+            if self.form.form then self.form.form:refresh() end
+            return false
+        end
+        print("[PBZCustomChallenges] selected " .. self.settings.bossId .. "\n")
+    end
+    return true
+end
 function Model:back()
     local handled = self.form and self.form:back() or false
     if handled then self.region = self.form.form.region end

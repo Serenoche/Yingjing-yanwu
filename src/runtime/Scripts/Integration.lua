@@ -1,6 +1,5 @@
 local Integration = {}
 local OWNER = "7d5ad307-d21c-47eb-9584-493443190984"
-local GAME_SHA256 = "4415933ce33476f14c837abb61a1b60af8b78cd81783896501913a7aac69e423"
 
 local function read(path)
     local stream = io.open(path, "rb")
@@ -52,14 +51,23 @@ function Integration.load(system)
     if not read(configPath) then return nil end
     local platform = assert(scripts:lower():match("^(.*)/ue4ss/mods/pbztestarena/scripts$"), "invalid installed MOD layout")
     local marker = read(platform .. "/ue4ss/.PBZTestArenaIntegrated-owner")
-    assert(marker and marker:match("^%s*(.-)%s*$") == OWNER, "installed MOD ownership marker is missing")
+    local modRoot = assert(scripts:match("^(.*)/[^/]+$"))
+    local sharedMarker = read(modRoot .. "/.PBZTestArenaShared-owner")
+    local ownsRoot = marker and marker:match("^%s*(.-)%s*$") == OWNER
+    local ownsMod = sharedMarker and sharedMarker:match("^%s*(.-)%s*$") == OWNER
+    assert(ownsRoot or ownsMod, "installed MOD ownership marker is missing")
     local config = assert(loadfile(configPath))()
     assert(type(config) == "table" and (config.version == 1 or config.version == 2) and config.owner == OWNER,
         "installed MOD configuration is invalid")
+    if config.installMode == "shared-v1" then
+        assert(config.version == 2 and ownsMod, "shared MOD ownership marker is missing")
+    else
+        assert(config.installMode == nil and ownsRoot, "installed MOD ownership mode is invalid")
+    end
     if config.version == 2 or config.gameSha256 ~= nil then
-        assert(type(config.gameSha256) == "string" and config.gameSha256:lower() == GAME_SHA256,
-            "installed MOD game build is unsupported")
-        config.gameSha256 = GAME_SHA256
+        assert(type(config.gameSha256) == "string" and #config.gameSha256 == 64
+            and not config.gameSha256:find("[^%x]"), "installed MOD game identity is invalid")
+        config.gameSha256 = config.gameSha256:lower()
     end
     assert(config.diagnostics == nil or type(config.diagnostics) == "boolean", "invalid installed MOD diagnostics setting")
     if config.version == 2 and config.diagnostics == nil then config.diagnostics = false end

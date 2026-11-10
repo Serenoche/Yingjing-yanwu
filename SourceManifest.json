@@ -1,0 +1,508 @@
+{
+  "schemaVersion": 1,
+  "version": "1.1.0",
+  "scope": "source-and-build-documentation-only",
+  "selfExcluded": "SourceManifest.json",
+  "files": {
+    ".editorconfig": {
+      "sha256": "e2c7d085da27dfa5922753344c0da0bb4698de246cdec7326f65c27aeb97aa9e",
+      "bytes": 228
+    },
+    ".gitattributes": {
+      "sha256": "62b127eb4091b0d1c9264025ab0c8a793852693f2763bf0ed88f211319487155",
+      "bytes": 345
+    },
+    ".github/workflows/ci.yml": {
+      "sha256": "0fe43e30637e5985c356e593b64e707db333a41ecd93467ac50f7e12734a40b1",
+      "bytes": 2130
+    },
+    ".gitignore": {
+      "sha256": "e1c9303547e17ae6cb2673349d181e1ce3574c216e192229d50b1321d5d04829",
+      "bytes": 864
+    },
+    "CONTRIBUTING.md": {
+      "sha256": "1d74582b0a1b7e0ad41fae48fcfb97ba2c4b4a778ff5637caf06a62ce0a1768c",
+      "bytes": 881
+    },
+    "LICENSE": {
+      "sha256": "4765ddbd0674a8c82a054f979cbc6180adface13af36440260dc16c6d2db3138",
+      "bytes": 1084
+    },
+    "README.md": {
+      "sha256": "bb4dca9875f12d0dc7eeaa921a33fdfe4fe2b95cc94fe2116287f2639998f9c0",
+      "bytes": 6547
+    },
+    "RELEASE_PROFILE.json": {
+      "sha256": "d0425b3384bee9849b3e86211ccfd1d013f15dd57ccea63f14554c8caf907451",
+      "bytes": 1073
+    },
+    "THIRD_PARTY_NOTICES.md": {
+      "sha256": "2e9d0a913f176304e2f6cac76df507ecf5350cfecf916f12a29881452d250df4",
+      "bytes": 2552
+    },
+    "config/ArenaProgression.json": {
+      "sha256": "6c33c7ddbcbc588c1dfe8a151d334805f273d85291b8eef43aea5aaff9f4e56d",
+      "bytes": 617
+    },
+    "config/ArenaScenes.json": {
+      "sha256": "b01dc4574f8102fd950988f3e19077254935d495c1be24957c9be9793cfde287",
+      "bytes": 5446
+    },
+    "config/BossCatalog.json": {
+      "sha256": "3b75ecb3e17564b94ee432e39f4f46d8bc02233c4477b2a508f13b2910a51761",
+      "bytes": 19601
+    },
+    "config/EncounterCatalog.json": {
+      "sha256": "e30e63746396f1bead397f5a23d0cedad6a7edd4ce5d87c1f497696fdf7adab3",
+      "bytes": 29891
+    },
+    "docs/BUILD.md": {
+      "sha256": "1b22c0464781f975e973d7159d83d0b5b3f986a144d9359b5ebf96c26da7f4d8",
+      "bytes": 8620
+    },
+    "docs/LOCAL_INPUTS.md": {
+      "sha256": "7a0b4f0445c1e235bcc9273aa37d05ff723d1dab6b62d20677212df3f2c75063",
+      "bytes": 10478
+    },
+    "docs/RELEASE_NOTES_1.1.0.md": {
+      "sha256": "58831d789609e8b3eda1727943036ce8b742d918191aee185034acce034b4a34",
+      "bytes": 1477
+    },
+    "docs/RELEASE_README.md": {
+      "sha256": "9918c9deb3991a321d5af44d49180cda83c332a26c1e5e4b629939b878f3a5ea",
+      "bytes": 5784
+    },
+    "docs/SOURCE_SCOPE.md": {
+      "sha256": "f286e4d8dfbf1486dde10303ae9cb837cb253ec3761e24a6b0a3f46b962fb4ca",
+      "bytes": 1786
+    },
+    "src/installer/CompatibilityInstall.ps1": {
+      "sha256": "e68b80ee9319b6f92745d1b821f2185f25b9fc0c748d4c37bd4ac88e22439ce5",
+      "bytes": 10997
+    },
+    "src/installer/Install-PbzIntegratedMenu.ps1": {
+      "sha256": "7496ba89cd626bee1d879ee1d38c2d24e888bc118bcc64fed7affacde2695314",
+      "bytes": 35797
+    },
+    "src/installer/InstallerHost.cs": {
+      "sha256": "532ee52eef729fed0cdf19bb8a068803b357a78f6e3c68e0a0ab0b899491081d",
+      "bytes": 1591
+    },
+    "src/installer/Open-PbzInstaller.ps1": {
+      "sha256": "945f853ba21c68a17ffaba9a708d505b9e37db7327773189248a67e705d97153",
+      "bytes": 9733
+    },
+    "src/installer/PortablePaths.ps1": {
+      "sha256": "ce25f67856ca1652ef9814accdf4eea80ed6caaaca51c966eddc68727f9ce868",
+      "bytes": 4503
+    },
+    "src/installer/SharedRuntime.ps1": {
+      "sha256": "134418cb933b14c12f4d748855e7abff053bc799ea27e32e07cd33b4cf1a75d5",
+      "bytes": 20197
+    },
+    "src/installer/卸载主菜单入口.cmd": {
+      "sha256": "4302162e8c02f830313d15b44da43699aeb0e624151bf7218a3f74137ef3499b",
+      "bytes": 194
+    },
+    "src/installer/安装主菜单入口.cmd": {
+      "sha256": "43f88dfab4238cdaa1247a688950652f9e3e2c6bf43989893923a8861ac8510a",
+      "bytes": 192
+    },
+    "src/runtime/Scripts/AbilityChallenge.lua": {
+      "sha256": "a7ed881bed9993931ae59d5d75a8d1d48ac9464edee7d4b0ecafc449e77c5afe",
+      "bytes": 27264
+    },
+    "src/runtime/Scripts/ArenaEconomy.lua": {
+      "sha256": "e6fd0db0140552addd543cbeaaec9cdd2e4d2ae0e03c125ce45c072eb8a0b7c1",
+      "bytes": 9805
+    },
+    "src/runtime/Scripts/ArenaLoadout.lua": {
+      "sha256": "27f054862329c6233a3d6cb28fcd7b5c85631d8fe7219599e8103ee51a31b64d",
+      "bytes": 11365
+    },
+    "src/runtime/Scripts/ArenaLoadoutMemory.lua": {
+      "sha256": "338977e38d688937ceb7693c3e7a1df395b8a9e95ddad7ba011e5098fa14a1c6",
+      "bytes": 11712
+    },
+    "src/runtime/Scripts/ArenaMapPolicy.lua": {
+      "sha256": "5f61b34a731c4c53376d7de17a39a22df9c5ae84995c50da63d89c908dcc59d5",
+      "bytes": 11281
+    },
+    "src/runtime/Scripts/ArenaScenes.lua": {
+      "sha256": "bd834f1bfa6c9cf8b622c9556bde8ce25870be49d5de1bc1e5eb47704253abe6",
+      "bytes": 1074
+    },
+    "src/runtime/Scripts/ArtAssets.lua": {
+      "sha256": "cb812471254347b03894e66893b21e0d88480002ca87feab35c7d47c67d0adae",
+      "bytes": 14504
+    },
+    "src/runtime/Scripts/BossCatalog.lua": {
+      "sha256": "57b2293f7bb60ac7609a99ea302d8f4422d81d74c974eda4264e65a122691654",
+      "bytes": 18623
+    },
+    "src/runtime/Scripts/Challenge.lua": {
+      "sha256": "6779440388ac9225d135024adb1a387cfbcec7f0a261f5addb2275c6552eedb1",
+      "bytes": 65102
+    },
+    "src/runtime/Scripts/ChallengeLoadout.lua": {
+      "sha256": "94f354b22782e0210563f23ec512b2347c6a7ed1e1cc19b7c44446f038904f89",
+      "bytes": 8223
+    },
+    "src/runtime/Scripts/ChallengeMedicine.lua": {
+      "sha256": "402248a3d0d3a657e5127d4c86b3a7bba51a2e631e7a68e74fd0d7d062f8c6af",
+      "bytes": 9089
+    },
+    "src/runtime/Scripts/ChallengeMenu.lua": {
+      "sha256": "b46ee4909c1ae0d4a5f266bba063635089c66460b3251ff65ec2245c2a6b11ea",
+      "bytes": 21778
+    },
+    "src/runtime/Scripts/ChallengeSignals.lua": {
+      "sha256": "5fd5ee997ee37171dad7a69a6c1fa75c814e4f4aeb92944204b2ed3916902508",
+      "bytes": 26691
+    },
+    "src/runtime/Scripts/ChallengeTarget.lua": {
+      "sha256": "7b3fdb8e0e12b4e57926097afa5dd836d483f44367b06d1a536fecb7c2136eff",
+      "bytes": 18135
+    },
+    "src/runtime/Scripts/ChallengeVictory.lua": {
+      "sha256": "2389fa70df3debea21c13c57932e047c9976f08f9d2f96f08acb2a4e84f81eae",
+      "bytes": 42177
+    },
+    "src/runtime/Scripts/ChiLianArena.lua": {
+      "sha256": "35021d5e4056eb50e2c5d03c6ac6e3d896a9f2e1086ad9399118d3be804432c5",
+      "bytes": 13806
+    },
+    "src/runtime/Scripts/ClosedArena.lua": {
+      "sha256": "586bb54be91981000188c5c8074d6ecf9aa1b0627fe55eab1bdc58b638521a24",
+      "bytes": 11762
+    },
+    "src/runtime/Scripts/CombatSpawn.lua": {
+      "sha256": "21746cded74e2aeb780a652c28286cf7f887b57907742b6a463696efa0eec0d2",
+      "bytes": 2916
+    },
+    "src/runtime/Scripts/CustomChallenges.lua": {
+      "sha256": "b582c4781a36406590be09cdfafcab1147f6a2aa81cc5a875b355b3cf19f68ed",
+      "bytes": 8201
+    },
+    "src/runtime/Scripts/DayArena.lua": {
+      "sha256": "7b9aac611cd786a6ec0c5a0e005caf4a74fff20ff484f99b3a72f2d369f52cb3",
+      "bytes": 24754
+    },
+    "src/runtime/Scripts/EncounterCatalog.lua": {
+      "sha256": "6137abb85300276ed6ef6724b28abaab4ee205cc3bcc28926bccc1d59c8450e9",
+      "bytes": 5341
+    },
+    "src/runtime/Scripts/EncounterEngage.lua": {
+      "sha256": "bc89a916192303db8d9f8520705a4fc583ece323a32bbb0f482242e78d681d04",
+      "bytes": 13593
+    },
+    "src/runtime/Scripts/EncounterPlayerState.lua": {
+      "sha256": "93a68afd0cdcfc7f674492c8e1156584dd2b16396fc9d9acd70ce1dfe0c8ab2d",
+      "bytes": 7801
+    },
+    "src/runtime/Scripts/EnemyHealthGuard.lua": {
+      "sha256": "6a370565201bf62110ae64d1783d177277f329c3479d0271cdbf79f6e07f1293",
+      "bytes": 4124
+    },
+    "src/runtime/Scripts/GameplayDifficulty.lua": {
+      "sha256": "b1a9d56ab0ac018dc6558d681ab15825599766da770f024a3f5edba233850431",
+      "bytes": 7642
+    },
+    "src/runtime/Scripts/GeneratedArenaScenes.lua": {
+      "sha256": "ee5caf8503936bbbe28f0b97b80206e683f2155f26d747a4db546924557f8601",
+      "bytes": 3995
+    },
+    "src/runtime/Scripts/GeneratedEncounterCatalog.lua": {
+      "sha256": "235ad0153a4cd587e70c64c6c231f8a22c7eddb819120f269182da11cc1e1d63",
+      "bytes": 22165
+    },
+    "src/runtime/Scripts/Health.lua": {
+      "sha256": "f6776f7b4c559876e114ed3f625885ace901bb2be1e0206f1f1ebac5215bbe20",
+      "bytes": 3333
+    },
+    "src/runtime/Scripts/HistoryReport.lua": {
+      "sha256": "bea442e6d3c22e1088b6b41ee21b575b5de8662e8035d0483d3b460a70a7dfc7",
+      "bytes": 10285
+    },
+    "src/runtime/Scripts/Integration.lua": {
+      "sha256": "7a7c722687f317a87daaa63d14c4ba86216b4c6dd3c36a098913407c8952b18c",
+      "bytes": 6100
+    },
+    "src/runtime/Scripts/JingYeMount.lua": {
+      "sha256": "184e45b4f9652c5d221c161394c890ba34e95c908265263c2f289fbcabf95422",
+      "bytes": 17557
+    },
+    "src/runtime/Scripts/KryptonDemo.lua": {
+      "sha256": "22e57ad03c72f52a8c5b06589db50bccab672289d9212a111fdb9a152b7bceb1",
+      "bytes": 19484
+    },
+    "src/runtime/Scripts/LengTuArena.lua": {
+      "sha256": "a57a50805ae8d673cfa904a2072c219a658f784230ba14a9f21e5a95175f1d99",
+      "bytes": 14335
+    },
+    "src/runtime/Scripts/LengTuSummons.lua": {
+      "sha256": "52e08bea3ce0035bc196c27041834037b52621953aff20e36f4d9f9e0986ce36",
+      "bytes": 12906
+    },
+    "src/runtime/Scripts/LionArena.lua": {
+      "sha256": "6863f00a4257b93386070af1e12c515f87324406108c6202222b5701b9a06329",
+      "bytes": 14316
+    },
+    "src/runtime/Scripts/NativeScreen.lua": {
+      "sha256": "9695c6c2084c471d3781637c0caa87a9aa9a1ddac4f96aaed52c4e0e2a352ee7",
+      "bytes": 11449
+    },
+    "src/runtime/Scripts/NativeSelection.lua": {
+      "sha256": "f9d1ea948a8b31d64a0511dfcfd1b15476cd8fa62091c65f049f9d1a8a8c908c",
+      "bytes": 7769
+    },
+    "src/runtime/Scripts/NativeUiAssetsData.lua": {
+      "sha256": "8466e38f7afc1e298f7abe6e5e640a331f15a4285ce3ed146c947ae208db90fc",
+      "bytes": 72136
+    },
+    "src/runtime/Scripts/Panel.lua": {
+      "sha256": "e9141abf742b1bd5e1b749b8be41e8bfcba961de5035895476c60c003268f95f",
+      "bytes": 3160
+    },
+    "src/runtime/Scripts/ParameterFeedback.lua": {
+      "sha256": "2e3ec0904660204eddc408faa483dc8f774b8d7b8661dc4ed418809a380505c2",
+      "bytes": 5071
+    },
+    "src/runtime/Scripts/ParameterForm.lua": {
+      "sha256": "02ab292d31ce6dadcf9ed2511fde599c08c1c23c19e05aeb3b5822799fb7d22a",
+      "bytes": 18168
+    },
+    "src/runtime/Scripts/ParameterStyle.lua": {
+      "sha256": "8f1d36c2441e3c08e0f8a7fa92fad619388f54098bb6fd9ad85b9107b59bffae",
+      "bytes": 11358
+    },
+    "src/runtime/Scripts/PendingEntry.lua": {
+      "sha256": "f368c01a30e99cd0edacbc805971d45dc22b1ce0f0f341a54b7473ded9e59ee3",
+      "bytes": 5863
+    },
+    "src/runtime/Scripts/PlayerDamageGuard.lua": {
+      "sha256": "388077aeec5b63a8db7190168314edff3444b3035cb7a9388536ab61f6c35da5",
+      "bytes": 7542
+    },
+    "src/runtime/Scripts/PlayerProfile.lua": {
+      "sha256": "13d7af7765b895c786ba13ff383f7a8fb794d56cd8328e2594ca096122c6d6fe",
+      "bytes": 3002
+    },
+    "src/runtime/Scripts/PortraitLayout.lua": {
+      "sha256": "861d5cf53e83d3f0f24a40cf76733de78034a56f12c82aa25269a95d37fd659a",
+      "bytes": 5402
+    },
+    "src/runtime/Scripts/PracticeBossInfo.lua": {
+      "sha256": "076f10def9e1df6f4939d25dee2afa38037cd8e281d9b515e892104e8e313f7b",
+      "bytes": 11608
+    },
+    "src/runtime/Scripts/PracticeHud.lua": {
+      "sha256": "2ce934b3199407d74da87b0575857bd1da9160e06270bcef338203c534afcdd2",
+      "bytes": 5647
+    },
+    "src/runtime/Scripts/PracticeMode.lua": {
+      "sha256": "39ed433df19960c6cc467a3bdf6c653297f6e42dbbb8cb947b181185e46eae7e",
+      "bytes": 24046
+    },
+    "src/runtime/Scripts/SaveBarrier.lua": {
+      "sha256": "0a3a55309b134185c6e769c6ef5a7e8b7f80f29b4e36e65209fb2cc4064224d2",
+      "bytes": 4696
+    },
+    "src/runtime/Scripts/SceneArena.lua": {
+      "sha256": "bc9b0f941b608f0c1d176eff57f864d5031e165f84d98accb9bce90f476fb687",
+      "bytes": 49036
+    },
+    "src/runtime/Scripts/SpawnClass.lua": {
+      "sha256": "169fbb7a418ee418e4a5c6b44a992f31a5b84f4308309d0686b9e3cab04c4207",
+      "bytes": 3595
+    },
+    "src/runtime/Scripts/StageFade.lua": {
+      "sha256": "628e20b4cfcc92fed084da99d2e879a3d83cdad97168808b75efecb37104f037",
+      "bytes": 4337
+    },
+    "src/runtime/Scripts/StageScreen.lua": {
+      "sha256": "110ebb373002af173842e4ac0d44f3fa0a2035de885f117868740c2749075228",
+      "bytes": 6066
+    },
+    "src/runtime/Scripts/StampPress.lua": {
+      "sha256": "a83c0433a11558fc0bf4c86fb1dfd08838238ceb920232ecffaa9db9b0559407",
+      "bytes": 4673
+    },
+    "src/runtime/Scripts/StatusBuildup.lua": {
+      "sha256": "066b6b016c3e3caa9cda9e00462966cc296fc54d531da2ba2159ce11896e310d",
+      "bytes": 7632
+    },
+    "src/runtime/Scripts/StatusBuildupHud.lua": {
+      "sha256": "b09c94ef0f47bcb13c5f0907beaf9248440a827e728a3ea9b8d2f9cdf872b467",
+      "bytes": 22561
+    },
+    "src/runtime/Scripts/StatusEffectClock.lua": {
+      "sha256": "54fd70506f2910aff980848a0134d909eef4a8c6473f8da5571dcc474dc75a12",
+      "bytes": 3107
+    },
+    "src/runtime/Scripts/TitleHome.lua": {
+      "sha256": "265ca9bc82d5ceccc34efdc479811c7ca3356c48941c2cb70ae48ef622912eb7",
+      "bytes": 20698
+    },
+    "src/runtime/Scripts/TitleProbe.lua": {
+      "sha256": "7eac28f8f43671002969c515d638ba4087487bf993cd74f783a111c6da98f818",
+      "bytes": 15309
+    },
+    "src/runtime/Scripts/TitleSession.lua": {
+      "sha256": "9232d4d16e12adc4d1f4267ab0134ad1adf158e878f7876c1eddb17006155edd",
+      "bytes": 33800
+    },
+    "src/runtime/Scripts/TrainingHud.lua": {
+      "sha256": "dcb2ef779876d8217712563d45467f4d3360bc83f1f53fed524e586b499094cf",
+      "bytes": 14209
+    },
+    "src/runtime/Scripts/main.lua": {
+      "sha256": "1a0453f57539b8278464cf1bc5fe5bc73cae9421758b1a93947ae7e45ee04b76",
+      "bytes": 42034
+    },
+    "src/runtime/enabled.txt": {
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "bytes": 1
+    },
+    "src/save_barrier/barrier.cpp": {
+      "sha256": "d2dd1fb79bd62ad3eb7568959e9188fe0457790c54becc422435d2a532970b4d",
+      "bytes": 36517
+    },
+    "src/save_barrier/engine_clone.hpp": {
+      "sha256": "1891df8dce24f61f8d1b6a950d5a84c21fb50c86e55abc7dbf0a6fe3048d46ff",
+      "bytes": 4156
+    },
+    "src/save_barrier/native_binding_profiles.hpp": {
+      "sha256": "8c1e6669d54e8610dfd749de47c42e56ef689071ee4b1886e7fa6041da1a4fbe",
+      "bytes": 3273
+    },
+    "src/save_barrier/native_compat.hpp": {
+      "sha256": "8fdeea581e060ad4e8807bdf29d13936b793731dd471ecb5db8dc6efab90e698",
+      "bytes": 10495
+    },
+    "src/save_barrier/native_compat_profile.hpp": {
+      "sha256": "589ad82f07ee03d76fdddb2811a404b008f3c67e9f3f8a93d1bf0d4449aa25ac",
+      "bytes": 4054
+    },
+    "src/save_barrier/native_legacy_301524.hpp": {
+      "sha256": "d99129a6e878788985b973c9ccebaafea7520f6b56d2e755eccfe91881e052ed",
+      "bytes": 2885
+    },
+    "src/save_barrier/near_relay.hpp": {
+      "sha256": "43b439de5f275568656ec4ab7422d7793609a313f2aeee28423983d80167c672",
+      "bytes": 9146
+    },
+    "src/save_barrier/patch_transaction.hpp": {
+      "sha256": "f23374a0dd00a9658c12fd151684f50c144b17f1778f2279e5b459df4a591ec2",
+      "bytes": 4405
+    },
+    "src/save_barrier/provider_identity.hpp": {
+      "sha256": "5c0198b5476faed406c7ab4dd6eb02e32347a1e23023a7fb5b112e455c0fb39e",
+      "bytes": 24334
+    },
+    "src/save_barrier/summary_cache.hpp": {
+      "sha256": "76f9adb0f6cb1cd215e9544ef644f2827d54758f0086155716c55f013c9f442b",
+      "bytes": 4252
+    },
+    "src/save_barrier/target_specs.hpp": {
+      "sha256": "e997aa2d7373cdc366fbe78a7a5f32c6245e2ce6dc04c05bc9b22d916f12b7e3",
+      "bytes": 1250
+    },
+    "src/save_barrier/tests/barrier_test.cpp": {
+      "sha256": "d46ab70f8e30176b2aaa35f4e8ba990e0c1ec63ad16089afeec54cfb3ed52a1c",
+      "bytes": 34189
+    },
+    "src/save_barrier/tests/legacy_clone_test.cpp": {
+      "sha256": "ebd2467e92fb41e5f86b25d735257c1dabf898caee0349c51982aaf6a017ba9c",
+      "bytes": 8028
+    },
+    "src/save_barrier/tests/native_compat_test.cpp": {
+      "sha256": "5e0fffac5f0c7058de55950b77d73e2aa8b579632b37a5ef38983d2605f2b5d9",
+      "bytes": 9158
+    },
+    "src/save_barrier/tests/provider_dynamic_layout_test.cpp": {
+      "sha256": "5ae5e1f5b375b43123de7530e6c93c33f9cca22f193f5a1af0ab435216e15403",
+      "bytes": 12214
+    },
+    "src/save_barrier/tests/provider_identity_test.cpp": {
+      "sha256": "f883b85d63485c5681afea8a72d6c293848cdb645b73d085f3fa84b7f5171d7a",
+      "bytes": 23048
+    },
+    "src/save_barrier/tests/test_wrong_host.py": {
+      "sha256": "36422329bd549d3a560c68e1e8f959e975bc7dff3357ac8abd798bf115d6fca5",
+      "bytes": 2119
+    },
+    "src/save_tool/container.hpp": {
+      "sha256": "5be5dc83856af04c852f0b441f560ae6ef00b276de372e37899ab380f1ca74a8",
+      "bytes": 7052
+    },
+    "src/save_tool/main.cpp": {
+      "sha256": "d2db816580494101b4d7ae3e538f7b6da9e65ab000b88cbfeaf4202c4b2de15a",
+      "bytes": 12512
+    },
+    "src/save_tool/vendor/LICENSE.MIT": {
+      "sha256": "86b998c792894ccb911a1cb7994f7a9652894e7a094c0b5e45be2f553f45cf14",
+      "bytes": 1076
+    },
+    "src/save_tool/vendor/json.hpp": {
+      "sha256": "9bea4c8066ef4a1c206b2be5a36302f8926f7fdc6087af5d20b417d0cf103ea6",
+      "bytes": 919975
+    },
+    "src/save_tool/win_support.hpp": {
+      "sha256": "917625502f9d36441217054c0947b32dcc092bbd97aea578af8626b71ea21d62",
+      "bytes": 14603
+    },
+    "tests/test_installer_residue.py": {
+      "sha256": "ee00e8b6e720dca46f5e154d498ffa6fb8fb0589cde986e4b1a53c1716ec32ee",
+      "bytes": 3658
+    },
+    "tests/test_platform_info.py": {
+      "sha256": "2a413b7cd569fbfd8a4c091446bba69058c6e6c0ba5fae78c9693c9ba46cc72b",
+      "bytes": 10688
+    },
+    "tests/test_source_distribution.py": {
+      "sha256": "97dd6dfbae89bb490e3e3192f7eed6c5ae9cf4dc52c7c6657a6315b66c6d7ae9",
+      "bytes": 4821
+    },
+    "tools/Collect-PbzPlatformInfo.ps1": {
+      "sha256": "6a1d2f5c15bf31fd5d0e21a108dd294454bb2a3aaa1d872f2b1a00245f45eb94",
+      "bytes": 13603
+    },
+    "tools/assemble_release.py": {
+      "sha256": "542508f859622e49da3f98a37581e08d8db01ba2a562db4abaa6f1349f125193",
+      "bytes": 30006
+    },
+    "tools/build.py": {
+      "sha256": "8fe173cdc970eb8bf3850d3873bd74fed49fdfe9b900f2284cd485c42df8b1dc",
+      "bytes": 11908
+    },
+    "tools/data/README.md": {
+      "sha256": "f858db9a0f88d233a9f6a6e1b5a707aadac09dde99a49ceb3bd181b962cc2015",
+      "bytes": 3500
+    },
+    "tools/data/arena_scenes.py": {
+      "sha256": "06d2a99b6d12a12df7fb2127dc2351b5593ef0b7187e9eaad697354072cf932f",
+      "bytes": 5083
+    },
+    "tools/data/create_encounter_catalog.py": {
+      "sha256": "6e74f4e41a193de81d6387e9bc70ba29b92b03e455890ed9b48b7cb047130862",
+      "bytes": 6915
+    },
+    "tools/data/encounter_catalog.py": {
+      "sha256": "a6b98778e4f193a3a1897b6cf2a248dca4072d03e5ec97157929a21891cc70f1",
+      "bytes": 10391
+    },
+    "tools/data/generate_runtime_data.py": {
+      "sha256": "1c98d390192b80e35fd05aae59e2f8721a8d2daad639a2f5be6f391124ac2d86",
+      "bytes": 4073
+    },
+    "tools/data/test_generate_runtime_data.py": {
+      "sha256": "404b6e7393923d4d5b6da9169a275c69f088719d34a36cc3030c503461534a8b",
+      "bytes": 3690
+    },
+    "tools/test_assemble_release.py": {
+      "sha256": "c0b7fecca0aef3db9246e0baa22e849241afd9334eb51066ec4ce343e9e2e6e4",
+      "bytes": 14808
+    }
+  }
+}

@@ -8,9 +8,12 @@ local StageFade = require("StageFade")
 local EncounterEngage = require("EncounterEngage")
 local SpawnClass = require("SpawnClass")
 local PlayerProfile = require("PlayerProfile")
+local ChallengeMedicine = require("ChallengeMedicine")
 local ArenaScenes = require("ArenaScenes")
 
 local LionArena = require("LionArena")
+local JingYeMount = require("JingYeMount")
+local ChiLianArena = require("ChiLianArena")
 local Challenge = {}
 Challenge.__index = Challenge
 
@@ -219,7 +222,7 @@ local function showZhan(gameplay, pawn)
     return extensions:PushContentToLayer_ForPlayer(player, { TagName = FName("UI.Layer.Game") }, class)
 end
 
-local function spawnBoss(entry, enemyCycle, gameplay, system, pawn, occupied, scene, nativeEncounter)
+local function spawnBoss(entry, enemyCycle, gameplay, system, pawn, occupied, scene, nativeEncounter, mounts, prepareChiLian)
     local mathLibrary = required("/Script/Engine.Default__KismetMathLibrary")
     local spawner = required("/Script/SGameAI.Default__SGameAIFunctionLibrary")
     local class, reason = SpawnClass.resolve(entry.classPath)
@@ -256,6 +259,12 @@ local function spawnBoss(entry, enemyCycle, gameplay, system, pawn, occupied, sc
                     local yaw = authored and authored.rotation.Yaw or mathLibrary:FindLookAtRotation(location, playerPosition).Yaw
                     local rotation, scale = { Pitch = 0, Yaw = yaw, Roll = 0 }, { X = 1, Y = 1, Z = 1 }
                     local transform = mathLibrary:MakeTransform(location, rotation, scale)
+                    local chiLian
+                    if ChiLianArena.required(entry) then
+                        local reason
+                        chiLian, reason = prepareChiLian(ground, rotation)
+                        if not chiLian then return nil, nil, reason end
+                    end
                     local deferred = spawner:SpawnActorDeferred(pawn, class, transform, 3)
                     if valid(deferred) then
                         local capsule = deferred.CapsuleComponent
@@ -266,6 +275,25 @@ local function spawnBoss(entry, enemyCycle, gameplay, system, pawn, occupied, sc
                         -- Bind before FinishSpawningActor: BeginPlay can grant and
                         -- immediately activate this boss's internal summon GAs.
                         if nativeEncounter then nativeEncounter:bindBoss(deferred) end
+                        if chiLian then chiLian:bind(deferred) end
+                        if JingYeMount.required(entry) then
+                            local prepared, mount, pending = pcall(function()
+                                local session, reason = JingYeMount.new(pawn, gameplay, ground, rotation)
+                                if session then
+                                    mounts[#mounts + 1] = session -- retain if binding/Finish fails
+                                    session:bind(deferred)
+                                end
+                                return session, reason
+                            end)
+                            if not prepared then
+                                if valid(deferred) then deferred:K2_DestroyActor() end
+                                error(mount, 0)
+                            end
+                            if not mount then
+                                deferred:K2_DestroyActor()
+                                return nil, nil, pending
+                            end
+                        end
                         return CombatSpawn.finish(gameplay, pawn, deferred, transform, enemyCycle, true)
                     end
                     failure = "延迟生成返回无效对象"
@@ -434,6 +462,8 @@ function Challenge:owns(actor)
         if not readable or not valid(world) or world:GetAddress() ~= self.encounterWorld then return false end
     end
     if self.lengtu and self.lengtu:owns(actor) then return true end
+    if self.chiLianArena and self.chiLianArena:owns(actor) then return true end
+    for _, mount in ipairs(self.mounts or {}) do if mount:owns(actor) then return true end end
     local candidate = actor
     for _ = 1, 8 do
         if not valid(candidate) then return false end
@@ -445,7 +475,46 @@ function Challenge:owns(actor)
     return false
 end
 
+function Challenge:clearMounts()
+    local pending, errors = {}, {}
+    for _, mount in ipairs(self.mounts or {}) do
+        local ok, reason = pcall(mount.close, mount)
+        if not ok then pending[#pending + 1] = mount; errors[#errors + 1] = tostring(reason) end
+    end
+    self.mounts = #pending > 0 and pending or nil
+    self.mountCleanupError = #errors > 0 and table.concat(errors, "; ") or nil
+    self.mountPreparation = nil
+    if self.mountCleanupError then print("[PBZJingYeMount] cleanup pending: " .. self.mountCleanupError .. "\n") end
+end
+
+function Challenge:updateMounts()
+    local running = (self.awake == true or self.transitionStep == "engage")
+        and self.status ~= "won" and not self.reloadAt
+        and not (self.practice and self.practice.state.ai == false)
+    for _, mount in ipairs(self.mounts or {}) do mount:update(running == true) end
+end
+
+function Challenge:clearChiLianArena()
+    if not self.chiLianArena then return end
+    local cleaned, reason = pcall(self.chiLianArena.close, self.chiLianArena)
+    if cleaned then self.chiLianArena, self.chiLianCleanupError = nil, nil
+    else
+        self.chiLianCleanupError = tostring(reason)
+        print("[PBZChiLianArena] cleanup pending: " .. self.chiLianCleanupError .. "\n")
+    end
+end
+
 function Challenge:clearStage()
+    -- Release native UI registrations while our stage actors still exist.
+    local cleared, reason = pcall(function() require("PracticeBossInfo").close() end)
+    if not cleared then print("[PBZTestArenaNative] Practice boss info cleanup: " .. tostring(reason) .. "\n") end
+    self.practiceBossInfoFault, self.practiceBossInfoRetryAt = nil, nil
+    -- Original snake helpers retain unowned summon references. Collect/cancel
+    -- them before generic cleanup destroys their native BP containers.
+    self:clearChiLianArena()
+    -- Cancel native horse spawns while the rider script still exists. Retain
+    -- failed cleanup handles so a retry cannot create an untracked second mount.
+    self:clearMounts()
     self.engageRequests, self.engageNextPoll, self.engageNextLog = nil, nil, nil
     self.groupAggro = nil
     -- Remove only this encounter's actors and owner-linked summons. Never scan
@@ -513,7 +582,32 @@ local function spawnWait(self, gameplay, pawn, reason)
     end
 end
 
+function Challenge:finishMountPreparation(gameplay, pawn)
+    local pending = self.mountPreparation
+    assert(pending and pending.stage == self.stageIndex
+        and pending.world == pawn:GetWorld():GetAddress(), "荆野准备阶段或场景已改变")
+    for _, mount in ipairs(self.mounts or {}) do
+        local ready, reason = mount:prepare(gameplay:GetRealTimeSeconds(pawn))
+        if not ready then spawnWait(self, gameplay, pawn, reason); return false end
+    end
+    self.boss, self.level = pending.actors[1], pending.levels[1]
+    self.mountPreparation = nil
+    spawnWait(self, gameplay, pawn, nil)
+    return true
+end
+
 function Challenge:spawnStage(gameplay, system, pawn)
+    if self.mountCleanupError then
+        self:clearMounts()
+        if self.mountCleanupError then spawnWait(self, gameplay, pawn, self.mountCleanupError); return false end
+    end
+    -- Async native horse spawning must retain this rider; do not spawn another
+    -- copy on each normal asset/ground retry, or arm aggro before the horse exists.
+    if self.mountPreparation then return self:finishMountPreparation(gameplay, pawn) end
+    if self.chiLianCleanupError then
+        self:clearChiLianArena()
+        if self.chiLianCleanupError then spawnWait(self, gameplay, pawn, self.chiLianCleanupError); return false end
+    end
     if not self:prepareNativeEncounter(gameplay, system, pawn) then return false end
     if self.lionArenaCleanupError then
         assert(self.lionArena,"舞狮机制清理记录不完整")
@@ -526,9 +620,16 @@ function Challenge:spawnStage(gameplay, system, pawn)
         self.lionArena=area
     end
     local actors, levels = {}, {}
+    local function prepareChiLian(ground, rotation)
+        if self.chiLianArena then return self.chiLianArena end
+        local arena, reason = ChiLianArena.new(pawn, gameplay, system, ground, rotation, self.scene)
+        if arena then self.chiLianArena = arena end
+        return arena, reason
+    end
+    self.mounts = {}
     local ok, failure = pcall(function()
         for _, member in ipairs(self.entry.stages[self.stageIndex].members) do
-            local actor, level, reason = spawnBoss(member, self.enemyCycle, gameplay, system, pawn, actors, self.scene, self.lengtu)
+            local actor, level, reason = spawnBoss(member, self.enemyCycle, gameplay, system, pawn, actors, self.scene, self.lengtu, self.mounts, prepareChiLian)
             if not valid(actor) then spawnWait(self, gameplay, pawn, reason or "候选生成条件未满足"); return end
             actors[#actors + 1], levels[#levels + 1] = actor, level
             -- Authored story flows may open cutscenes or replace the arena.
@@ -544,6 +645,8 @@ function Challenge:spawnStage(gameplay, system, pawn)
         end
     end)
     if not ok or #actors ~= #self.entry.stages[self.stageIndex].members then
+        self:clearMounts()
+        self:clearChiLianArena()
         for _, actor in ipairs(actors) do
             pcall(clearBossFlow, actor)
             pcall(function() actor:K2_DestroyActor() end)
@@ -551,11 +654,17 @@ function Challenge:spawnStage(gameplay, system, pawn)
         if not ok then error(failure, 0) end
         return false
     end
-    self.bosses, self.boss, self.level = actors, actors[1], levels[1]
-    spawnWait(self, gameplay, pawn, nil)
+    self.bosses = actors
     self.encounterWorld = pawn:GetWorld():GetAddress()
     self.ownedActors = {}
     for _, actor in ipairs(actors) do self.ownedActors[actor:GetAddress()] = true end
+    if #self.mounts > 0 then
+        self.mountPreparation = { actors = actors, levels = levels, stage = self.stageIndex, world = self.encounterWorld }
+        return self:finishMountPreparation(gameplay, pawn)
+    end
+    self.mounts = nil
+    self.boss, self.level = actors[1], levels[1]
+    spawnWait(self, gameplay, pawn, nil)
     return true
 end
 
@@ -564,9 +673,12 @@ function Challenge:close()
     pcall(function() require("PracticeHud").close() end)
     if self.practice then pcall(self.practice.close, self.practice); self.practice = nil end
     self.practiceFault, self.practiceRetryAt = nil, nil
+    self.practiceHudFault, self.practiceHudRetryAt = nil, nil
+    self.practiceBossInfoFault, self.practiceBossInfoRetryAt = nil, nil
     if self.difficulty then pcall(self.difficulty.close, self.difficulty); self.difficulty = nil end
     if self.ability and self.ability.clearProfile then self.ability.clearProfile(self.abilityProfilePawn) end
     self.abilityProfilePawn, self.openingLoadout = nil, nil
+    self.roundMedicine, self.medicineDeadline = nil, nil
     if self.observer then pcall(self.observer.close, self.observer) end
     self:clearStage()
     self.observer, self.boss, self.level, self.awake, self.startedAt = nil, nil, nil, false, nil
@@ -837,6 +949,7 @@ function Challenge:updateMenuOnly(gameplay, system, pawn, now)
         if self.observer then self.observer:close(); self.observer = nil end
         self:clearStage()
         self.stageIndex, self.anchor, self.advanceAt = 1, nil, nil
+        self.roundMedicine, self.medicineDeadline = nil, nil
         if self.pendingScene then
             self.scene, self.sceneId = self.pendingScene, self.pendingScene.id
             self.pendingScene = nil
@@ -863,6 +976,7 @@ function Challenge:tick(gameplay, system, pawn, now)
     end
     if not self.reloadAt then
         if self.lionArena then self.lionArena:update(pawn,realNow) end
+        if self.chiLianArena and self.status ~= "won" then self.chiLianArena:update(pawn,realNow) end
         if not self.difficulty then self.difficulty = require("GameplayDifficulty").new(pawn, self.difficultyMode) end
         assert(self.difficulty:update(pawn) ~= false, "挑战难度的玩家或场景已改变")
         if self.lengtu and not self.markerCleanupError and self.status ~= "won" then
@@ -872,33 +986,70 @@ function Challenge:tick(gameplay, system, pawn, now)
     end
     if self.mode == "practice" and not self.reloadAt and self.status ~= "won" then
         if now >= (self.practiceRetryAt or 0) then
-            local updated, failure = pcall(function()
+            local updated, stateOrFailure = pcall(function()
                 if not self.practice then self.practice = require("PracticeMode").new(pawn, gameplay:GetPlayerController(pawn, 0)) end
-                -- The phase coordinator owns AI while it is acquiring the new
-                -- stage. Practice must not interpret awake=false as standby
-                -- and stop the AI that updateTransition just started.
+                -- Phase acquisition owns AI until it has confirmed engagement.
                 local phaseOwnsAI = self.transitionStep == "engage"
                 assert(self.practice:update(pawn, self.bosses, self.awake, now, phaseOwnsAI) ~= false, "练习控制的角色或场景已改变")
                 local state = self.practice:getState()
                 if self.practiceFault and not state.lastError then state.lastError = "练习控制已复位，详见日志" end
-                require("PracticeHud").update(gameplay:GetPlayerController(pawn, 0), state, self.entry.name)
+                return state
             end)
             if not updated then
-                -- Optional practice controls must not tear down the encounter,
-                -- victory decision or bell guard. Restore only their own state
-                -- and let normal combat/death/result observation continue.
-                local message = tostring(failure)
+                -- Genuine control faults release only optional practice state.
+                local message = tostring(stateOrFailure)
                 if self.practiceFault ~= message then print("[PBZTestArenaNative] Practice controls reset: " .. message .. "\n") end
                 self.practiceFault, self.practiceRetryAt = message, now + 1
                 if self.practice then pcall(self.practice.close, self.practice); self.practice = nil end
                 pcall(function() require("PracticeHud").close() end)
-            else self.practiceRetryAt = nil end
+                self.practiceHudRetryAt = nil
+            else
+                self.practiceRetryAt = nil
+                -- A transient layout/widget failure must not revoke gameplay
+                -- switches. Retry presentation independently, with a short backoff.
+                if now >= (self.practiceHudRetryAt or 0) then
+                    local drawn, failure = pcall(function()
+                        require("PracticeHud").update(gameplay:GetPlayerController(pawn, 0), stateOrFailure, self.entry.name)
+                    end)
+                    if not drawn then
+                        local message = tostring(failure)
+                        if self.practiceHudFault ~= message then print("[PBZTestArenaNative] Practice HUD waiting: " .. message .. "\n") end
+                        self.practiceHudFault, self.practiceHudRetryAt = message, now + 0.25
+                        pcall(function() require("PracticeHud").close() end)
+                    else
+                        if self.practiceHudFault then print("[PBZTestArenaNative] Practice HUD recovered; controls retained\n") end
+                        self.practiceHudFault, self.practiceHudRetryAt = nil, nil
+                    end
+                end
+            end
         end
     elseif self.mode == "practice" then
         -- The native game retires defeated actors after their death animation.
         -- Settlement owns the UI from this point; it must not keep sampling a
         -- corpse, fail the completed encounter, or expose the underlying bell.
         require("PracticeHud").close()
+    end
+    self:updateMounts()
+    -- Native boss information follows owned living targets, independently of
+    -- AI state and optional practice-control/panel retries.
+    if self.mode == "practice" and not self.reloadAt and self.status ~= "won" and #self.bosses > 0 then
+        if now >= (self.practiceBossInfoRetryAt or 0) then
+            local shown, failure = pcall(function()
+                local updated, reason = require("PracticeBossInfo").update(gameplay:GetPlayerController(pawn, 0), self.bosses, now)
+                assert(updated ~= false, reason or "练习首领信息暂未就绪")
+            end)
+            if not shown then
+                local message = tostring(failure)
+                if self.practiceBossInfoFault ~= message then print("[PBZTestArenaNative] Practice boss info waiting: " .. message .. "\n") end
+                self.practiceBossInfoFault, self.practiceBossInfoRetryAt = message, now + 0.25
+            else
+                if self.practiceBossInfoFault then print("[PBZTestArenaNative] Practice boss info recovered\n") end
+                self.practiceBossInfoFault, self.practiceBossInfoRetryAt = nil, nil
+            end
+        end
+    elseif self.mode == "practice" then
+        pcall(function() require("PracticeBossInfo").close() end)
+        self.practiceBossInfoFault, self.practiceBossInfoRetryAt = nil, nil
     end
     if self:updateMenuOnly(gameplay, system, pawn, now) then return end
 
@@ -916,7 +1067,6 @@ function Challenge:tick(gameplay, system, pawn, now)
     if not self.boss then
         if self.nextSpawn and now < self.nextSpawn then return end
         self.nextSpawn = now + 0.5
-        self.spawnDeadline = self.spawnDeadline or now + 12
         if self.playerCycle == nil then
             local native = required("/Script/ProjectPBZ.Default__PBZBlueprintFunctionLibrary")
             self.playerCycle = native:GetGameCycle(pawn)
@@ -939,6 +1089,22 @@ function Challenge:tick(gameplay, system, pawn, now)
             self.abilityLoadout = self.ability.capture(pawn)
             self.loadoutApplied, self.pendingSkillLevel = true, nil
         end
+        -- ArenaLoadoutMemory has already committed the remembered equipment
+        -- before arenaContext permits this tick. Fill only the opening attempt,
+        -- after that commit; clearStage/spawnStage also run between phases and
+        -- must never restore consumables used in the preceding fight.
+        if self.stageIndex == 1 then
+            self.roundMedicine = self.roundMedicine or ChallengeMedicine.new(pawn)
+            self.medicineDeadline = self.medicineDeadline or now + 12
+            local full, reason = self.roundMedicine:update(pawn, now, gameplay:GetPlayerController(pawn, 0))
+            if not full then
+                assert(now < self.medicineDeadline, reason or "挑战药瓶未就绪")
+                self.status, self.message = "waiting", "正在准备本轮挑战的药瓶"
+                return
+            end
+            self.medicineDeadline = nil
+        end
+        self.spawnDeadline = self.spawnDeadline or now + 12
         if not self:spawnStage(gameplay, system, pawn) then
             assert(now < self.spawnDeadline, self.spawnWaitReason or "首领场地未就绪或没有足够的生成空间")
             -- Preserve death handling if asset/ground streaming delays a phase.
@@ -985,6 +1151,7 @@ function Challenge:tick(gameplay, system, pawn, now)
             end
         end
     end
+    self:updateMounts()
     local sample = self.observer:read(now)
     self.lastSample = sample
     if self.entry.adapter == "lengtu" and sample.bossDead and valid(self.boss) and self.boss:IsAlive() then
@@ -1055,7 +1222,9 @@ function Challenge:practiceKey(key, gameplay, pawn)
     local name = ({ F5 = "ai", F6 = "enemyRegen", F7 = "invulnerable", F8 = "infiniteUltimate", F9 = "infiniteSpiritShadow" })[key]
     if not name then return false end
     if not self.practice then self.practice = require("PracticeMode").new(pawn, gameplay:GetPlayerController(pawn, 0)) end
-    local applied, reason = self.practice:set(name, not self.practice.state[name])
+    local applied, reason
+    if name == "invulnerable" then applied, reason = self.practice:cycleDamageMode()
+    else applied, reason = self.practice:set(name, not self.practice.state[name]) end
     if applied then self.practiceFault = nil end
     return applied, reason
 end

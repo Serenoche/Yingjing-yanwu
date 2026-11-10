@@ -29,6 +29,21 @@ local function rootOf(layout)
     end
     error("practice HUD root exceeds depth")
 end
+-- A native layout can remove an owned child without destroying its UObject.
+-- Rebuild detached or partly constructed trees, rather than trusting IsValid.
+local function intact(session,layout,root,controller,world)
+    if not same(session.layout,layout) or not same(session.root,root)
+        or not same(session.controller,controller) or not same(session.world,world)
+        or not valid(session.panel) or not same(unwrap(session.panel:GetParent()),root)
+        or not valid(session.border) or not same(unwrap(session.border:GetParent()),session.panel)
+        or not valid(session.body) or not same(unwrap(session.body:GetParent()),session.border)
+        or type(session.labels)~="table" or #session.labels~=7 then return false end
+    for index=1,7 do
+        local label=session.labels[index]
+        if not valid(label) or not same(unwrap(label:GetParent()),session.body) then return false end
+    end
+    return true
+end
 function Hud.close()
     if current and valid(current.panel) then pcall(current.panel.RemoveFromParent,current.panel) end
     current=nil
@@ -37,17 +52,16 @@ function Hud.update(controller,state,target)
     controller=check(controller,"practice HUD controller missing")
     local world=check(controller:GetWorld(),"practice HUD world missing")
     local layout=check(required(LIB):GetUILayOut(controller),"practice HUD layout missing")
-    assert(same(layout:GetOwningPlayer(),controller) and same(layout:GetWorld(),world),"practice HUD owner mismatch")
+    assert(same(unwrap(layout:GetOwningPlayer()),controller) and same(unwrap(layout:GetWorld()),world),"practice HUD owner mismatch")
     local root,kind=rootOf(layout)
-    if current and (not same(current.root,root) or not same(current.controller,controller)
-        or not same(current.world,world) or not valid(current.panel)) then Hud.close() end
+    if current and not intact(current,layout,root,controller,world) then Hud.close() end
     if not current then
         local panel=make("SizeBox",root); panel:SetWidthOverride(286)
-        current={panel=panel,controller=controller,world=world,root=root,labels={}}
-        local border=make("Border",panel)
+        current={panel=panel,controller=controller,world=world,layout=layout,root=root,labels={}}
+        local border=make("Border",panel);current.border=border
         border:SetBrushColor({R=.025,G=.03,B=.035,A=.82})
         border:SetPadding({Left=12,Top=10,Right=12,Bottom=10});panel:SetContent(border)
-        local body=make("VerticalBox",border);border:SetContent(body)
+        local body=make("VerticalBox",border);current.body=body;border:SetContent(body)
         for index=1,7 do
             local text=make("TextBlock",body)
             local font=text.Font; font.Size=index==1 and 18 or 14; text:SetFont(font)
@@ -67,12 +81,14 @@ function Hud.update(controller,state,target)
         end
     end
     local function value(name) return state[name] and "开启" or "关闭" end
+    local protection=({off="关闭",no_damage="无伤模式",invulnerable="无敌模式"})[state.damageMode or (state.invulnerable and "invulnerable" or "off")] or "关闭"
     local lines={"练习模式", "F5  敌人 AI　"..value("ai"),"F6  回血／锁血　"..value("enemyRegen"),
-        "F7  玩家无敌　"..value("invulnerable"),"F8  无限大招　"..value("infiniteUltimate"),
+        "F7  无伤模式　"..protection,"F8  无限大招　"..value("infiniteUltimate"),
         "F9  无限暗源　"..value("infiniteSpiritShadow")}
     for index,text in ipairs(lines) do current.labels[index]:SetText(FText(text)) end
-    current.labels[7]:SetText(FText(state.lastError or ""))
-    current.labels[7]:SetVisibility(state.lastError and state.lastError~="" and 3 or 1)
+    local note=state.lastError or (state.damageMode=="no_damage" and "无伤模式：开启时补满，保留普通受击／击退" or "")
+    current.labels[7]:SetText(FText(note))
+    current.labels[7]:SetVisibility(note~="" and 3 or 1)
     current.panel:SetVisibility((layout:HasModal() or layout:HasWidgetAboveLayer({TagName=FName("UI.Layer.Game")},true)) and 1 or 3)
     return true
 end

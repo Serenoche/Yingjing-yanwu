@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "version": "1.1.0",
+  "profile": "stable-internally-verified-release",
+  "runtimeRoot": "src/runtime",
+  "runtimeModules": 63,
+  "developmentTreePolicy": "The development tree may contain experimental entry points. This snapshot uses the confirmed stable three-mode home.",
+  "override": {
+    "file": "src/runtime/Scripts/TitleHome.lua",
+    "sha256": "265ca9bc82d5ceccc34efdc479811c7ca3356c48941c2cb70ae48ef622912eb7",
+    "developmentSourceSha256": "e60a18adef91c10e61c85ee5e84eb2bcf932cf2c4b8e7a0c24997a965b55d959"
+  },
+  "mountFix": {
+    "file": "src/runtime/Scripts/JingYeMount.lua",
+    "sha256": "184e45b4f9652c5d221c161394c890ba34e95c908265263c2f289fbcabf95422"
+  },
+  "excludedFromRuntime": [
+    "camera sampler diagnostics",
+    "experimental Krypton entry point",
+    "endless trials",
+    "cancelled appearance replacement"
+  ],
+  "inertCodePolicy": "A dormant original module in the allowlist does not enable its experimental entry point.",
+  "nativeSource": "src/save_barrier",
+  "gameResourcesAndNativeBinariesIncluded": false
+}

@@ -9,13 +9,15 @@
 - Windows 自带 .NET Framework 的 `csc.exe`，用于编译安装器宿主；PowerShell 5.1 用于实际安装器脚本。
 - 可运行的 MOD 另外需要受支持的原版游戏、独立取得的匹配 UE4SS 发布包、合法取得的本地图片，以及本地生成的专用预设包。下文的编译操作不会提供或生成这些游戏资源。
 
-支持范围固定为 Steam Windows 游戏可执行文件 SHA-256：
+1.1.0 的验证范围是 Steam Windows x64 参考版本 `CL-302256_JKS-17280`，以及玩家确认的旧版 `301524-17219`／ModCraft UE4SS 组合。组装发行包仍使用以下参考游戏文件来认证本地预设：
 
 ```text
 4415933ce33476f14c837abb61a1b60af8b78cd81783896501913a7aac69e423
 ```
 
-原生地址、函数指纹和保存格式校验只针对该版本。换游戏版本不能只改这个哈希来宣称兼容。
+原生保存保护包含参考版与该旧版的针对性接口配置；运行时核实实际接口，保存工具继续核实密钥材料与容器认证。参考指纹不再等同于唯一可运行版本，也不能通过随意修改哈希来宣称其他版本兼容。EPIC／WeGame 仍待客户端验证。
+
+Tested coverage is the reference Steam build and the reported older Steam/ModCraft combination above. Separate native profiles retain interface checks; this is not universal game-build or UE4SS compatibility. The reference executable remains a local packaging input.
 
 ## 预检查
 
@@ -66,11 +68,11 @@ python tools/build.py native --component save-tool `
   --presets C:/LocalModInputs/PrivatePresets.pbzs
 ```
 
-`--presets` 必须是本地准备的 **18 个专用槽位** PBZS 包。构建工具只读取它、检查外层 framing 并计算 SHA-256，将哈希写入构建目录的 `generated/build_config.hpp`。它不会把预设包复制到源码或构建产物目录。运行时工具仍会验证该精确哈希、18 个固定私有槽名、游戏版本和密钥材料指纹，并原生认证所有密文块。
+`--presets` 必须是本地准备的 **18 个专用槽位** PBZS 包。构建工具只读取它、检查外层 framing 并计算 SHA-256，将哈希写入构建目录的 `generated/build_config.hpp`。它不会把预设包复制到源码或构建产物目录。运行时工具仍会验证该精确哈希、18 个固定私有槽名、游戏身份及密钥材料指纹，并原生认证所有密文块。
 
 若构建确需支持旧八槽安装所有权迁移，可以额外传 `--legacy-presets <本地旧八槽包>`。未提供该参数的构建会拒绝旧八槽所有权收据，不会猜测旧包。两种模板均不包含在仓库。
 
-这里没有保存密钥字面值。工具从用户提供、哈希匹配的本机游戏可执行文件提取并校验材料，运行时派生密钥。它不会输出密钥或解压原有槽位，普通槽及 `__Advanced__` 按原密文块保留。`__Advanced__` 字节一致是验证范围，不能据此宣称解析了其语义内容。
+这里没有保存密钥字面值。工具从用户提供的本机游戏可执行文件提取并校验材料，运行时派生密钥；实际文件身份写入核对结果，兼容性并非只看完整文件哈希。它不会输出密钥或解压原有槽位，普通槽及 `__Advanced__` 按原密文块保留。`__Advanced__` 字节一致是验证范围，不能据此宣称解析了其语义内容。
 
 该工具只提供 `stage` / `verify`，并且输出必须是它所在 `IntegratedMenu/Tools` 相邻 `IntegratedMenu/Staging` 下的新文件。直接从普通构建目录运行会因布局校验而拒绝；这不是完整安装包，不能用它覆盖正式存档来绕过安装交易流程。
 
@@ -98,6 +100,18 @@ python tools/data/test_generate_runtime_data.py
 ```
 
 前一条只写 `src/runtime/Scripts` 内三个指定生成文件；`--check` 只比较，不写文件。更多约束见 [数据生成器说明](../tools/data/README.md)。
+
+## 1.1.0 稳定运行时选择
+
+完整组装使用 `tools/assemble_release.py --runtime-dir <稳定运行时目录>`。该目录必须含 `Scripts/` 中完整的 63 项 Lua 白名单，以及空白的 `enabled.txt`；原生 DLL 取自所选构建目录，不能沿用旧 DLL 代替本次双版本接口构建。
+
+`--runtime-dir` 默认是 `src/runtime`。开发工作树保留实验代码，1.1.0 发行及其源码快照选择经确认的三模式 `TitleHome.lua`，不启用《影之氪零》入口。`KryptonDemo.lua` 仍在文件白名单中，但稳定首页不引用它。内部镜头采样不属于该稳定快照；偶发镜头抖动未被列为已修复项。
+
+`--data-dir` 只用于核对三个生成表，**不会覆盖运行时模块**；其内容也必须与所选 `runtime-dir/Scripts` 中的生成表一致。不要把它当作稳定 UI 或修复脚本的覆盖目录。组装后，逐文件核对 `BuildProvenance.json` 的运行时指纹，尤其是稳定首页与本次构建的保存保护 DLL。
+
+Use `--runtime-dir` to select one complete reviewed runtime, including `Scripts/` and `enabled.txt`. `--data-dir` validates generated tables only and never replaces runtime modules. The stable 1.1.0 profile excludes experimental entry points and camera diagnostics while retaining the confirmed target-registration repair.
+
+完整命令及本地输入布局见 [LOCAL_INPUTS.md](LOCAL_INPUTS.md)。无尽试炼、取消的模型替换和暂停的单文件夹方案不在本版构建范围内。
 
 仅编译原生组件及安装器无需游戏资源。完整 UI、预设生成和完整发行包组装需要上面的本地输入，因此这里不承诺干净克隆后能独立生成完整 MOD 发行包。游戏资源不因被代码引用而适用本项目的 MIT 授权。
 

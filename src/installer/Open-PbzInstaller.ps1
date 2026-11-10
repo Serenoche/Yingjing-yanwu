@@ -63,7 +63,7 @@ $browse=New-Object Windows.Forms.Button;$browse.Text='选择文件…';$browse.L
 $accountLabel=New-Object Windows.Forms.Label;$accountLabel.Text='存档账号（多个账号时，请明确选择）';$accountLabel.Location=New-Object Drawing.Point(24,100);$accountLabel.AutoSize=$true;$form.Controls.Add($accountLabel)
 $accounts=New-Object Windows.Forms.ComboBox;$accounts.Location=New-Object Drawing.Point(24,127);$accounts.Size=New-Object Drawing.Size(713,30);$accounts.DropDownStyle='DropDownList';$accounts.DisplayMember='Label';$form.Controls.Add($accounts)
 $note=New-Object Windows.Forms.Label;$note.Location=New-Object Drawing.Point(24,180);$note.Size=New-Object Drawing.Size(710,112)
-$baseNoteText="先退出游戏。安装会备份当前存档，再加入专用演武预设。`r`n原有存档块与「继续游戏」保持不变；卸载仅移除本包运行时，保留进度、战报与配装记忆。`r`n支持 CL-302256_JKS-17280；不匹配的游戏版本或其他 MOD 冲突会停止操作。"
+$baseNoteText="先退出游戏。已有 UE4SS 则沿用；没有时才安装，保留其他 MOD 与设置。`r`n安装时自动备份存档，保留原进度、战报与配装记忆。`r`n本轮直接尝试兼容，不按版本号拦截；进入演武时核对实际接口，不匹配再反馈处理。"
 $note.Text=$baseNoteText;$form.Controls.Add($note)
 $installButton=New-Object Windows.Forms.Button;$installButton.Text='安装 / 更新';$installButton.Location=New-Object Drawing.Point(160,325);$installButton.Size=New-Object Drawing.Size(195,42);$form.Controls.Add($installButton)
 $uninstallButton=New-Object Windows.Forms.Button;$uninstallButton.Text='卸载（保留进度）';$uninstallButton.Location=New-Object Drawing.Point(385,325);$uninstallButton.Size=New-Object Drawing.Size(215,42);$form.Controls.Add($uninstallButton)

@@ -267,7 +267,8 @@ end
 
 function Form.open(modal, description, controller, confirmButton, rows, options)
     options = options or {}
-    assert(type(rows) == "table" and #rows >= 1 and #rows <= 8, "参数菜单必须包含一至八行")
+    local maximum = options.host and 13 or 8
+    assert(type(rows) == "table" and #rows >= 1 and #rows <= maximum, "参数菜单行数超出当前布局范围")
     for _, row in ipairs(rows) do
         assert(type(row) == "table" and type(row.label) == "string" and type(row.value) == "function"
             and type(row.change) == "function", "参数行定义无效")

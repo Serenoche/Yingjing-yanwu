@@ -1,4 +1,55 @@
-local UE = require("UEHelpers")
+-- Pending installations expose only a title notice. Dispatch before loading
+-- gameplay modules, registering keys/hooks, or inspecting any save subsystem.
+do
+    local info = type(debug) == "table" and type(debug.getinfo) == "function" and debug.getinfo(1, "S")
+    local source = info and info.source
+    local scripts = type(source) == "string" and source:sub(1, 1) == "@"
+        and source:sub(2):match("^(.*)[/\\][^/\\]+$")
+    local modRoot = scripts and scripts:match("^(.*)[/\\][^/\\]+$")
+    if not modRoot or type(io) ~= "table" or type(io.open) ~= "function" then
+        print("[PBZTestArenaNative] 演武入口暂未启用：无法确认本地配置，正常游戏不受影响。\n")
+        return
+    end
+    local opened, marker, _, code = pcall(io.open, scripts .. "/CompatibilityPending.lua", "rb")
+    if not opened or (not marker and code ~= 2) then
+        print("[PBZTestArenaNative] 演武入口暂未启用：无法读取本地配置，正常游戏不受影响。\n")
+        return
+    end
+    if marker then
+        pcall(marker.close, marker)
+        local loaded, entry = pcall(require, "PendingEntry")
+        if loaded and type(entry) == "table" and type(entry.start) == "function" then
+            local ok = pcall(entry.start, scripts)
+            if not ok then print("[PBZTestArenaNative] 演武待适配提示暂不可用，正常游戏不受影响。\n") end
+        else
+            print("[PBZTestArenaNative] 演武待适配提示暂不可用，正常游戏不受影响。\n")
+        end
+        return
+    end
+end
+
+-- Some UE4SS distributions keep their helpers elsewhere or omit this optional
+-- Lua sidecar. Use their helper when available; keep our fallback MOD-local.
+local helperLoaded, UE = pcall(require, "UEHelpers")
+if not helperLoaded or type(UE) ~= "table" or UE.GetPlayerController == nil then
+    UE = { GetPlayerController = function()
+        local controllers = FindAllOf("PlayerController") or {}
+        if #controllers == 0 then controllers = FindAllOf("Controller") or {} end
+        for _, controller in ipairs(controllers) do
+            local usable, accepted = pcall(function()
+                if not controller:IsValid() then return false end
+                local localOk, isLocal = pcall(function() return controller:IsLocalPlayerController() end)
+                if localOk then return isLocal == true end
+                local player = controller.Player
+                local localClass = StaticFindObject("/Script/Engine.LocalPlayer")
+                return player ~= nil and player:IsValid() and localClass ~= nil and localClass:IsValid()
+                    and player:IsA(localClass) == true
+            end)
+            if usable and accepted then return controller end
+        end
+        return type(CreateInvalidObject) == "function" and CreateInvalidObject() or nil
+    end }
+end
 local Health = require("Health")
 local Panel = require("Panel")
 local ClosedArena = require("ClosedArena")
@@ -39,6 +90,7 @@ local serviceMapEpoch,serviceLoadDepth,servicePendingEpoch=0,0,nil
 local expectedServiceSlot
 local sealedServicesStarted=false
 local pendingServiceCleanup,nextServiceCleanup={},0
+local lastStatusHudError,statusHudFailedWorld
 
 local function log(message)
     print("[PBZTestArenaNative] " .. message .. "\n")
@@ -78,7 +130,13 @@ local function privateServicesGate(pawn)
     return text(scope.gameplay:GetCurrentLevelName(pawn,true))==scope.map
         and text(pawn:GetClass():GetFName())==ADULT_CLASS
 end
+local function closeStatusHud()
+    local hud=package.loaded.StatusBuildupHud
+    if type(hud)=="table" and type(hud.close)=="function" then pcall(hud.close) end
+    statusHudFailedWorld=nil
+end
 local function closeArenaServices()
+    closeStatusHud()
     if privateServiceScope then privateServiceScope.active=false end
     local old=arenaServices;arenaServices=nil
     if not old then return end
@@ -533,7 +591,8 @@ local function bind(key, label, action)
                 if challenge then
                     if challenge.mode == "practice" then
                         local gameplay, _, pawn = arenaContext()
-                        challenge:practiceKey(label, gameplay, pawn)
+                        local applied, reason = challenge:practiceKey(label, gameplay, pawn)
+                        if applied == false and reason then log("Practice " .. label .. ": " .. tostring(reason)) end
                     end
                     return
                 end
@@ -542,7 +601,13 @@ local function bind(key, label, action)
                 updateTargets(now)
                 action(gameplay, system, pawn, now)
             end)
-            if challenge then return end
+            if challenge then
+                if not ok and challenge.mode == "practice" then
+                    local message = tostring(err):gsub("^.-:%d+: ", "", 1)
+                    log("Practice " .. label .. " failed: " .. message)
+                end
+                return
+            end
             if ok then publish("ready")
             else
                 local message = tostring(err):gsub("^.-:%d+: ", "", 1)
@@ -625,6 +690,27 @@ local parsedAtBoot, _, _, bossAtBoot, _, _, probeAtBoot = pcall(function()
     return sessionArgs(requiredObject("/Script/Engine.Default__KismetSystemLibrary"))
 end)
 local serviceInterval = parsedAtBoot and (bossAtBoot or probeAtBoot) and 50 or 250
+local function updateStatusHud(gameplay,pawn,now)
+    local actors={}
+    if challenge then
+        if (challenge.status=="ready" or challenge.status=="combat") and not challenge.reloadRequested
+            and not challenge.reloadAt and not challenge.view then
+            actors=challenge.bosses or {}
+        end
+    else
+        for _,target in ipairs(targets) do actors[#actors+1]=target.actor end
+    end
+    if #actors==0 then closeStatusHud();return end
+    if statusHudFailedWorld~=nil and statusHudFailedWorld==worldAddress then return end
+    local ok,failure=pcall(function()
+        require("StatusBuildupHud").update(playerController,actors,gameplay:GetRealTimeSeconds(pawn))
+    end)
+    if not ok then
+        closeStatusHud();statusHudFailedWorld=worldAddress
+        if failure~=lastStatusHudError then log("[PBZStatusBuildup] disabled for this scene: "..tostring(failure)) end
+        lastStatusHudError=failure
+    else lastStatusHudError=nil end
+end
 local function service()
     drainServiceCleanup()
     if probeAtBoot or titleSession then
@@ -642,6 +728,7 @@ local function service()
     end
     local ready, gameplay, system, pawn, now = pcall(arenaContext, true)
     if not ready then
+        closeStatusHud()
         local message = tostring(gameplay):gsub("^.-:%d+: ", "", 1)
         if statusPath and lastArenaError ~= message then log("waiting: " .. message) end
         lastArenaError = message
@@ -688,10 +775,12 @@ local function service()
             log("challenge: " .. message)
             challenge:fail(message)
         end
+        updateStatusHud(gameplay,pawn,now)
         publish(challenge.status, challenge.message)
         return
     end
     local ok, err = pcall(updateTargets, now)
+    updateStatusHud(gameplay,pawn,now)
     if not ok then
         if err ~= lastTickError then log("maintenance: " .. tostring(err)) end
         lastTickError = err

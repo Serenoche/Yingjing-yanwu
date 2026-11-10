@@ -124,6 +124,45 @@ inline std::string sha256(const unsigned char* bytes,std::size_t size){
 }
 inline std::string sha256(const Bytes& bytes){return sha256(bytes.data(),bytes.size());}
 inline std::string sha256(const ReadOnlyFile& file){return sha256(file.data(),file.size());}
+inline void game_image(const ReadOnlyFile& game){
+    require(equal_path(filename(game.path),L"PBZ.exe"),"Expected the selected PBZ.exe client");
+    require(game.size()>=sizeof(IMAGE_DOS_HEADER),"Executable DOS header is truncated");
+    IMAGE_DOS_HEADER dos{};std::memcpy(&dos,game.data(),sizeof(dos));
+    require(dos.e_magic==IMAGE_DOS_SIGNATURE && dos.e_lfanew>=64 && dos.e_lfanew<=1024*1024,
+        "Executable DOS header is invalid");
+    const auto offset=static_cast<std::size_t>(dos.e_lfanew);
+    require(offset<=game.size() && sizeof(IMAGE_NT_HEADERS64)<=game.size()-offset,"Executable PE header is truncated");
+    IMAGE_NT_HEADERS64 nt{};std::memcpy(&nt,game.data()+offset,sizeof(nt));
+    require(nt.Signature==IMAGE_NT_SIGNATURE && nt.FileHeader.Machine==IMAGE_FILE_MACHINE_AMD64
+        && nt.FileHeader.SizeOfOptionalHeader==sizeof(IMAGE_OPTIONAL_HEADER64)
+        && nt.OptionalHeader.Magic==IMAGE_NT_OPTIONAL_HDR64_MAGIC && nt.OptionalHeader.NumberOfRvaAndSizes==16,
+        "Expected a bounded AMD64 PE32+ client");
+    const auto count=nt.FileHeader.NumberOfSections;
+    const auto table=offset+sizeof(nt);
+    require(count>=1 && count<=96 && table<=game.size() && static_cast<std::size_t>(count)*sizeof(IMAGE_SECTION_HEADER)<=game.size()-table,
+        "Executable section table is invalid");
+    const auto headers=nt.OptionalHeader.SizeOfHeaders,image=nt.OptionalHeader.SizeOfImage;
+    require(headers>=table+static_cast<std::size_t>(count)*sizeof(IMAGE_SECTION_HEADER) && headers<=game.size()
+        && image>=headers && image<=2ULL*1024*1024*1024,"Executable image extent is invalid");
+    std::vector<std::pair<std::uint64_t,std::uint64_t>> raw_ranges,virtual_ranges;
+    for(WORD index=0;index<count;++index){
+        IMAGE_SECTION_HEADER section{};std::memcpy(&section,game.data()+table+static_cast<std::size_t>(index)*sizeof(section),sizeof(section));
+        const auto extent=(std::max)(section.Misc.VirtualSize,section.SizeOfRawData);
+        require(extent && section.VirtualAddress>=headers && section.VirtualAddress<=image && extent<=image-section.VirtualAddress,
+            "Executable section virtual extent is invalid");
+        virtual_ranges.emplace_back(section.VirtualAddress,static_cast<std::uint64_t>(section.VirtualAddress)+extent);
+        if(section.SizeOfRawData){
+            require(section.PointerToRawData>=headers && section.PointerToRawData<=game.size()
+                && section.SizeOfRawData<=game.size()-section.PointerToRawData,"Executable section raw extent is invalid");
+            raw_ranges.emplace_back(section.PointerToRawData,static_cast<std::uint64_t>(section.PointerToRawData)+section.SizeOfRawData);
+        }
+    }
+    for(auto* ranges:{&raw_ranges,&virtual_ranges}){
+        std::sort(ranges->begin(),ranges->end());
+        for(std::size_t index=1;index<ranges->size();++index)
+            require((*ranges)[index-1].second<=(*ranges)[index].first,"Executable sections overlap");
+    }
+}
 constexpr unsigned char block_header[8]={0x50,0x42,0x5A,0x53,1,1,0,0};
 class Cipher {
     Algorithm algorithm_{BCRYPT_AES_ALGORITHM};Bytes object_;BCRYPT_KEY_HANDLE key_=nullptr;

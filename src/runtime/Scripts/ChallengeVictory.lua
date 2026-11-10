@@ -16,6 +16,9 @@ local LABELS = { "重试", "更换目标", "退出演武" }
 local CONFIRM_KEYS = { "Gamepad_FaceButton_Bottom", "Enter", "SpaceBar" }
 local SKIP_KEYS = { "Gamepad_FaceButton_Bottom", "Enter", "SpaceBar", "LeftMouseButton" }
 local REVEAL_DURATION, STAMP_AT, BUTTONS_AT = .80, 2.36, 3.00
+-- Fit the whole top-to-bottom cascade into .48s. Overlap the rebound tails
+-- slightly so each individual press remains readable even with five enemies.
+local NATIVE_STAMP_DURATION, ENEMY_STAMP_TOTAL, ENEMY_STAMP_PRESS, ACTION_GAP = .64, .48, .32, .12
 local REVEAL_INTERVAL_MS = 16
 local DIRECTIONS = {
     { "Gamepad_DPad_Left", "Left", "Gamepad_DPad_Up", "Up" },
@@ -56,6 +59,7 @@ local function reportInfo(report,reportOnly)
     local encounter = require("EncounterCatalog").resolve(report.encounterId or report.bossId)
     return {
         id = report.encounterId or report.bossId,
+        encounter = encounter,
         name = report.encounterName or report.bossName or (not reportOnly and encounter and encounter.name) or (reportOnly and "—" or "挑战对象"),
         category = (report.categoryName or (not reportOnly and encounter and encounter.categoryName) or (reportOnly and "—" or "")):gsub("（.-）", ""):gsub("%b()", ""),
         difficulty = report.difficultyName or DIFFICULTIES[report.difficultyMode] or (reportOnly and "—" or "难度未记录"),
@@ -107,6 +111,8 @@ end
 local function clearSkin(session)
     stopRevealTicker(session)
     if session.stampPress then session.stampPress:close();session.stampPress=nil end
+    for _,stamp in ipairs(session.enemyStamps or {})do stamp.press:close()end
+    session.enemyStamps,session.enemyStampSlots,session.enemyRowsEnd,session.buttonsAt=nil,nil,nil,nil
     if session.portraits then session.portraits:close(); session.portraits = nil end
     if session.skin then session.skin:close(); session.skin = nil end
     session.reveal, session.revealRows, session.stamp, session.resultButtons,session.skipLayer = nil, nil, nil, nil,nil
@@ -170,10 +176,47 @@ local function resultConfirm(session)
     return session.confirmReady == true and not session.consumeGesture
         and (session.practice or session.resultControlsReady) and focused(session)
 end
-local function row(session,y,height,delay)
-    local panel=session.skin:panel(120,y,900,height)
-    session.revealRows[#session.revealRows+1]={widget=panel,x=120,y=y,delay=delay}
+local function row(session,y,height,delay,x,width,direction)
+    x=x or 120
+    local panel=session.skin:panel(x,y,width or 900,height)
+    session.revealRows[#session.revealRows+1]={widget=panel,x=x,y=y,delay=delay,direction=direction or -1}
     return panel
+end
+local function enemyRoster(session,encounter)
+    local members={}
+    for _,stage in ipairs(encounter.stages)do
+        -- Preserve repeated targets and authored order; encounter portraits
+        -- intentionally deduplicate actors and cannot serve as this roster.
+        for _,member in ipairs(stage.members)do members[#members+1]=member end
+    end
+    assert(#members>=1 and #members<=5,"自订结算目标数量无效")
+    local screen=session.skin
+    local width,height,gap=780,116,20
+    local top=530-(#members*height+(#members-1)*gap)*.5
+    session.enemyStampSlots={}
+    for index,member in ipairs(members)do
+        local y=top+(index-1)*(height+gap)
+        local panel=row(session,y,height,(index-1)*.25,1065,width,1)
+        screen:shade(0,0,width,height,.20,panel)
+        local number=caption(screen,("%02d"):format(index),12,39,48,42,1.05,false,panel)
+        number:SetJustification(1)
+        local texture,meta=Art.bossMember(session.pawn,member.id,"bust")
+        if valid(texture)then
+            screen:image(texture,meta,68,4,156,108,panel)
+        else
+            local missing=caption(screen,"暂无立绘",68,41,156,40,.85,false,panel)
+            missing:SetJustification(1)
+        end
+        local name=member.name or member.id
+        local _,length=name:gsub("[^\128-\191]","")
+        local scale=math.min(1.5,388/(math.max(1,length)*26))
+        local label=caption(screen,name,242,33,398,52,scale,true,panel)
+        label:SetJustification(1)
+        label:SetToolTipText(FText(name))
+        session.enemyStampSlots[index]={x=1065+668,y=y+8,w=100,h=100}
+    end
+    -- The enemy roster owns this gate; left-side equipment may reveal longer.
+    session.enemyRowsEnd=(#members-1)*.25+REVEAL_DURATION
 end
 local function presentResult(session,elapsed,final)
     for _,item in ipairs(session.revealRows or {})do
@@ -185,11 +228,12 @@ local function presentResult(session,elapsed,final)
             -- The original UI also uses this native render-only translation
             -- (DisplayQuest.js / PickupSwitcher.js). Keep the approved Canvas
             -- layout fixed instead of invalidating it on every animation frame.
-            item.widget:SetRenderTranslation({X=-48*(1-eased),Y=0})
+            item.widget:SetRenderTranslation({X=item.direction*48*(1-eased),Y=0})
         end
     end
     if session.stampPress then session.stampPress:present(elapsed-STAMP_AT,final)end
-    local ready=final or elapsed>=BUTTONS_AT
+    for _,stamp in ipairs(session.enemyStamps or {})do stamp.press:present((elapsed-stamp.at)*stamp.rate,final)end
+    local ready=final or elapsed>=(session.buttonsAt or BUTTONS_AT)
     if ready~=session.resultControlsReady then
         session.resultControlsReady=ready
         for _,button in ipairs(session.resultButtons or {})do
@@ -207,7 +251,7 @@ local function completeReveal(session, skipped)
         session.confirmReady,session.consumeGesture=false,true
         if session.skin then session.skin.pending={} end
     end
-    presentResult(session,BUTTONS_AT,true)
+    presentResult(session,session.buttonsAt or BUTTONS_AT,true)
     session.reveal=nil
     stopRevealTicker(session)
 end
@@ -245,12 +289,12 @@ local function startRevealTicker(session)
             -- UI presentation only: no Screen.update, input dispatch, actor
             -- enumeration, scene service, inventory, report/file IO or reload.
             -- A native click can request skip between owner updates, including
-            -- immediately before 3s. Consume its already-recorded gesture before
+            -- immediately before the reveal deadline. Consume its recorded gesture before
             -- revealing buttons; the loop never polls or dispatches input.
             if session.skipPending then completeReveal(session,true);return end
             local elapsed = math.max(0,session.gameplay:GetRealTimeSeconds(session.modal)-ticker.reveal.startedAt)
             presentResult(session,elapsed,false)
-            if elapsed >= BUTTONS_AT then session.reveal = nil; stopRevealTicker(session) end
+            if elapsed >= (session.buttonsAt or BUTTONS_AT) then session.reveal = nil; stopRevealTicker(session) end
         end)
         if not tickOk then
             stopRevealTicker(session); session.revealTickerUnavailable = true
@@ -264,7 +308,8 @@ local function startRevealTicker(session)
     ticker.handle = handle
     if not session.revealTickerLogged then
         session.revealTickerLogged=true
-        print("[PBZTestArenaNative] Victory reveal uses a temporary game-thread loop: requested=16ms; duration=3s\n")
+        print("[PBZTestArenaNative] Victory reveal uses a temporary game-thread loop: requested=16ms; duration="
+            ..tostring(session.buttonsAt or BUTTONS_AT).."s\n")
     end
     return true
 end
@@ -297,6 +342,7 @@ showResult = function(session)
     session.skin = screen
     local info = session.info
     session.revealRows,session.resultButtons={},{}
+    session.buttonsAt=BUTTONS_AT
     session.stampOpacity,session.revealTickerUnavailable=nil,nil
     local first=row(session,45,75,0)
     local x,firstScale=0,1.55
@@ -328,13 +374,28 @@ showResult = function(session)
     if type(session.report.loadout) ~= "table" or session.report.loadout.available == false then
         caption(screen, "未读到出战装备",310,20,500,42,1.2,false,medicine)
     end
-    session.portraits = Portraits.open(screen, session.pawn, info.id, "bust", { x = 1050, y = 155, w = 810, h = 750 })
+    local custom=info.encounter and info.encounter.custom==true
+    if custom then enemyRoster(session,info.encounter)
+    else session.portraits = Portraits.open(screen, session.pawn, info.id, "bust", { x = 1050, y = 155, w = 810, h = 750 }) end
     if (not session.reportOnly or session.report.attemptResult=="success")and type(Art.missionComplete)=="function" then
         local texture,meta=Art.missionComplete(session.pawn)
         if texture then
-            session.stampPress=StampPress.new(screen,texture,meta,{x=990,y=50,w=900,h=900},
-                not session.reportOnly and not session.hasShownResult)
-            session.stamp=session.stampPress.flat
+            local animated=not session.reportOnly and not session.hasShownResult
+            if custom then
+                session.enemyStamps={}
+                local count=#session.enemyStampSlots
+                local duration=count==1 and ENEMY_STAMP_TOTAL or ENEMY_STAMP_PRESS
+                local interval=(ENEMY_STAMP_TOTAL-duration)/math.max(1,count-1)
+                for index,rect in ipairs(session.enemyStampSlots)do
+                    local at=session.enemyRowsEnd+(index-1)*interval
+                    session.enemyStamps[index]={press=StampPress.new(screen,texture,meta,rect,animated),at=at,
+                        rate=NATIVE_STAMP_DURATION/duration}
+                end
+                session.buttonsAt=math.max(session.buttonsAt,session.enemyRowsEnd+ENEMY_STAMP_TOTAL+ACTION_GAP)
+            else
+                session.stampPress=StampPress.new(screen,texture,meta,{x=990,y=50,w=900,h=900},animated)
+                session.stamp=session.stampPress.flat
+            end
         end
     end
     for index, label in ipairs(session.reportOnly and {"返回"}or LABELS) do
@@ -626,7 +687,7 @@ local function resultAnimation(session,gameplay)
     local down=held(session.router,SKIP_KEYS)
     if not down then
         session.skipReady=true
-        -- Preserve the owner's observed release across the natural 3s boundary.
+        -- Preserve the owner's observed release across the natural reveal boundary.
         -- The ticker can reveal buttons between owner ticks; the first fresh A
         -- must not be discarded merely because resultInput has not run yet.
         if not session.consumeGesture then session.confirmReady=true end
@@ -637,7 +698,7 @@ local function resultAnimation(session,gameplay)
     end
     session.skipPending=nil
     local elapsed=math.max(0,gameplay:GetRealTimeSeconds(session.modal)-session.reveal.startedAt)
-    if elapsed>=BUTTONS_AT then
+    if elapsed>=(session.buttonsAt or BUTTONS_AT) then
         presentResult(session,elapsed,false);stopRevealTicker(session);session.reveal=nil;return false
     end
     -- Main service remains 50ms. It handles gestures/lifecycle, while this short
