@@ -56,6 +56,10 @@ local ClosedArena = require("ClosedArena")
 local CombatSpawn = require("CombatSpawn")
 local ArenaScenes = require("ArenaScenes")
 local SceneArena = require("SceneArena")
+local LakeUpperArena = require("LakeUpperArena")
+local XiguArena = require("XiguArena")
+local MeiGuHuArena = require("MeiGuHuArena")
+local XiguStreaming = require("XiguStreaming")
 
 local ARENA_LEVEL = "PBZ_Duanhun_WP"
 local ADULT_CLASS = "BP_Renewal_Hun_C"
@@ -75,14 +79,21 @@ local SPAWN_OFFSETS = {
 }
 
 local targets, selectedId, worldAddress = {}, nil, nil
-local nextId, autoheal, panelVisible = 1, false, true
+local nextId, panelVisible = 1, true
+local trainingMob
+local trainingBell, lastTrainingBellError
+local updateTrainingBell
+local trainingHealthMode = "normal"
 local statusPath, notice, playerController, lastPanelError, lastHudError
 local enemyCycle = 0
 local trainingSceneId = "night"
 local lastPreparationMenuError
 local perfSceneId, perfMode
+local perfClock = os and type(os.clock) == "function" and os.clock
+local sceneServiceAfter
 local challenge, titleSession
 local installedConfig, trainingSkillLevel, trainingSkillsApplied, trainingSkillPawnAddress
+local trainingAbilitySnapshot
 local trainingPlayerCycle, trainingDifficultyMode, trainingDifficulty = 6, 3, nil
 local loadoutMemoryPath, arenaServices, privateServiceScope
 local servicesHooksReady,servicesAllowed=false,false
@@ -94,6 +105,29 @@ local lastStatusHudError,statusHudFailedWorld
 
 local function log(message)
     print("[PBZTestArenaNative] " .. message .. "\n")
+end
+
+local function releaseTargetLock(target)
+    if target.healthGuard then
+        target.healthGuard:close()
+        target.healthGuard = nil
+    end
+end
+
+local function resetTrainingTargets()
+    for _, target in ipairs(targets) do
+        local ok, reason = pcall(releaseTargetLock, target)
+        if not ok then log("清理测试目标锁血 #" .. target.id .. "：" .. tostring(reason)) end
+    end
+    targets, selectedId, worldAddress = {}, nil, nil
+end
+
+local function closeTrainingBell()
+    local bell = trainingBell
+    trainingBell = nil
+    if not bell then return end
+    local ok, failure = pcall(bell.close, bell)
+    if not ok then log("Training bell cleanup: " .. tostring(failure)) end
 end
 
 local function valid(object)
@@ -141,7 +175,7 @@ local function closeArenaServices()
     local old=arenaServices;arenaServices=nil
     if not old then return end
     if old.memory then pcall(old.memory.close,old.memory)end
-    for _,service in ipairs({old.economy or false,old.mapPolicy or false})do
+    for _,service in ipairs({old.shuangYueCharge or false,old.summonAccess or false,old.economy or false,old.mapPolicy or false})do
         if service then
             local ok,closed=pcall(service.close,service)
             if not ok or closed~=true then pendingServiceCleanup[#pendingServiceCleanup+1]=service end
@@ -157,12 +191,15 @@ local function drainServiceCleanup()
         if not ok or closed~=true then pendingServiceCleanup[#pendingServiceCleanup+1]=service end
     end
 end
-local function checkpointArenaServices(pawn,slot)
-    -- This explicit MOD command runs before native LoadGame can change arrays.
-    if arenaServices and arenaServices.memory then pcall(arenaServices.memory.beginLoad,arenaServices.memory,pawn)end
+local function checkpointArenaServices(_,slot)
     closeArenaServices()
     servicesAllowed=false
     expectedServiceSlot=slot
+end
+local function rememberBellLoadout(pawn)
+    if not arenaServices or not arenaServices.initialized then return false end
+    local memory = arenaServices.memory
+    return not memory or memory:remember(pawn) ~= nil
 end
 local function updateArenaServices(gameplay,pawn,scene,world,mapOnly)
     if not servicesHooksReady then return true end -- optional services fail closed
@@ -177,9 +214,16 @@ local function updateArenaServices(gameplay,pawn,scene,world,mapOnly)
     if not arenaServices then arenaServices={pawn=pawn:GetAddress(),world=world} end
     if not arenaServices.mapPolicyAttempted then
         arenaServices.mapPolicyAttempted=true
-        local ok,mapPolicy,reason=pcall(function()return require("ArenaMapPolicy").new(pawn,function()return privateServicesGate(pawn)end)end)
+        local ok,mapPolicy=pcall(function()
+            local policy = require("ArenaMapPolicy")
+            local gate = function() return privateServicesGate(pawn) end
+            if installedConfig and not challenge then
+                return policy.only(pawn, playerController, gate, "Character", "System")
+            end
+            return policy.new(pawn, gate)
+        end)
         if ok then arenaServices.mapPolicy=mapPolicy end
-        if not ok or not mapPolicy then log("演武地图策略未启用："..tostring(ok and reason or mapPolicy))end
+        if not ok or not mapPolicy then log("演武菜单策略未启用："..tostring(mapPolicy))end
     end
     local realNow=gameplay:GetRealTimeSeconds(pawn)
     if arenaServices.mapPolicy and arenaServices.mapUpdatedAt~=realNow then
@@ -193,6 +237,30 @@ local function updateArenaServices(gameplay,pawn,scene,world,mapOnly)
         end
     end
     if mapOnly then return true end
+    if realNow >= (arenaServices.nextSummonAccess or 0) then
+        arenaServices.nextSummonAccess = realNow + 1
+        local mode = challenge and challenge.mode or "training"
+        if (mode == "training" or mode == "practice" or mode == "challenge") and not (challenge and challenge.palace) then
+            local ok, failure = pcall(function()
+                if not arenaServices.shuangYueCharge then
+                    arenaServices.shuangYueCharge = require("ShuangYueCharge").new(mode, log)
+                end
+                arenaServices.shuangYueCharge:update()
+            end)
+            if not ok and failure ~= arenaServices.shuangYueError then
+                log("双钺脱战煞气调整未生效 " .. tostring(failure))
+            end
+            arenaServices.shuangYueError = not ok and failure or nil
+        end
+        local ok, failure = pcall(function()
+            if not arenaServices.summonAccess then
+                arenaServices.summonAccess = require("ArenaSummonAccess").new(pawn, world, privateServicesGate)
+            end
+            arenaServices.summonAccess:update(pawn)
+        end)
+        if not ok and failure ~= arenaServices.summonError then log("演武召唤许可：" .. tostring(failure)) end
+        arenaServices.summonError = not ok and failure or nil
+    end
     if not arenaServices.initialized then
         arenaServices.initialized=true
         if loadoutMemoryPath then
@@ -213,8 +281,8 @@ local function updateArenaServices(gameplay,pawn,scene,world,mapOnly)
             log("演武意识尘埃服务已停用："..tostring(ok and reason or accepted))
         end
     end
-    if arenaServices.memory then
-        local ok,accepted,reason=pcall(arenaServices.memory.update,arenaServices.memory,pawn,realNow)
+    if arenaServices.memory and arenaServices.memory.state == "pending" then
+        local ok,accepted,reason=pcall(arenaServices.memory.update,arenaServices.memory,pawn)
         if not ok then
             pcall(arenaServices.memory.close,arenaServices.memory);arenaServices.memory=nil
             log("配装记忆本次停用，演武继续："..tostring(accepted))
@@ -298,6 +366,7 @@ local function prepareSession(system)
     if statusPath then return end
     local profile, bossId, playerCycle, skillLevel, probe, fullMenu
     profile, enemyCycle, bossId, playerCycle, skillLevel, probe, installedConfig, fullMenu,loadoutMemoryPath = sessionArgs(system)
+    if installedConfig then require("DreamPalacePressure").configure(installedConfig) end
     if fullMenu then
         installedConfig = { disposable = true, profile = profile, defaultPlayerCycle = 6,
             defaultEnemyCycle = enemyCycle, trainingSlot = "PBZArenaIntegratedTraining", cyclePrefix = "PBZArenaIntegratedCycle",loadoutMemoryPath=loadoutMemoryPath }
@@ -305,7 +374,7 @@ local function prepareSession(system)
     if bossId then
         local entry = assert(require("EncounterCatalog").resolve(bossId), "unknown challenge encounter")
         challenge = require("Challenge").new(entry, enemyCycle, profile, playerCycle, skillLevel,
-            {loadoutMemoryPath=loadoutMemoryPath,onBeforeLoad=checkpointArenaServices})
+            {loadoutMemoryPath=loadoutMemoryPath,onBeforeLoad=checkpointArenaServices,onBellSave=rememberBellLoadout})
     end
     if installedConfig then
         local options = {
@@ -315,33 +384,49 @@ local function prepareSession(system)
             loadoutMemoryPath=loadoutMemoryPath,
             onBeforeRestore=function()
                 servicesAllowed,expectedServiceSlot=false,nil
+                closeTrainingBell()
+                if challenge then challenge:closeMusic() end
                 closeArenaServices()
+                resetTrainingTargets()
             end,
             defaults = { playerCycle = installedConfig.defaultPlayerCycle, enemyCycle = installedConfig.defaultEnemyCycle,
                 skillLevel = 5 * installedConfig.defaultPlayerCycle },
             onStart = function(settings, slot)
                 settings.skillLevel = require("PlayerProfile").normalizeSkillLevel(settings.playerCycle, settings.skillLevel)
+                closeTrainingBell()
                 closeArenaServices();servicesAllowed=true;expectedServiceSlot=slot
+                if settings.mode == "bloody-palace" and package.loaded.ShuangYueCharge then
+                    package.loaded.ShuangYueCharge.restore()
+                end
                 if challenge then challenge:close() end
                 challenge = nil
-                targets, selectedId, worldAddress, autoheal, panelVisible = {}, nil, nil, false, true
+                resetTrainingTargets()
+                trainingMob, trainingHealthMode = nil, "normal"
+                panelVisible, notice = true, nil
                 enemyCycle, trainingSkillLevel, trainingSkillsApplied = settings.enemyCycle, nil, false
                 trainingSkillPawnAddress = nil
+                trainingAbilitySnapshot = nil
                 trainingPlayerCycle, trainingDifficultyMode = settings.playerCycle, settings.difficultyMode or 3
                 local selectedEncounter = settings.mode ~= "training" and settings.bossId or nil
-                trainingSceneId = ArenaScenes.forEncounter(selectedEncounter, settings.sceneId).id
+                trainingSceneId = ArenaScenes.forEncounter(selectedEncounter, settings.sceneId, settings.mode).id
                 if settings.mode == "challenge" or settings.mode == "practice" then
                     challenge = require("Challenge").new(assert(require("EncounterCatalog").resolve(settings.bossId)),
                         enemyCycle, profile, settings.playerCycle, settings.skillLevel,
                         { resetSlot = slot, cyclePrefix = installedConfig.cyclePrefix,
                             mode = settings.mode, difficultyMode = settings.difficultyMode or 3,
+                            customPressure = settings.customPressure,
+                            musicId = settings.musicId,
                             sceneId = trainingSceneId,
-                            loadoutMemoryPath=loadoutMemoryPath,onBeforeLoad=checkpointArenaServices,
+                            loadoutMemoryPath=loadoutMemoryPath,onBeforeLoad=checkpointArenaServices,onBellSave=rememberBellLoadout,
                             onSceneChange = function(sceneId, gameplay, pawn)
                                 if titleSession then titleSession:changeArenaScene(sceneId, gameplay, pawn) end
                             end })
                 else
                     trainingSkillLevel = settings.skillLevel
+                    if settings.trainingMobId then
+                        trainingMob = assert(require("TrainingTarget").resolve(settings.trainingMobId))
+                    end
+                    log("Training settings: target=" .. (trainingMob and trainingMob.id or ENEMY_NAME))
                 end
                 log("Integrated MOD mode=" .. settings.mode .. "; playerCycle=" .. settings.playerCycle
                     .. "; enemyCycle=" .. settings.enemyCycle .. "; skillLevel=" .. settings.skillLevel)
@@ -382,7 +467,10 @@ local function arenaContext(serveMenu)
     local level = text(gameplay:GetCurrentLevelName(pawn, true))
     local scene = challenge and challenge.scene or ArenaScenes.get(trainingSceneId)
     assert((scene.id == "night" and scene.map == "PBZ_Duanhun_WP")
-        or (scene.id == "lake" and scene.map == "PBZ_Zhengdaodaying_WP"), "此演武场景已撤下")
+        or (scene.id == "lake" and scene.map == "PBZ_Zhengdaodaying_WP")
+        or (scene.id == "lake" and scene.standaloneLake and scene.map == "PBZ_LakeUpperArena" and titleSession)
+        or (scene.id == "xigu" and scene.map == "PBZ_Xigu_WP" and titleSession)
+        or (scene.id == "meiguhu" and scene.map == "PBZ_MeiGuHuArena" and titleSession), "此演武场景已撤下")
     assert(level == scene.map, "requires " .. scene.map .. "; current level: " .. level)
     local class = pawn:GetClass():GetFName():ToString()
     assert(class == ADULT_CLASS, "requires adult Hun; current pawn: " .. class)
@@ -394,10 +482,13 @@ local function arenaContext(serveMenu)
     -- equipment readiness. It must cover the preparation interval as well.
     updateArenaServices(gameplay,pawn,scene,activeWorld,true)
     if worldAddress ~= activeWorld then
-        targets, selectedId, worldAddress = {}, nil, activeWorld
+        resetTrainingTargets()
+        worldAddress = activeWorld
     end
     perfSceneId, perfMode = scene.id, challenge and (challenge.mode or "challenge") or "training"
     local now = gameplay:GetTimeSeconds(pawn)
+    -- Unbind the world soundtrack before scene triggers or boss spawning run.
+    if serveMenu and challenge then challenge:updateMusic(gameplay, pawn, gameplay:GetRealTimeSeconds(pawn)) end
     local keep = function(actor)
         if SceneArena.owns(actor) or (challenge and challenge:owns(actor)) then return true end
         if valid(actor) then
@@ -407,15 +498,28 @@ local function arenaContext(serveMenu)
         end
         return false
     end
+    local training = installedConfig ~= nil and not challenge
     local allowBell = challenge ~= nil and challenge.status ~= "error" and challenge.status ~= "won"
         and challenge.view ~= "victory"
     local ready, reason
-    if scene.id ~= "night" then
-        ready, reason = SceneArena.update(gameplay, pawn, playerController, now, scene, keep, allowBell)
+    if scene.id == "xigu" then
+        local streamingNow = gameplay:GetRealTimeSeconds(pawn)
+        ready, reason = XiguArena.update(gameplay, system, pawn, playerController, actualWorld, streamingNow, scene,
+            training or challenge ~= nil and challenge:canUseBell())
+        XiguStreaming.update(gameplay, actualWorld, pawn, playerController, streamingNow, ready == true)
+    elseif scene.id == "meiguhu" then
+        ready, reason = MeiGuHuArena.update(gameplay, system, pawn, playerController, actualWorld,
+            gameplay:GetRealTimeSeconds(pawn), scene, training or challenge ~= nil and challenge:canUseBell())
+    elseif scene.standaloneLake then
+        ready, reason = LakeUpperArena.update(gameplay, system, pawn, playerController, actualWorld, scene, keep, training or allowBell)
+    elseif scene.id == "lake" then
+        ready, reason = SceneArena.update(gameplay, pawn, playerController, now, scene, keep, training or allowBell)
     else
-        ready, reason = ClosedArena.update(pawn, playerController, activeWorld, now, keep, allowBell)
+        ready, reason = ClosedArena.update(pawn, playerController, activeWorld, now, keep, training or allowBell, training)
     end
-    if not ready and serveMenu and challenge then
+    if not ready and serveMenu and training then
+        updateTrainingBell(gameplay, pawn, scene)
+    elseif not ready and serveMenu and challenge and (not scene.runtimeModule or require(scene.runtimeModule).getBell()) then
         -- The original bell UI must remain usable while streaming or optional
         -- anchor calibration waits. This path never spawns or advances combat.
         local served, failure = pcall(challenge.updateMenuOnly, challenge, gameplay, system, pawn, now)
@@ -424,7 +528,10 @@ local function arenaContext(serveMenu)
     end
     assert(ready, reason or "训练场正在准备")
     local configured,configurationReason=updateArenaServices(gameplay,pawn,scene,activeWorld)
-    if not configured and serveMenu and challenge then pcall(challenge.updateMenuOnly,challenge,gameplay,system,pawn,now)end
+    if not configured and serveMenu then
+        if training then updateTrainingBell(gameplay, pawn, scene)
+        elseif challenge then pcall(challenge.updateMenuOnly, challenge, gameplay, system, pawn, now) end
+    end
     assert(configured,configurationReason or "等待演武配装初始化")
     return gameplay, system, pawn, now
 end
@@ -441,6 +548,46 @@ local function report(message)
     log(message)
 end
 
+local function selectTrainingTarget(settings)
+    local mobId = settings.trainingMobId
+    local mob = mobId and assert(require("TrainingTarget").resolve(mobId), "测试对象无效")
+    trainingMob = mob or nil
+    if titleSession then titleSession:rememberTrainingTarget(mobId) end
+    report("测试对象：" .. (trainingMob and trainingMob.name or "金面人"))
+end
+
+updateTrainingBell = function(gameplay, pawn, scene)
+    local ok, active = pcall(function()
+        if not trainingBell or not valid(trainingBell.pawn) or trainingBell.pawn:GetAddress() ~= pawn:GetAddress() then
+            closeTrainingBell()
+            trainingBell = require("TrainingBell").new(pawn, playerController)
+        end
+        local bell
+        if scene.runtimeModule then bell = require(scene.runtimeModule).getBell()
+        elseif scene.id == "lake" then bell = SceneArena.getBell()
+        else bell = ClosedArena.getTrainingBell() end
+        local handled = trainingBell:update(gameplay, scene, bell, trainingMob and trainingMob.id, selectTrainingTarget,
+            trainingSkillsApplied and trainingSkillPawnAddress == pawn:GetAddress())
+        if trainingBell.abilitySnapshot then
+            trainingAbilitySnapshot = trainingBell.abilitySnapshot
+            trainingBell.abilitySnapshot = nil
+        end
+        if arenaServices then
+            if not handled then arenaServices.bellLoadoutHandled = nil
+            elseif not arenaServices.bellLoadoutHandled then
+                arenaServices.bellLoadoutHandled = rememberBellLoadout(pawn)
+            end
+        end
+        return handled
+    end)
+    if not ok then
+        closeTrainingBell()
+        if active ~= lastTrainingBellError then log("Training bell: " .. tostring(active)) end
+    end
+    lastTrainingBellError = not ok and active or nil
+    return ok and active
+end
+
 local function publish(mode, message)
     if not statusPath then return end
     local rows = {}
@@ -448,12 +595,15 @@ local function publish(mode, message)
         for _, target in ipairs(targets) do
             rows[#rows + 1] = {
                 id = target.id, level = target.level, health = target.health, maxHealth = target.maxHealth,
-                ai = target.running, alive = true,
+                ai = target.running, engaging = target.engagement ~= nil, alive = true,
+                name = target.mob and target.mob.name or "金面人",
             }
         end
     end
     local snapshot = {
-        maxTargets = MAX_TARGETS, selectedId = selectedId, autoheal = autoheal, enemyCycle = enemyCycle,
+        maxTargets = MAX_TARGETS, selectedId = selectedId,
+        autoheal = trainingHealthMode ~= "normal", healthMode = trainingHealthMode, enemyCycle = enemyCycle,
+        trainingTarget = trainingMob and trainingMob.name or "金面人",
         mode = mode, visible = not challenge and panelVisible, message = message or notice, targets = rows,
         training = challenge == nil, challenge = challenge ~= nil,
     }
@@ -472,54 +622,111 @@ local function publish(mode, message)
     end
 end
 
-local function openFloor(system, pawn, position, x, y)
+local function openFloor(system, pawn, position, x, y, allowObjectTrace)
     for _, target in ipairs(targets) do
-        local other = target.actor:K2_GetActorLocation()
-        if (x - other.X)^2 + (y - other.Y)^2 < 165^2 then return nil end
+        if valid(target.actor) then
+            local other = target.actor:K2_GetActorLocation()
+            if (x - other.X)^2 + (y - other.Y)^2 < 165^2 then return nil end
+        end
     end
     local top = { X = x, Y = y, Z = position.Z + 180 }
     local bottom = { X = x, Y = y, Z = position.Z - 180 }
     local floor, noColor = {}, { R = 0, G = 0, B = 0, A = 0 }
     -- UE4SS's official LineTraceMod passes an empty Lua table for FHitResult.
     local hit = system:LineTraceSingle(pawn, top, bottom, 0, false, {}, 0, floor, true, noColor, noColor, 0.0)
+    if allowObjectTrace and not hit then
+        hit = system:LineTraceSingleForObjects(pawn, top, bottom, { 0 }, false, {}, 0, floor, true, noColor, noColor, 0.0)
+    end
     if hit and floor.ImpactPoint and floor.ImpactNormal and floor.ImpactNormal.Z >= 0.65 then
         local point = floor.ImpactPoint
-        return { X = point.X, Y = point.Y, Z = point.Z + ENEMY_CAPSULE_HALF_HEIGHT + 5 }
+        return { X = point.X, Y = point.Y, Z = point.Z }
     end
+end
+
+local function applyTargetLock(target)
+    target.healthGuard = target.healthGuard or require("EnemyHealthGuard").new(target.actor)
+    target.healthGuard:enable()
 end
 
 local function spawnPaused(gameplay, system, pawn, now)
     assert(#targets < MAX_TARGETS, "测试单位已满（" .. MAX_TARGETS .. "）")
+    local mob, class = trainingMob
+    if mob then
+        local reason
+        class, reason = require("SpawnClass").resolve(mob.classPath)
+        if not valid(class) then return false, reason end
+    else
+        class = CombatSpawn.class(ENEMY_CLASS)
+    end
     local mathLibrary = requiredObject("/Script/Engine.Default__KismetMathLibrary")
     local spawner = requiredObject("/Script/SGameAI.Default__SGameAIFunctionLibrary")
-    local class = CombatSpawn.class(ENEMY_CLASS)
-    local position, forward = pawn:K2_GetActorLocation(), pawn:GetActorForwardVector()
-    local deferred, transform
-    for _, offset in ipairs(SPAWN_OFFSETS) do
-        local x = position.X + forward.X * offset[1] - forward.Y * offset[2]
-        local y = position.Y + forward.Y * offset[1] + forward.X * offset[2]
-        local location = openFloor(system, pawn, position, x, y)
-        if location then
-            local facing = mathLibrary:FindLookAtRotation(location, position)
-            local yawOnly = { Pitch = 0, Yaw = facing.Yaw, Roll = 0 }
-            transform = mathLibrary:MakeTransform(location, yawOnly, { X = 1, Y = 1, Z = 1 })
-            deferred = spawner:SpawnActorDeferred(pawn, class, transform, ADJUST_IF_CLEAR)
-            if valid(deferred) then break end
+    local origin = pawn:K2_GetActorLocation()
+    local position = { X = origin.X, Y = origin.Y, Z = origin.Z }
+    local forward = pawn:GetActorForwardVector()
+    local forwardX, forwardY = forward.X, forward.Y
+    local name = mob and mob.name or "金面人"
+    local target = { id = nextId, running = false, lastDamage = now, mob = mob }
+    local deferred
+    local ok, spawned, reason = pcall(function()
+        local transform, ground, rotation
+        local scale = { X = 1, Y = 1, Z = 1 }
+        local halfHeight = mob and 180 or ENEMY_CAPSULE_HALF_HEIGHT
+        for _, offset in ipairs(SPAWN_OFFSETS) do
+            local distance = offset[1] + (mob and 150 or 0)
+            local x = position.X + forwardX * distance - forwardY * offset[2]
+            local y = position.Y + forwardY * distance + forwardX * offset[2]
+            ground = openFloor(system, pawn, position, x, y, mob ~= nil)
+            if ground then
+                local location = { X = ground.X, Y = ground.Y, Z = ground.Z + halfHeight + 5 }
+                rotation = { Pitch = 0, Yaw = mathLibrary:FindLookAtRotation(location, position).Yaw, Roll = 0 }
+                transform = mathLibrary:MakeTransform(location, rotation, scale)
+                deferred = spawner:SpawnActorDeferred(pawn, class, transform, ADJUST_IF_CLEAR)
+                if valid(deferred) then break end
+            end
         end
+        if not valid(deferred) then return false, "前方没有足够的平地，请换个方向或位置" end
+        if mob then
+            local capsule = deferred.CapsuleComponent
+            if valid(capsule) then
+                local location = { X = ground.X, Y = ground.Y, Z = ground.Z + capsule:GetScaledCapsuleHalfHeight() + 6 }
+                transform = mathLibrary:MakeTransform(location, rotation, scale)
+            end
+            CombatSpawn.prepareMobAppearance(deferred, mob.id)
+        end
+        target.actor, target.level = CombatSpawn.finish(gameplay, pawn, deferred, transform, enemyCycle, mob ~= nil)
+        deferred = nil
+        if mob then
+            CombatSpawn.clearStoryFlow(target.actor)
+            CombatSpawn.stabilizeMobAppearance(target.actor, mob.id)
+        end
+        if trainingHealthMode == "lock" then applyTargetLock(target) end
+        return true
+    end)
+    if not ok then
+        pcall(releaseTargetLock, target)
+        local actor = target.actor or deferred
+        if valid(actor) then pcall(CombatSpawn.destroyMobGroup, { actor }) end
+        error(spawned, 0)
     end
-    assert(valid(deferred), "前方没有足够的平地，请换个方向或位置")
-    local actor, enemyLevel = CombatSpawn.finish(gameplay, pawn, deferred, transform, enemyCycle)
-    targets[#targets + 1] = { id = nextId, actor = actor, level = enemyLevel, running = false, lastDamage = now }
+    if not spawned then return false, reason end
+    targets[#targets + 1] = target
     selectedId, nextId = nextId, nextId + 1
-    report(string.format("已生成金面人 #%d · 轮回 %d · Lv.%g，AI 已暂停", selectedId, enemyCycle, enemyLevel))
+    log(("Training spawn: %s; target=#%d; cycle=%d; level=%g; healthMode=%s"):format(
+        mob and (mob.id .. " " .. name) or name, selectedId, enemyCycle, target.level, trainingHealthMode))
+    report(string.format("已生成%s #%d，AI 已暂停", name, selectedId))
+    return true
 end
 
-local function toggleAI()
+local function toggleAI(_, _, _, now)
     local target = assert(selected(), "请先按 F8 生成测试单位")
-    local ai = CombatSpawn.ai(target.actor)
-    if target.running then ai:StopAI() else ai:StartAI() end
+    if not target.running and target.mob then
+        target.engagement = { deadline = now + 8 }
+    else
+        CombatSpawn.challengeAI(target.actor, not target.running)
+        target.engagement = nil
+    end
     target.running = not target.running
-    report("#" .. target.id .. (target.running and " 已恢复 AI" or " 已暂停 AI"))
+    report("#" .. target.id .. (target.engagement and " 正在接战" or target.running and " 已恢复 AI" or " 已暂停 AI"))
 end
 
 local function removeTarget(index)
@@ -534,7 +741,8 @@ end
 local function clearSelected()
     local target, index = selected()
     assert(target, "当前没有可清除的测试单位")
-    target.actor:K2_DestroyActor()
+    releaseTargetLock(target)
+    CombatSpawn.destroyMobGroup({ target.actor })
     removeTarget(index)
     report("已清除测试单位 #" .. target.id)
 end
@@ -546,7 +754,26 @@ local function nextTarget()
     report("已选中测试单位 #" .. selectedId)
 end
 
-local function updateTargets(now)
+local function cycleTrainingHealth(now)
+    local nextMode = ({ normal = "regen", regen = "lock", lock = "normal" })[trainingHealthMode]
+    local action = nextMode == "lock" and applyTargetLock or releaseTargetLock
+    local ok, reason = pcall(function()
+        for _, target in ipairs(targets) do action(target) end
+    end)
+    if not ok then
+        local rollback = trainingHealthMode == "lock" and applyTargetLock or releaseTargetLock
+        for _, target in ipairs(targets) do
+            local restored, err = pcall(rollback, target)
+            if not restored then log("恢复测试目标锁血 #" .. target.id .. "：" .. tostring(err)) end
+        end
+        error("切换测试目标生命模式失败：" .. tostring(reason), 0)
+    end
+    trainingHealthMode = nextMode
+    for _, target in ipairs(targets) do target.lastDamage = now end
+    report(({ normal = "生命：正常", regen = "生命：自动回血", lock = "生命：锁血＋回血" })[nextMode])
+end
+
+local function updateTargets(now, gameplay, pawn)
     for index = #targets, 1, -1 do
         local target = targets[index]
         if not valid(target.actor) then
@@ -559,12 +786,29 @@ local function updateTargets(now)
                 target.readError, target.health, target.maxHealth = health, nil, nil
             elseif dead then
                 -- Keep stock death and execution animations; release the active slot immediately.
+                local released, reason = pcall(releaseTargetLock, target)
+                if not released then log("清理死亡目标锁血 #" .. target.id .. "：" .. tostring(reason)) end
                 removeTarget(index)
                 report("测试单位 #" .. target.id .. " 已死亡，位置已释放")
             elseif health and maxHealth then
+                local engagement = target.engagement
+                if engagement and now >= (engagement.nextCheck or 0) then
+                    engagement.nextCheck = now + .25
+                    local ok, started, reason = pcall(require("EncounterEngage").start, target.actor, pawn,
+                        engagement, gameplay:GetRealTimeSeconds(pawn))
+                    if ok and started then
+                        target.engagement = nil
+                        report("#" .. target.id .. " 已恢复 AI")
+                    elseif not ok or now >= engagement.deadline then
+                        target.engagement = nil
+                        local stopped = pcall(CombatSpawn.challengeAI, target.actor, false)
+                        if stopped then target.running = false end
+                        report("目标 #" .. target.id .. " 接战失败：" .. tostring(ok and reason or started))
+                    end
+                end
                 target.readError = nil
                 if target.health and health < target.health then target.lastDamage = now end
-                if autoheal and health < maxHealth and now - target.lastDamage >= HEAL_DELAY_SECONDS then
+                if trainingHealthMode ~= "normal" and health < maxHealth and now - target.lastDamage >= HEAL_DELAY_SECONDS then
                     local healOk, healed, reason, restored, restoredMax = pcall(Health.restore, target.actor, maxHealth, health)
                     if healOk and healed then
                         health, maxHealth = restored or maxHealth, restoredMax or maxHealth
@@ -582,51 +826,172 @@ local function updateTargets(now)
     end
 end
 
-local function bind(key, label, action)
-    RegisterKeyBind(key, function()
-        ExecuteInGameThread(function()
-            local ready = false
-            local ok, err = pcall(function()
-                prepareSession(requiredObject("/Script/Engine.Default__KismetSystemLibrary"))
-                if challenge then
-                    if challenge.mode == "practice" then
-                        local gameplay, _, pawn = arenaContext()
-                        local applied, reason = challenge:practiceKey(label, gameplay, pawn)
-                        if applied == false and reason then log("Practice " .. label .. ": " .. tostring(reason)) end
-                    end
-                    return
-                end
-                local gameplay, system, pawn, now = arenaContext()
-                ready = true
-                updateTargets(now)
-                action(gameplay, system, pawn, now)
-            end)
+local function arenaKeyHandler(label, action)
+    return function()
+        local ready = false
+        local ok, err = pcall(function()
+            prepareSession(requiredObject("/Script/Engine.Default__KismetSystemLibrary"))
             if challenge then
-                if not ok and challenge.mode == "practice" then
-                    local message = tostring(err):gsub("^.-:%d+: ", "", 1)
-                    log("Practice " .. label .. " failed: " .. message)
+                if challenge.mode == "practice" then
+                    local gameplay, _, pawn = arenaContext()
+                    local applied, reason = challenge:practiceKey(label, gameplay, pawn)
+                    if applied == false and reason then log("Practice " .. label .. ": " .. tostring(reason)) end
                 end
                 return
             end
-            if ok then publish("ready")
-            else
-                local message = tostring(err):gsub("^.-:%d+: ", "", 1)
-                log(label .. ": " .. message)
-                publish(ready and "ready" or "waiting", message)
-            end
+            if not action then return end
+            local gameplay, system, pawn, now = arenaContext()
+            ready = true
+            if trainingBell and trainingBell:blocksKeys() then return end
+            updateTargets(now, gameplay, pawn)
+            action(gameplay, system, pawn, now)
         end)
-    end)
+        if challenge then
+            if not ok and challenge.mode == "practice" then
+                local message = tostring(err):gsub("^.-:%d+: ", "", 1)
+                log("Practice " .. label .. " failed: " .. message)
+            end
+            return
+        end
+        if not action then return end
+        if ok then publish("ready")
+        else
+            local message = tostring(err):gsub("^.-:%d+: ", "", 1)
+            log(label .. ": " .. message)
+            publish(ready and "ready" or "waiting", message)
+        end
+    end
 end
 
-bind(Key.F5, "F5", nextTarget)
-bind(Key.F6, "F6", function()
-    autoheal = not autoheal
-    report(autoheal and "已开启自动回血" or "已关闭自动回血")
-end)
-bind(Key.F7, "F7", function() panelVisible = not panelVisible end)
-bind(Key.F8, "F8", spawnPaused)
-bind(Key.F9, "F9", toggleAI)
-bind(Key.F10, "F10", clearSelected)
+local arenaKeys = {
+    { name = "F5", action = nextTarget },
+    { name = "F6", action = function(_, _, _, now) cycleTrainingHealth(now) end },
+    { name = "F7", action = function() panelVisible = not panelVisible end },
+    { name = "F8", action = function(gameplay, system, pawn, now)
+        local ok, reason = spawnPaused(gameplay, system, pawn, now)
+        assert(ok, reason)
+    end },
+    { name = "F9", action = toggleAI },
+    { name = "F10", action = clearSelected, trainingOnly = true },
+}
+
+local modifierNames = { "LeftShift", "RightShift", "LeftControl", "RightControl", "LeftAlt", "RightAlt" }
+local modifierKeys
+local arenaKeyInput
+
+local function stopArenaKeys()
+    local input = arenaKeyInput
+    arenaKeyInput = nil
+    if input and input.handle then pcall(CancelDelayedAction, input.handle) end
+end
+
+local function currentArenaKeyMode()
+    if not challenge then return "training" end
+    if challenge.mode == "practice" then return "practice" end
+end
+
+local function streamingKeyAvailable()
+    return titleSession ~= nil and titleSession.scene ~= nil and titleSession.scene.id == "xigu"
+end
+
+local function modifierDown(controller)
+    if not modifierKeys then
+        modifierKeys = {}
+        for index, name in ipairs(modifierNames) do modifierKeys[index] = { KeyName = FName(name) } end
+    end
+    for _, key in ipairs(modifierKeys) do
+        if controller:IsInputKeyDown(key) then return true end
+    end
+    return false
+end
+
+local function keyDown(controller, key)
+    return controller:IsInputKeyDown(key) or controller:WasInputKeyJustPressed(key)
+end
+
+local function readArenaKeys(input)
+    if arenaKeyInput ~= input then return end
+    local controller = input.controller
+    if playerController ~= controller or titleSession ~= input.session or challenge ~= input.run
+        or (titleSession and not titleSession:allowArena()) or not valid(controller)
+        or (input.mode and currentArenaKeyMode() ~= input.mode)
+        or streamingKeyAvailable() ~= input.streaming then
+        stopArenaKeys()
+        return
+    end
+
+    for _, key in ipairs(input.keys) do
+        if arenaKeyInput ~= input then return end
+        local ok, down = pcall(keyDown, controller, key.value)
+        if ok then
+            local pressed = key.armed and down
+            key.armed, key.error = not down, nil
+            if pressed then
+                local fired, failure = pcall(function()
+                    if not modifierDown(controller) then key.press() end
+                end)
+                if not fired then log(key.name .. ": " .. tostring(failure)) end
+            end
+        else
+            if down ~= key.error then log(key.name .. " input: " .. tostring(down)) end
+            key.error, key.armed = down, false
+        end
+    end
+end
+
+local function scheduleArenaKeys(input)
+    if type(CancelDelayedAction) ~= "function" then return end
+    local function tick() readArenaKeys(input) end
+    local ok, handle
+    if EngineTickAvailable and type(LoopInGameThreadAfterFrames) == "function" then
+        ok, handle = pcall(LoopInGameThreadAfterFrames, 1, tick)
+    end
+    if not ok or type(handle) ~= "number" or handle <= 0 then
+        ok, handle = pcall(LoopInGameThreadWithDelay, 4, tick)
+    end
+    if ok and type(handle) == "number" and handle > 0 then input.handle = handle end
+end
+
+local function syncArenaKeys(ready)
+    local mode = ready and currentArenaKeyMode() or nil
+    local streaming = streamingKeyAvailable()
+    if (not mode and not streaming) or not valid(playerController)
+        or (titleSession and not titleSession:allowArena()) then
+        stopArenaKeys()
+        return
+    end
+
+    local input = arenaKeyInput
+    if input and input.controller == playerController and input.session == titleSession and input.run == challenge
+        and input.mode == mode and input.streaming == streaming then
+        if not input.handle then readArenaKeys(input) end
+        return
+    end
+
+    stopArenaKeys()
+    local keys = {}
+    local function add(name, press)
+        keys[#keys + 1] = { name = name, press = press, value = { KeyName = FName(name) } }
+    end
+    if streaming then add("F1", XiguStreaming.toggle) end
+    if mode == "practice" then
+        local key = require("PracticeHud").toggleKey
+        add(key, arenaKeyHandler(key))
+    end
+    if mode then
+        for _, key in ipairs(arenaKeys) do
+            if mode == "training" or not key.trainingOnly then
+                add(key.name, arenaKeyHandler(key.name, key.action))
+            end
+        end
+    end
+    input = { controller = playerController, session = titleSession, run = challenge,
+        mode = mode, streaming = streaming, keys = keys }
+    arenaKeyInput = input
+    -- Arm each key after it is released in this session.
+    readArenaKeys(input)
+    if arenaKeyInput == input then scheduleArenaKeys(input) end
+end
 
 local function installServiceLoadGuards()
     if type(RegisterHook)~="function"then log("演武配装/经济服务未启用：缺少原生载档前守卫");return end
@@ -648,7 +1013,7 @@ local function installServiceLoadGuards()
             sealedServicesStarted=true -- a real load must use its explicit private-slot ticket
             servicesAllowed=false
             outerSlot=slotName(slot)
-            closeArenaServices() -- cached private bytes only; never capture here
+            closeArenaServices()
             servicePendingEpoch=serviceMapEpoch
             servicesAllowed=ticket~=nil and outerSlot==ticket
         elseif slotName(slot)~=outerSlot then servicesAllowed=false end
@@ -669,17 +1034,22 @@ end
 installServiceLoadGuards()
 
 RegisterLoadMapPreHook(function()
-    -- Native LoadGame may already have replaced backpack caches. Only flush
-    -- the last valid private snapshot here; explicit MOD commands checkpoint
-    -- before invoking LoadGame, and raw pre-hooks have already closed scope.
+    stopArenaKeys()
+    XiguStreaming.reset("map transition")
+    sceneServiceAfter = nil
     closeArenaServices();serviceMapEpoch=serviceMapEpoch+1
     if titleSession then titleSession:onMapPre() end
-    playerController, worldAddress, targets, selectedId = nil, nil, {}, nil
+    closeTrainingBell()
+    playerController = nil
+    resetTrainingTargets()
     if challenge then challenge:close() end
     if trainingDifficulty then pcall(trainingDifficulty.close, trainingDifficulty); trainingDifficulty = nil end
     pcall(function() require("AbilityChallenge").clearProfile() end)
     ClosedArena.reset()
     SceneArena.reset()
+    LakeUpperArena.reset()
+    XiguArena.reset()
+    MeiGuHuArena.reset()
     trainingSkillsApplied = false
     trainingSkillPawnAddress = nil
     if installedConfig then pcall(function() require("TrainingHud").close() end) end
@@ -703,7 +1073,9 @@ local function updateStatusHud(gameplay,pawn,now)
     if #actors==0 then closeStatusHud();return end
     if statusHudFailedWorld~=nil and statusHudFailedWorld==worldAddress then return end
     local ok,failure=pcall(function()
-        require("StatusBuildupHud").update(playerController,actors,gameplay:GetRealTimeSeconds(pawn))
+        local lookup = perfSceneId == "xigu" and XiguArena.findStatusObjects or nil
+        require("StatusBuildupHud").update(playerController,actors,gameplay:GetRealTimeSeconds(pawn),lookup,
+            perfSceneId == "meiguhu")
     end)
     if not ok then
         closeStatusHud();statusHudFailedWorld=worldAddress
@@ -716,11 +1088,25 @@ local function service()
     if probeAtBoot or titleSession then
         local ok, failure = pcall(function()
             prepareSession(requiredObject("/Script/Engine.Default__KismetSystemLibrary"))
-            titleSession:tick(requiredObject("/Script/Engine.Default__GameplayStatics"), UE.GetPlayerController())
+            local controller
+            if titleSession.phase == "arena" and titleSession.scene and titleSession.scene.runtimeModule then
+                if not valid(playerController) then playerController = UE.GetPlayerController() end
+                controller = playerController
+            else
+                controller = UE.GetPlayerController()
+            end
+            titleSession:tick(requiredObject("/Script/Engine.Default__GameplayStatics"), controller)
         end)
         if not ok and failure ~= lastTitleProbeError then log("Title probe: " .. tostring(failure)) end
         lastTitleProbeError = not ok and failure or nil
         if not titleSession or not titleSession:allowArena() then
+            stopArenaKeys()
+            closeTrainingBell()
+            XiguStreaming.reset("private session ended")
+            XiguArena.reset()
+            MeiGuHuArena.reset()
+            if not titleSession or titleSession.phase ~= "loading" then LakeUpperArena.abort() end
+            if challenge then challenge:closeMusic() end
             closeArenaServices()
             publish("waiting", "请在测试主菜单中选择 MOD。")
             return
@@ -728,14 +1114,18 @@ local function service()
     end
     local ready, gameplay, system, pawn, now = pcall(arenaContext, true)
     if not ready then
+        syncArenaKeys(false)
         closeStatusHud()
         local message = tostring(gameplay):gsub("^.-:%d+: ", "", 1)
         if statusPath and lastArenaError ~= message then log("waiting: " .. message) end
         lastArenaError = message
-        publish("waiting", "请继续游戏进入故屋幻景。" .. message)
+        local scene = challenge and challenge.scene or ArenaScenes.get(trainingSceneId)
+        if scene.runtimeModule and perfClock then sceneServiceAfter = perfClock() + 0.25 end
+        publish("waiting", "等待" .. scene.name .. "就绪。" .. message)
         return
     end
     lastArenaError = nil
+    syncArenaKeys(true)
     if installedConfig and not challenge then
         local configured, failure = pcall(function()
             if trainingSkillPawnAddress and trainingSkillPawnAddress ~= pawn:GetAddress() and trainingDifficulty then
@@ -757,7 +1147,8 @@ local function service()
         local applied, failure = pcall(function()
             local ability = require("AbilityChallenge")
             ability.setProfile(pawn, require("PlayerProfile").id(trainingPlayerCycle))
-            ability.setCycleSkills(pawn, trainingSkillLevel)
+            if trainingAbilitySnapshot then ability.restore(pawn, trainingAbilitySnapshot)
+            else ability.setCycleSkills(pawn, trainingSkillLevel) end
         end)
         if not applied then
             publish("waiting", "正在应用训练技能设置")
@@ -775,11 +1166,26 @@ local function service()
             log("challenge: " .. message)
             challenge:fail(message)
         end
+        challenge:updateMusic(gameplay, pawn, gameplay:GetRealTimeSeconds(pawn))
+        local active = challenge.startedAt ~= nil and not challenge.reloadAt and not challenge.reloadRequested
+            and challenge.status ~= "won" and challenge.status ~= "error" and challenge.view ~= "victory"
+        if perfSceneId == "xigu" then
+            XiguArena.updateCombat(active, challenge.status == "won", gameplay:GetRealTimeSeconds(pawn))
+        elseif perfSceneId == "meiguhu" then
+            MeiGuHuArena.updateCombat(pawn, active)
+        elseif perfSceneId == "lake" and challenge.scene.standaloneLake then
+            LakeUpperArena.updateCombat(pawn, challenge.scene, active)
+        end
         updateStatusHud(gameplay,pawn,now)
         publish(challenge.status, challenge.message)
         return
     end
-    local ok, err = pcall(updateTargets, now)
+    local menuActive = installedConfig and updateTrainingBell(gameplay, pawn, ArenaScenes.get(trainingSceneId))
+    if menuActive then
+        publish("ready")
+        return
+    end
+    local ok, err = pcall(updateTargets, now, gameplay, pawn)
     updateStatusHud(gameplay,pawn,now)
     if not ok then
         if err ~= lastTickError then log("maintenance: " .. tostring(err)) end
@@ -794,10 +1200,11 @@ end
 -- Approximate elapsed time of this Lua service only, including its native
 -- calls. os.clock resolution is platform-dependent; this is not a CPU/GPU or
 -- whole-frame profiler. It performs no extra engine queries or per-tick I/O.
-local perfClock = os and type(os.clock) == "function" and os.clock
 local perfState
 LoopInGameThreadWithDelay(serviceInterval, function()
     local started = perfClock and perfClock()
+    if started and sceneServiceAfter and started < sceneServiceAfter then return end
+    sceneServiceAfter = nil
     perfSceneId, perfMode = nil, nil
     service()
     local finished = perfClock and perfClock()

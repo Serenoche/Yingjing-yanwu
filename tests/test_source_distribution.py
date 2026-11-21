@@ -9,7 +9,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 LOCAL_DIRS = {".git", "build", "dist", "local-inputs", "__pycache__", ".venv"}
 SOURCE_SUFFIXES = {
-    ".lua", ".py", ".cpp", ".hpp", ".cs", ".ps1", ".cmd", ".json",
+    ".lua", ".js", ".py", ".cpp", ".hpp", ".cs", ".ps1", ".cmd", ".json",
     ".md", ".txt", ".yml", ".yaml", ".mit",
 }
 ROOT_FILES = {"LICENSE", ".gitignore", ".gitattributes", ".editorconfig"}

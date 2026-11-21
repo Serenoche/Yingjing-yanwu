@@ -100,11 +100,12 @@ local function localOwner(gameplay, controller, bell)
     return ok and found == true
 end
 
-local function matchesBell(gameplay, widget, controller, expectedBellId)
+local function matchesBell(gameplay, widget, controller, state)
     if not valid(widget) or not same(resolveObject(widget:GetOwningPlayer()), controller) then return false end
     local bell = resolveObject(widget.OwnerBell)
     if not valid(bell) then return false end
-    local actual, expected = name(bell.BellID), expectedBellId or BELL_ID
+    local actual, expected = name(bell.BellID), state.bellId or BELL_ID
+    if state.requireBellOwner and not same(bell, state.bellOwner) then return false end
     local localActor = actual == expected and localOwner(gameplay, controller, bell)
     if localActor then return true end
     local key = tostring(widget:GetAddress()) .. ":" .. expected
@@ -116,12 +117,18 @@ local function matchesBell(gameplay, widget, controller, expectedBellId)
     return false
 end
 
-local function ownedBellMenu(gameplay, controller, expectedBellId)
-    for _, widget in ipairs(FindAllOf("W_BellMenu_C") or {}) do
+local function ownedBellMenu(gameplay, controller, state)
+    local widgets
+    if state.runtimeModule then
+        widgets = require(state.runtimeModule).findBellWidgets("W_BellMenu_C", gameplay:GetRealTimeSeconds(controller))
+    else
+        widgets = FindAllOf("W_BellMenu_C")
+    end
+    for _, widget in ipairs(widgets or {}) do
         if valid(widget) and widget:IsActivated() and same(resolveObject(widget:GetOwningPlayer()), controller) then
             local bell = resolveObject(widget.OwnerBell)
             if valid(bell) then
-                if matchesBell(gameplay, widget, controller, expectedBellId) then return widget end
+                if matchesBell(gameplay, widget, controller, state) then return widget end
             elseif unrecognizedOwner ~= widget:GetAddress() then
                 unrecognizedOwner = widget:GetAddress()
                 print("[PBZTestArenaNative] Native bell menu missing owner actor\n")
@@ -236,6 +243,10 @@ function ChallengeMenu.suspend()
     session.suspended, session.pending = true, nil
     session.returnFocus = session.group:GetSelectedButtonBase()
     return true
+end
+
+function ChallengeMenu.active()
+    return current ~= nil
 end
 
 function ChallengeMenu.resume(realNow)
@@ -394,25 +405,39 @@ local function attach(session, controller, state, onAction)
         setPageBack(session, back)
         renderBell(session, title, rows, detail)
     end
+    if state.mode == "training" then
+        show(state.sceneName or "测试场", {
+            row("重选目标", function() onAction("target") end),
+            row("能力调整", function() onAction("configure") end),
+            row("退出", ChallengeMenu.close),
+        })
+        return
+    end
     local function menu()
-        show(state.sceneName or "故屋幻景", {
+        local rows = {
             row("更换目标", function() onAction("target") end),
             row("能力调整", function() onAction("configure") end),
             row("挑战记录", function() history(session.state.history, show, menu, function(record, restore)
                 openHistory(session, record, restore)
             end) end),
-            row("返回", ChallengeMenu.close),
-        })
+        }
+        if state.requireBellOwner then rows[#rows + 1] = row("重试", function() onAction("retry") end) end
+        rows[#rows + 1] = row("返回", ChallengeMenu.close)
+        show(state.sceneName or "故屋幻景", rows)
     end
     menu()
 end
 
 function ChallengeMenu.update(gameplay, pawn, state, onAction)
+    if state.requireBellOwner and not valid(state.bellOwner) then
+        if current then ChallengeMenu.close() end
+        return false
+    end
     local controller = gameplay:GetPlayerController(pawn, 0)
     if current then
         local session = current
         session.gameplay, session.pawn, session.state = gameplay, pawn, state
-        if state.available == false or not matchesBell(gameplay, session.widget, controller, state.bellId) then
+        if state.available == false or not matchesBell(gameplay, session.widget, controller, state) then
             ChallengeMenu.close()
             return false
         end
@@ -448,7 +473,15 @@ function ChallengeMenu.update(gameplay, pawn, state, onAction)
         end
         return current ~= nil
     end
-    local widget = ownedBellMenu(gameplay, controller, state.bellId)
+    if state.requireBellOwner then
+        -- A native menu for this bell can only start within interaction range.
+        -- Already-open or suspended menus are handled above regardless of distance.
+        local pawnAt = pawn:K2_GetActorLocation()
+        local x, y, z = pawnAt.X, pawnAt.Y, pawnAt.Z
+        local bellAt = state.bellOwner:K2_GetActorLocation()
+        if (x - bellAt.X)^2 + (y - bellAt.Y)^2 + (z - bellAt.Z)^2 > 1200^2 then return false end
+    end
+    local widget = ownedBellMenu(gameplay, controller, state)
     if not valid(widget) then return false end
     if state.available == false then
         widget:DeactivateWidget()

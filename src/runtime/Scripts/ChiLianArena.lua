@@ -150,14 +150,34 @@ local function nightLayout(pawn,system,ground,scene,mathLibrary)
  return points,1,home,{minX=home.X-1100,maxX=home.X+1100,minY=home.Y-1000,maxY=home.Y+1000},1
 end
 
+local function sceneLayout(pawn,system,ground,scene,mathLibrary)
+ local placement=scene.chiLianUltimate
+ local home=tracedFloor(pawn,system,placement.center.X,placement.center.Y,ground.Z)
+ if not home then return nil,scene.name..'的召蛇中心地面尚未就绪' end
+ -- Keep alternate points within the four authored corners for this scene.
+ for _,scale in ipairs({1,.8,.6})do
+  local points={}
+  for _,point in ipairs(placement.snakes)do
+   local x=home.X+(point.X-home.X)*scale
+   local y=home.Y+(point.Y-home.Y)*scale
+   local floor=tracedFloor(pawn,system,x,y,home.Z)
+   if not floor then break end
+   points[#points+1]={location={X=floor.X,Y=floor.Y,Z=floor.Z+2},yaw=mathLibrary:FindLookAtRotation(floor,home).Yaw}
+  end
+  if #points==#placement.snakes then return points,scale,home end
+ end
+ return nil,scene.name..'尚未找到完整的召蛇地面'
+end
+
 local function layout(pawn,system,ground,yaw,scene,mathLibrary)
  if scene.id=='night'then return nightLayout(pawn,system,ground,scene,mathLibrary)end
+ if scene.chiLianUltimate then return sceneLayout(pawn,system,ground,scene,mathLibrary)end
  local points,scale=authoredLayout(pawn,system,ground,yaw)
- return points,scale,ground -- lake keeps the tested original layout unchanged
+ return points,scale,ground
 end
 
 function Arena.new(pawn,gameplay,system,ground,rotation,scene)
- assert(scene and(scene.id=='night'or scene.id=='lake'),'白赤练场地不受支持')
+ assert(scene and(scene.id=='night'or scene.id=='lake'or scene.chiLianUltimate),'白赤练场地不受支持')
  local classes={}
  for _,path in ipairs({CENTER,SPAWNER,SNAKE})do
   local cls,reason=SpawnClass.resolve(path)
@@ -206,6 +226,9 @@ function Arena.new(pawn,gameplay,system,ground,rotation,scene)
    :format(bounds.minX,bounds.maxX,bounds.minY,bounds.maxY,scale,scaleY))
   for i,point in ipairs(points)do log(('night snake %d at %.1f %.1f %.1f; yaw=%.1f')
    :format(i,point.location.X,point.location.Y,point.location.Z,point.yaw))end
+ elseif scene.chiLianUltimate then
+  for i,point in ipairs(points)do log(('%s snake %d at %.1f %.1f %.1f; yaw=%.1f')
+   :format(scene.id,i,point.location.X,point.location.Y,point.location.Z,point.yaw))end
  end
  return self
 end

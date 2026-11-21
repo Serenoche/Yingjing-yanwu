@@ -10,6 +10,8 @@ local SpawnClass = require("SpawnClass")
 local PlayerProfile = require("PlayerProfile")
 local ChallengeMedicine = require("ChallengeMedicine")
 local ArenaScenes = require("ArenaScenes")
+local Music = require("BattleMusic")
+local Difficulty = require("GameplayDifficulty")
 
 local LionArena = require("LionArena")
 local JingYeMount = require("JingYeMount")
@@ -157,15 +159,7 @@ local function appendHistory(profilePath, report)
     assert(wrote and closed, reason or closeReason)
 end
 
-local function clearBossFlow(actor)
-    if not valid(actor) then return end
-    local readable, flow = pcall(function() return actor.BP_PBZFlowComponent end)
-    if not readable then return end -- Some enemy classes have no story component.
-    if not valid(flow) then return end
-    flow.bAutoStartRootFlow = false
-    if valid(flow.RootFlow) and valid(flow:GetRootFlowInstance()) then flow:FinishRootFlow(flow.RootFlow, 1) end
-    flow:PBZUnregister()
-end
+local clearBossFlow = CombatSpawn.clearStoryFlow
 
 local function reloadChallenge(gameplay, pawn, slot, scene)
     local instance = gameplay:GetGameInstance(pawn)
@@ -173,12 +167,17 @@ local function reloadChallenge(gameplay, pawn, slot, scene)
     local result = { ResultType = 255, LevelName = "", GameModeOptions = "" }
     instance:LoadGame(slot, result)
     local map = stringValue(result.LevelName)
-    local expected = scene and scene.map or ARENA_LEVEL
+    local preset = ArenaScenes.preset(scene)
+    local expected = preset and preset.map or ARENA_LEVEL
     assert(result.ResultType == 0 and (map == expected or map:sub(-#expected - 1) == "/" .. expected),
         "无法重载所选演武场景的挑战前存档")
-    assert(not scene or stringValue(result.GameModeOptions) == scene.gameModeOptions,
+    assert(not preset or stringValue(result.GameModeOptions) == preset.gameModeOptions,
         "所选场景的成年角色模式不匹配")
-    gameplay:OpenLevel(pawn, FName(map), true, stringValue(result.GameModeOptions))
+    if scene and scene.runtimeModule then
+        require(scene.runtimeModule).reload(gameplay, pawn, scene)
+    else
+        gameplay:OpenLevel(pawn, FName(map), true, stringValue(result.GameModeOptions))
+    end
 end
 
 local function returnToTitle(gameplay, pawn)
@@ -232,12 +231,17 @@ local function spawnBoss(entry, enemyCycle, gameplay, system, pawn, occupied, sc
     scene = scene or ArenaScenes.get("night")
     local authored = nativeEncounter and scene.lengtuSpawn
     local candidates = authored and { authored.location } or scene.spawnPoints
+    local playerClearance = scene.spawnClearance or 3000
     local failures = {}
     for index, candidate in ipairs(candidates) do
         local top = { X = candidate.X, Y = candidate.Y, Z = authored and candidate.Z + 300 or scene.spawnTrace.top }
         local bottom = { X = candidate.X, Y = candidate.Y, Z = authored and candidate.Z - 500 or scene.spawnTrace.bottom }
         local hit = {}
         local found = system:LineTraceSingle(pawn, top, bottom, 0, false, {}, 0, hit, true, NO_COLOR, NO_COLOR, 0)
+        if not found and scene.spawnTrace.worldStaticFallback then
+            hit = {}
+            found = system:LineTraceSingleForObjects(pawn, top, bottom, { 0 }, false, {}, 0, hit, true, NO_COLOR, NO_COLOR, 0)
+        end
         local failure
         if not found then failure = "未碰到地面"
         elseif not hit.ImpactPoint or not hit.ImpactNormal then failure = "地面命中数据未就绪"
@@ -254,7 +258,7 @@ local function spawnBoss(entry, enemyCycle, gameplay, system, pawn, occupied, sc
                     if valid(actor) and distanceSquared(location, actor:K2_GetActorLocation()) < 750^2 then clear = false end
                 end
                 if not clear then failure = "与已有首领距离不足750"
-                elseif not (distanceSquared(location, playerPosition) >= 3000^2) then failure = "与玩家距离不足3000"
+                elseif distanceSquared(location, playerPosition) < playerClearance^2 then failure = "与玩家距离不足" .. playerClearance
                 else
                     local yaw = authored and authored.rotation.Yaw or mathLibrary:FindLookAtRotation(location, playerPosition).Yaw
                     local rotation, scale = { Pitch = 0, Yaw = yaw, Roll = 0 }, { X = 1, Y = 1, Z = 1 }
@@ -321,7 +325,9 @@ function Challenge.new(entry, enemyCycle, profilePath, playerCycle, skillLevel, 
             stages = { { members = { entry } } } }
     end
     assert(#entry.stages > 0, "挑战尚未完成场景适配")
-    local scene = ArenaScenes.forEncounter(entry.id, slots.sceneId)
+    local mode = slots.mode or "challenge"
+    local customPressure = (mode == "practice" or mode == "challenge") and Difficulty.copyPressure(slots.customPressure) or nil
+    local scene = ArenaScenes.forEncounter(entry.id, slots.sceneId, mode)
     local resetSlot = slots.resetSlot
     if resetSlot and playerCycle ~= nil then
         resetSlot = PlayerProfile.slot(playerCycle, slots.cyclePrefix or "PBZArenaCycle", scene.id)
@@ -332,10 +338,12 @@ function Challenge.new(entry, enemyCycle, profilePath, playerCycle, skillLevel, 
         cyclePrefix = slots.cyclePrefix or "PBZArenaCycle", history = readHistory(profilePath),
         status = "waiting", message = "等待" .. scene.name .. "的挑战场地加载",
         stageIndex = 1, bosses = {}, ownedActors = {},
-        mode = slots.mode or "challenge", difficultyMode = slots.difficultyMode or 3,
+        mode = mode, customPressure = customPressure,
+        difficultyMode = customPressure and Difficulty.customBase or slots.difficultyMode or 3,
+        musicId = Music.normalize(slots.musicId),
         sceneId = scene.id, scene = scene,
         onSceneChange = slots.onSceneChange,
-        onBeforeLoad=slots.onBeforeLoad,loadoutMemoryPath=slots.loadoutMemoryPath,
+        onBeforeLoad=slots.onBeforeLoad,loadoutMemoryPath=slots.loadoutMemoryPath,onBellSave=slots.onBellSave,
     }, Challenge)
     self.onMenuAction = function(action, settings) self:queueAction(action, settings) end
     if slots.resetSlot and skillLevel ~= nil then
@@ -351,12 +359,17 @@ function Challenge:canUseBell()
 end
 
 function Challenge:menuState(available)
+    local arena = self.scene.runtimeModule and require(self.scene.runtimeModule)
     return {
         available = available, bossId = self.entry.id, bossName = self.entry.name,
         playerCycle = self.playerCycle or 0, enemyCycle = self.enemyCycle, skillLevel = self.skillLevel or 0,
-        history = self.history, profilePath = self.profilePath, category = self.entry.category, mode = self.mode, difficultyMode = self.difficultyMode,
+        history = self.history, profilePath = self.profilePath, category = self.entry.category, mode = self.mode,
+        difficultyMode = self.difficultyMode, customPressure = self.customPressure,
         playerProfile = PlayerProfile.id(self.playerCycle or 0),
         sceneId = self.sceneId, sceneName = self.scene.name, bellId = self.scene.bellSaveId,
+        musicId = self.musicId,
+        runtimeModule = self.scene.runtimeModule,
+        requireBellOwner = arena ~= nil, bellOwner = arena and arena.getBell() or nil,
     }
 end
 
@@ -432,10 +445,13 @@ function Challenge:command(gameplay, system, pawn, realNow, command)
             settings.skillLevel == nil and defaultSkill or tonumber(settings.skillLevel))
         if not selectedSkill or selectedSkill % 1 ~= 0 or selectedSkill < 0
             or selectedSkill > PlayerProfile.skillCap(playerCycle) then return end
-        local difficulty = settings.difficultyMode or self.difficultyMode
-        if type(difficulty) ~= "number" or difficulty % 1 ~= 0 or difficulty < 1 or difficulty > 3 then return end
-        local sceneOk, scene = pcall(ArenaScenes.forEncounter, entry.id, settings.sceneId or self.sceneId)
-        if not sceneOk then return end
+        local validPressure, customPressure = pcall(Difficulty.copyPressure, settings.customPressure)
+        if not validPressure then return end
+        if customPressure and not require("DreamPalacePressure").available() then return end
+        local difficulty = customPressure and Difficulty.customBase or settings.difficultyMode or self.difficultyMode
+        if not Difficulty.valid(difficulty) then return end
+        local sceneOk, scene = pcall(ArenaScenes.forEncounter, entry.id, settings.sceneId or self.sceneId, self.mode)
+        if not sceneOk or not ArenaScenes.available(scene.id, self.mode) then return end
         self.slot = PlayerProfile.slot(playerCycle, self.cyclePrefix, scene.id)
         if self.playerCycle ~= playerCycle then
             self.abilityLoadout = nil
@@ -446,9 +462,10 @@ function Challenge:command(gameplay, system, pawn, realNow, command)
             self.pendingSkillLevel = selectedSkill
         end
         self.skillLevel = selectedSkill
-        self.difficultyMode = difficulty
+        self.difficultyMode, self.customPressure = difficulty, customPressure
+        self.musicId = Music.normalize(settings.musicId or self.musicId)
         self.entry, self.playerCycle, self.enemyCycle = entry, playerCycle, enemyCycle
-    elseif action ~= "retry" or not victory then return end
+    elseif action ~= "retry" or (not victory and (not self.scene.runtimeModule or not self:canUseBell())) then return end
     self:checkpointLoadout(pawn,self.slot)
     if victory then Victory.close() else Menu.close() end
     self.view, self.bellOpen = nil, false
@@ -509,6 +526,7 @@ function Challenge:clearStage()
     local cleared, reason = pcall(function() require("PracticeBossInfo").close() end)
     if not cleared then print("[PBZTestArenaNative] Practice boss info cleanup: " .. tostring(reason) .. "\n") end
     self.practiceBossInfoFault, self.practiceBossInfoRetryAt = nil, nil
+    if self.pressure then self.pressure:close(); self.pressure = nil end
     -- Original snake helpers retain unowned summon references. Collect/cancel
     -- them before generic cleanup destroys their native BP containers.
     self:clearChiLianArena()
@@ -596,6 +614,17 @@ function Challenge:finishMountPreparation(gameplay, pawn)
     return true
 end
 
+function Challenge:bindStagePressure(pawn)
+    if not self.customPressure then return end
+    local targets = {}
+    for index, member in ipairs(self.entry.stages[self.stageIndex].members) do
+        if not member.regularMob then targets[#targets + 1] = { actor = self.bosses[index], id = member.id } end
+    end
+    if #targets > 0 then
+        self.pressure = require("DreamPalacePressure").new(pawn, targets, self.customPressure, self.stageIndex)
+    end
+end
+
 function Challenge:spawnStage(gameplay, system, pawn)
     if self.mountCleanupError then
         self:clearMounts()
@@ -658,6 +687,11 @@ function Challenge:spawnStage(gameplay, system, pawn)
     self.encounterWorld = pawn:GetWorld():GetAddress()
     self.ownedActors = {}
     for _, actor in ipairs(actors) do self.ownedActors[actor:GetAddress()] = true end
+    self:bindStagePressure(pawn)
+    if self.sceneId == "xigu" then
+        print(("[PBZXiguArena] boss stage spawned target=%s stage=%d count=%d\n")
+            :format(self.entry.id, self.stageIndex, #actors))
+    end
     if #self.mounts > 0 then
         self.mountPreparation = { actors = actors, levels = levels, stage = self.stageIndex, world = self.encounterWorld }
         return self:finishMountPreparation(gameplay, pawn)
@@ -668,7 +702,47 @@ function Challenge:spawnStage(gameplay, system, pawn)
     return true
 end
 
+function Challenge:closeMusic()
+    if self.music then self.music:close(); self.music = nil end
+end
+
+function Challenge:updateMusic(gameplay, pawn, now)
+    if self.reloadAt or self.reloadRequested or self.status == "error" or self.status == "won" then
+        self:closeMusic()
+        return
+    end
+    if self.musicFailed then return end
+    if not self.music then
+        if now < (self.musicRetryAt or 0) then return end
+        local cue, target = Music.resolve(self.entry, self.musicId)
+        if not cue then
+            self.musicFailed = true
+            print("[PBZArenaMusic] 未找到目标的原版战斗曲 " .. tostring(target) .. "\n")
+            return
+        end
+        local player, reason = Music.new(gameplay, pawn, cue)
+        if not player then
+            self.musicRetryAt = now + 1
+            if self.musicError ~= reason then print("[PBZArenaMusic] " .. tostring(reason) .. "\n") end
+            self.musicError = reason
+            return
+        end
+        self.music, self.musicError = player, nil
+    end
+    local ok, reason = pcall(self.music.update, self.music, now, self.startedAt ~= nil)
+    if ok then
+        if reason then self.musicErrors = 0 end
+        return
+    end
+    self.musicErrors = (self.musicErrors or 0) + 1
+    if self.musicError ~= reason then print("[PBZArenaMusic] " .. tostring(reason) .. "\n") end
+    self.musicError = reason
+    if self.musicErrors >= 3 then self:closeMusic(); self.musicFailed = true end
+end
+
 function Challenge:close()
+    self:closeMusic()
+    self.musicRetryAt, self.musicError, self.musicErrors, self.musicFailed = nil, nil, nil, nil
     self:closeTransition()
     pcall(function() require("PracticeHud").close() end)
     if self.practice then pcall(self.practice.close, self.practice); self.practice = nil end
@@ -692,10 +766,11 @@ function Challenge:close()
     self.loadoutApplied, self.action, self.bellOpen = false, nil, false
     self.stageIndex, self.advanceAt, self.anchor, self.encounterWorld = 1, nil, nil, nil
     self.pendingScene = nil
-    self.status, self.message = "waiting", "等待故屋幻景的挑战场地加载"
+    self.status, self.message = "waiting", "等待" .. self.scene.name .. "的挑战场地加载"
 end
 
 function Challenge:fail(message)
+    self:closeMusic()
     self:closeTransition()
     pcall(function() require("PracticeHud").close() end)
     if self.practice then pcall(self.practice.close, self.practice); self.practice = nil end
@@ -716,6 +791,7 @@ function Challenge:closeTransition()
         if not ok then print("[PBZTestArenaNative] Phase fade cleanup: " .. tostring(failure) .. "\n") end
     end
     self.stageFade, self.transitionStep, self.advanceAt = nil, nil, nil
+    self.phaseDestination, self.phaseDestinationDeadline = nil, nil
     self.engagePending, self.engageDeadline = nil, nil
     self.engageRequests, self.engageNextPoll, self.engageNextLog = nil, nil, nil
 end
@@ -735,6 +811,16 @@ function Challenge:updateTransition(gameplay, system, pawn, now, realNow)
     end
     if self.transitionStep == "waiting" then
         if realNow < self.advanceAt then return true end
+        if self.scene.runtimeModule then
+            local destination, reason = require(self.scene.runtimeModule).phaseDestination(pawn, system, self.scene)
+            if not destination then
+                self.phaseDestinationDeadline = self.phaseDestinationDeadline or realNow + 5
+                assert(realNow < self.phaseDestinationDeadline, reason)
+                self.advanceAt, self.message = realNow + 0.25, reason
+                return true
+            end
+            self.phaseDestination = destination
+        end
         self.stageFade = StageFade.new(gameplay, pawn, realNow)
         self.advanceAt, self.transitionStep = nil, "out"
         return true
@@ -789,9 +875,23 @@ function Challenge:updateTransition(gameplay, system, pawn, now, realNow)
         self:clearStage()
         local controller = gameplay:GetPlayerController(pawn, 0)
         local before = PlayerState.capture(pawn, controller)
-        assert(PlayerState.teleport(pawn, self.anchor, controller), "阶段回位失败；未恢复玩家状态")
+        local anchor = self.anchor
+        if self.phaseDestination then
+            local destination = self.phaseDestination
+            anchor = {
+                pawnAddress = before.pawnAddress, worldAddress = before.worldAddress,
+                abilitySystemAddress = before.abilitySystemAddress, controllerAddress = before.controllerAddress,
+                position = destination.position, rotation = destination.rotation, controlRotation = destination.rotation,
+            }
+        end
+        assert(PlayerState.teleport(pawn, anchor, controller), "阶段回位失败；未恢复玩家状态")
         local same, differences = PlayerState.compare(before, PlayerState.capture(pawn, controller))
         assert(same, "阶段回位意外改变玩家状态：" .. (differences[1] and differences[1].field or "unknown"))
+        if self.phaseDestination then
+            local at = pawn:K2_GetActorLocation()
+            assert(distanceSquared(at, anchor.position) <= 75^2, self.scene.name .. "阶段回位偏离场内落点")
+            print(("[PBZTestArenaNative] %s phase return x=%.2f y=%.2f z=%.2f\n"):format(self.sceneId, at.X, at.Y, at.Z))
+        end
         self.stageIndex, self.transitionStep = self.stageIndex + 1, "loading"
         self.nextSpawn, self.spawnDeadline = realNow, realNow + 12
         self.status, self.message = "transition", "正在准备下一阶段"
@@ -836,7 +936,10 @@ function Challenge:record(pawn, sample, now, result)
         damageTaken = sample.damageTaken, damageTakenStatus = sample.damageTakenStatus, damageTakenNote = sample.damageTakenNote,
         playerCycle = self.playerCycle, nativePlayerCycle = native:GetGameCycle(pawn),
         playerProfile = PlayerProfile.id(self.playerCycle), mode = self.mode,
-        difficultyMode = self.difficultyMode, difficultyName = ({ "入阵者", "破局者", "逆天者" })[self.difficultyMode],
+        difficultyMode = self.difficultyMode,
+        difficultyName = self.customPressure and ("自订 · %s %d"):format(
+            self.customPressure.mode == "fixed" and "固定" or "最低", self.customPressure.value)
+            or Difficulty.choices[self.difficultyMode].name,
         enemyCycle = self.enemyCycle, bossLevel = self.level, loadout = self.openingLoadout,
         endedAt = os.date("!%Y-%m-%dT%H:%M:%SZ"), metricsNote = sample.metricsNote,
         category = self.entry.category, categoryName = self.entry.categoryName,
@@ -937,7 +1040,12 @@ function Challenge:updateMenuOnly(gameplay, system, pawn, now)
             if self.bellError ~= active then print("[PBZTestArenaNative] Native bell menu: " .. tostring(active) .. "\n") end
         end
         self.bellError = not ok and active or nil
-        self.bellOpen = ok and active == true
+        local opened = ok and active == true
+        if not opened or not self.bellOpen then self.bellLoadoutHandled = nil end
+        if opened and self.onBellSave and not self.bellLoadoutHandled then
+            self.bellLoadoutHandled = self.onBellSave(pawn)
+        end
+        self.bellOpen = opened
         if self.bellOpen then return true end
     end
     if self.status == "error" then return false end
@@ -1007,7 +1115,7 @@ function Challenge:tick(gameplay, system, pawn, now)
                 self.practiceRetryAt = nil
                 -- A transient layout/widget failure must not revoke gameplay
                 -- switches. Retry presentation independently, with a short backoff.
-                if now >= (self.practiceHudRetryAt or 0) then
+                if not self.practiceHudHidden and now >= (self.practiceHudRetryAt or 0) then
                     local drawn, failure = pcall(function()
                         require("PracticeHud").update(gameplay:GetPlayerController(pawn, 0), stateOrFailure, self.entry.name)
                     end)
@@ -1035,7 +1143,8 @@ function Challenge:tick(gameplay, system, pawn, now)
     if self.mode == "practice" and not self.reloadAt and self.status ~= "won" and #self.bosses > 0 then
         if now >= (self.practiceBossInfoRetryAt or 0) then
             local shown, failure = pcall(function()
-                local updated, reason = require("PracticeBossInfo").update(gameplay:GetPlayerController(pawn, 0), self.bosses, now)
+                local targets = self.observer and self.observer:livingGroup() or self.bosses
+                local updated, reason = require("PracticeBossInfo").update(gameplay:GetPlayerController(pawn, 0), targets, now)
                 assert(updated ~= false, reason or "练习首领信息暂未就绪")
             end)
             if not shown then
@@ -1089,7 +1198,7 @@ function Challenge:tick(gameplay, system, pawn, now)
             self.abilityLoadout = self.ability.capture(pawn)
             self.loadoutApplied, self.pendingSkillLevel = true, nil
         end
-        -- ArenaLoadoutMemory has already committed the remembered equipment
+        -- ArenaLoadoutMemory has already applied the remembered equipment
         -- before arenaContext permits this tick. Fill only the opening attempt,
         -- after that commit; clearStage/spawnStage also run between phases and
         -- must never restore consumables used in the preceding fight.
@@ -1118,7 +1227,7 @@ function Challenge:tick(gameplay, system, pawn, now)
             end
             return
         end
-        if not self.anchor and #self.entry.stages > 1 then
+        if not self.scene.runtimeModule and not self.anchor and #self.entry.stages > 1 then
             self.anchor = PlayerState.capture(pawn, gameplay:GetPlayerController(pawn, 0))
         end
         if self.observer then
@@ -1126,6 +1235,9 @@ function Challenge:tick(gameplay, system, pawn, now)
         else
             self.observer = Signals.newEncounter(pawn, self.bosses, self.profilePath .. "/PBZChallengeTelemetry.csv",
                 self.stageIndex == #self.entry.stages)
+        end
+        if self.scene.standaloneLake then
+            require("LakeUpperArena").refreshWater(gameplay, pawn)
         end
         self.pawnAddress = pawn:GetAddress()
         self.status = self.startedAt and "combat" or "ready"
@@ -1152,6 +1264,7 @@ function Challenge:tick(gameplay, system, pawn, now)
         end
     end
     self:updateMounts()
+    if self.pressure then self.pressure:sample(realNow) end
     local sample = self.observer:read(now)
     self.lastSample = sample
     if self.entry.adapter == "lengtu" and sample.bossDead and valid(self.boss) and self.boss:IsAlive() then
@@ -1163,10 +1276,15 @@ function Challenge:tick(gameplay, system, pawn, now)
         -- Proximity can start AI, but actual same-player hatred is required to
         -- recruit the other current members. A verified remote pull uses the
         -- original timing branch below, never a separately restarted clock.
-        local enabled = not (self.practice and self.practice.state.ai == false)
-        self.groupAggro = EncounterEngage.linkGroup(pawn, self.bosses, self.groupAggro, realNow,
-            enabled, sample.engaged == true)
-        if enabled and self.groupAggro and self.groupAggro.triggered then self.awake = true end
+        local living = self.observer:livingGroup()
+        if #living > 1 then
+            local enabled = not (self.practice and self.practice.state.ai == false)
+            self.groupAggro = EncounterEngage.linkGroup(pawn, living, self.groupAggro, realNow,
+                enabled, sample.engaged == true)
+            if enabled and self.groupAggro and self.groupAggro.triggered then self.awake = true end
+        else
+            self.groupAggro = nil
+        end
     end
     if self.practice and self.practice.startedCombat then self.awake = true end
     if self.awake and (sample.engaged or (self.practice and self.practice.startedCombat)) and not self.startedAt then
@@ -1219,6 +1337,13 @@ end
 function Challenge:practiceKey(key, gameplay, pawn)
     if self.mode ~= "practice" or self.reloadAt or self.reloadRequested or self.status == "error"
         or self.status == "won" or self.view then return false end
+    local hud = require("PracticeHud")
+    if key == hud.toggleKey then
+        self.practiceHudHidden = not self.practiceHudHidden
+        self.practiceHudRetryAt = nil
+        if self.practiceHudHidden then hud.close() end
+        return true
+    end
     local name = ({ F5 = "ai", F6 = "enemyRegen", F7 = "invulnerable", F8 = "infiniteUltimate", F9 = "infiniteSpiritShadow" })[key]
     if not name then return false end
     if not self.practice then self.practice = require("PracticeMode").new(pawn, gameplay:GetPlayerController(pawn, 0)) end

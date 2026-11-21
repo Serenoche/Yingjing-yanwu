@@ -291,35 +291,46 @@ local function chargeOwner(object,allowed,byASC)
         end
     end
 end
-local function discover(session,allowed,now)
-    if now<session.scanAt then return end
-    session.scanAt=now+.5
+local function discoverBars(session,allowed,definition,find)
+    if not valid(StaticFindObject(definition.path)) then return end
+    for _,bar in ipairs(find(definition.name) or {}) do
+        if valid(bar) and same(bar:GetOwningPlayer(),session.controller) and same(bar:GetWorld(),session.world) then
+            local actor=bar[definition.actor]
+            if valid(actor) and allowed[actor:GetAddress()] then
+                local address=bar:GetAddress()
+                local old=session.views[address]
+                if old and not same(old.actor,actor) then remove(old);session.views[address]=nil end
+                if not session.views[address] then session.views[address]=mount(bar,actor,definition.kind,definition.actor) end
+            end
+        end
+    end
+end
+local function sourceOwners(allowed)
     local byASC={}
-    session.abilities={}
     for address,actor in pairs(allowed) do
         local asc=actor.AbilitySystemComponent
         if valid(asc) then byASC[asc:GetAddress()]=address end
     end
-    for _,definition in ipairs(ABILITIES) do
-        if valid(StaticFindObject(definition.path)) then
-            for _,ability in ipairs(FindAllOf(definition.name) or {}) do
-                if valid(ability) then
-                    -- GAS CreateNewInstanceOfAbility uses the owner actor as
-                    -- Outer, not the ASC. Accept component-owned custom variants.
-                    -- Never call avatar/actor-info getters on CDOs/templates.
-                    local outer=ability:GetOuter()
-                    local ownerAddress=valid(outer) and outer:GetAddress()
-                    local address=ownerAddress and (allowed[ownerAddress] and ownerAddress or byASC[ownerAddress])
-                    if address then
-                        local owned=session.abilities[address] or {}
-                        owned[definition.key]=ability;session.abilities[address]=owned
-                    end
-                end
+    return byASC
+end
+local function discoverAbility(abilities,allowed,byASC,definition,find)
+    if not valid(StaticFindObject(definition.path)) then return end
+    for _,ability in ipairs(find(definition.name) or {}) do
+        if valid(ability) then
+            -- Ability instances can be owned by the character or its ASC.
+            local outer=ability:GetOuter()
+            local ownerAddress=valid(outer) and outer:GetAddress()
+            local address=ownerAddress and (allowed[ownerAddress] and ownerAddress or byASC[ownerAddress])
+            if address then
+                local owned=abilities[address] or {}
+                owned[definition.key]=ability;abilities[address]=owned
             end
         end
     end
+end
+local function discoverCharges(abilities,allowed,byASC,find)
     -- Poll subobjects read-only. Never bind their single-cast UI delegates.
-    local found,objects=pcall(FindAllOf,"UIChargeObject")
+    local found,objects=pcall(find,"UIChargeObject")
     if found then
         for _,object in ipairs(objects or {})do
             if valid(object)then
@@ -329,28 +340,52 @@ local function discover(session,allowed,now)
                         local n=object:GetTableRow();return type(n)=="string"and n or n:ToString()
                     end)
                     if read and(row=="FrostAccumulation"or row=="BleedAccumulation"or row:match("^PoisonPhase[0-3]$"))then
-                        local owned=session.abilities[address]or{}
-                        owned.charges=owned.charges or{};owned.charges[row]=object;session.abilities[address]=owned
+                        local owned=abilities[address]or{}
+                        owned.charges=owned.charges or{};owned.charges[row]=object;abilities[address]=owned
                     end
                 end
             end
         end
     end
-    for _,definition in ipairs(BARS) do
-        if valid(StaticFindObject(definition.path)) then
-            for _,bar in ipairs(FindAllOf(definition.name) or {}) do
-                if valid(bar) and same(bar:GetOwningPlayer(),session.controller) and same(bar:GetWorld(),session.world) then
-                    local actor=bar[definition.actor]
-                    if valid(actor) and allowed[actor:GetAddress()] then
-                        local address=bar:GetAddress()
-                        local old=session.views[address]
-                        if old and not same(old.actor,actor) then remove(old);session.views[address]=nil end
-                        if not session.views[address] then session.views[address]=mount(bar,actor,definition.kind,definition.actor) end
-                    end
-                end
-            end
+end
+local function discoverPaced(session,allowed,now,find)
+    local scan=session.discovery or {index=1,abilities={}}
+    session.discovery=scan
+    local bar=BARS[scan.index]
+    local finished=false
+    if bar then
+        discoverBars(session,allowed,bar,find)
+        finished=scan.index==#BARS and not next(session.views)
+    elseif not next(session.views) then
+        finished=true
+    else
+        local ability=ABILITIES[scan.index-#BARS]
+        local owners=sourceOwners(allowed)
+        if ability then
+            discoverAbility(scan.abilities,allowed,owners,ability,find)
+        else
+            discoverCharges(scan.abilities,allowed,owners,find)
+            finished=true
         end
     end
+    if finished then
+        session.abilities,session.discovery,session.scanAt=scan.abilities,nil,now+.45
+    else
+        scan.index=scan.index+1
+        session.scanAt=now+.04
+    end
+end
+local function discover(session,allowed,now,lookup,paced)
+    if now<session.scanAt then return end
+    local find=lookup or FindAllOf
+    if paced then discoverPaced(session,allowed,now,find);return end
+    session.scanAt=now+.5
+    for _,definition in ipairs(BARS) do discoverBars(session,allowed,definition,find) end
+    session.abilities={}
+    if lookup and not next(session.views) then return end
+    local owners=sourceOwners(allowed)
+    for _,definition in ipairs(ABILITIES) do discoverAbility(session.abilities,allowed,owners,definition,find) end
+    discoverCharges(session.abilities,allowed,owners,find)
 end
 local function display(view,rows,now)
     local cellWidth=view.skin.outerWidth
@@ -400,7 +435,7 @@ local function display(view,rows,now)
         end
     end
 end
-function Hud.update(controller,actors,now)
+function Hud.update(controller,actors,now,lookup,pacedDiscovery)
     if not valid(controller) or not finite(now) then Hud.close();return false end
     local world=controller:GetWorld()
     if not valid(world) then Hud.close();return false end
@@ -424,9 +459,10 @@ function Hud.update(controller,actors,now)
             remove(view);session.views[address]=nil
         end
     end
+    if pacedDiscovery then discover(session,allowed,now,lookup,true) end
     if now<session.updateAt then return true end
     session.updateAt=now+.1
-    discover(session,allowed,now)
+    if not pacedDiscovery then discover(session,allowed,now,lookup) end
     -- One snapshot per actor, even if the game has two HP widgets for it.
     local samples={}
     for _,view in pairs(session.views) do

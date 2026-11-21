@@ -1,0 +1,60 @@
+{
+  "id": "leidang",
+  "name": "圣躯心池",
+  "map": "PBZ_Ximeng_WP",
+  "originalPath": "/Game/Maps/B08_09_12_13/PBZ_Ximeng_WP",
+  "runtimeModule": "ShengQuXinChiArena",
+  "checkpointSlot": "PBZArenaStockMap05",
+  "bellSaveId": "Bell_XM_007",
+  "checkpointBell": {
+    "id": "Bell_XM_007",
+    "class": "BP_MelodiousBell_C",
+    "name": "BP_MelodiousBell_C_UAID_60CF848A91CA9B9E02_1410685889"
+  },
+  "anchor": { "X": -200519.50, "Y": 90653.99, "Z": 4531.4404 },
+  "rotation": { "Pitch": 0, "Yaw": -83.125, "Roll": 0 },
+  "reviveCameraYaw": 276.875,
+  "spawnPoints": [
+    { "X": -203022.44, "Y": 85013.195, "Z": 5322.772 },
+    { "X": -202045.45, "Y": 84342.67 },
+    { "X": -204180.55, "Y": 85295.30 },
+    { "X": -203120.92, "Y": 83726.46 },
+    { "X": -201950.08, "Y": 85530.55 },
+    { "X": -203751.72, "Y": 86399.32 }
+  ],
+  "spawnClearance": 1400,
+  "phaseSpawnClearance": 1400,
+  "spawnTrace": { "top": 5650, "bottom": 5050, "worldStaticFallback": true },
+  "phaseReturnPoints": [
+    { "X": -202058.90, "Y": 87237.51, "Z": 5326 },
+    { "X": -202154.60, "Y": 87273.80, "Z": 5326 },
+    { "X": -201883.90, "Y": 87147.60, "Z": 5319 }
+  ],
+  "chiLianUltimate": {
+    "center": { "X": -202956.60, "Y": 85154.40 },
+    "snakes": [
+      { "X": -204289.40, "Y": 84600.90 },
+      { "X": -202488.60, "Y": 83761.20 },
+      { "X": -201561.00, "Y": 85750.30 },
+      { "X": -203361.80, "Y": 86590.10 }
+    ]
+  },
+  "lionArena": {
+    "center": { "X": -202956.60, "Y": 85154.40, "Z": 6350 },
+    "extent": { "X": 2300, "Y": 2550, "Z": 1200 },
+    "exits": [
+      { "X": -204072.40, "Y": 85588.80 },
+      { "X": -201753.60, "Y": 84507.50 },
+      { "X": -203582.30, "Y": 83812.60 },
+      { "X": -202281.50, "Y": 86602.20 }
+    ]
+  },
+  "combatFog": "BP_FogDoor_C_UAID_60CF848A91CA9B9E02_1410864012",
+  "passageFog": [
+    { "id": "A", "X": -202252.70, "Y": 91396.30, "yaw": 65, "halfWidth": 385, "top": 4730, "bottom": 4120 },
+    { "id": "C", "X": -203960.20, "Y": 82971.50, "yaw": -25, "halfWidth": 1320, "top": 5830, "bottom": 5150 }
+  ],
+  "unloadedLayers": [
+    "/Game/DataLayers/T01_FirstStage_WP/202405DemoVersion/MainGameFlow/Main_XMSZ_SPpost.Main_XMSZ_SPpost"
+  ]
+}

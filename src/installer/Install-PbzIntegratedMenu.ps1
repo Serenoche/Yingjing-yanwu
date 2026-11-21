@@ -1,42 +1,69 @@
 ﻿param(
     [switch] $Install,
     [switch] $Uninstall,
+    [switch] $Preflight,
+    [switch] $Repair,
+    [switch] $Recover,
     [string] $SteamRoot = '',
     [string] $GameExe = '',
     [string] $SteamAccount = '',
-    [string] $UserSid = ''
+    [string] $UserSid = '',
+    [Alias('EpicAccount')][string] $AccountId = '',
+    [string] $ExpectedGameExe = '',
+    [switch] $KeepExistingLoader
 )
 
 $ErrorActionPreference = 'Stop'
+$script:pbzInstallerStage = 'package'
+. (Join-Path $PSScriptRoot 'PBZInstallHealth.ps1')
+try {
+. (Join-Path $PSScriptRoot 'PBZInstallRecovery.ps1')
+. (Join-Path $PSScriptRoot 'PBZRuntimeRepair.ps1')
 . (Join-Path $PSScriptRoot 'PortablePaths.ps1')
 . (Join-Path $PSScriptRoot 'SharedRuntime.ps1')
-if ($Install -and $Uninstall) { throw 'Choose Install or Uninstall, not both.' }
+. (Join-Path $PSScriptRoot 'ArenaMaps.ps1')
+$script:pbzTransaction = $null
 $owner = '7d5ad307-d21c-47eb-9584-493443190984'
 $saveOwner = 'PBZTestArena.IntegratedMenu'
 $expectedGameHash = '4415933ce33476f14c837abb61a1b60af8b78cd81783896501913a7aac69e423'
+$legacyGameHash = '7b4fcd286a350780faf0824d73aa150b21cbf1bccde883e6a96386cbe09973b4'
+$epicGameHash = '0d2569748593c59a29ae461aeab5c2735e727c0e706430d24bb02699c49770be'
 $ownerName = '.PBZTestArenaNative-owner'
 $integratedName = '.PBZTestArenaIntegrated-owner'
 $root = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
+Assert-PbzPackagePaths $root
 $integratedRoot = [IO.Path]::GetFullPath($PSScriptRoot)
 $runtimeRoot = Join-Path $root 'NativeEnemyRuntime'
 $payload = Join-Path $runtimeRoot 'Payload'
 $manifestPath = Join-Path $runtimeRoot 'PayloadHashes.json'
+. (Join-Path $PSScriptRoot 'CheckpointPayload.ps1')
+$hasCheckpoint = (Test-Path -LiteralPath $checkpointManifestPath) -or (Test-Path -LiteralPath $checkpointPayloadRoot)
+. (Join-Path $PSScriptRoot 'PBZModLoaderBridges.ps1')
 $helper = Join-Path $integratedRoot 'Tools/PBZSaveTool.exe'
 $toolBuildPath = Join-Path $integratedRoot 'Tools/Build.json'
 $presets = Join-Path $integratedRoot 'PrivatePresets.pbzs'
 $legacyStatePath = Join-Path $integratedRoot 'InstallState.json'
 $legacyPrivatePath = Join-Path $integratedRoot 'PrivateSlots.json'
+$script:pbzInstallerStage = 'selection'
+if (@(@($Install,$Uninstall,$Repair,$Recover) | Where-Object { $_ }).Count -gt 1) {
+    Stop-PbzInstall 'ACTION_REQUIRED' '请在安装器中只选择一项操作。'
+}
 if (!$GameExe -and $SteamRoot) { $GameExe = Join-Path $SteamRoot 'steamapps/common/PBZ/platform/steam/PBZ.exe' }
 if (!$GameExe) {
     $candidates = @(Get-PbzGameCandidates)
-    if ($candidates.Count -ne 1) { throw 'Choose PBZ.exe in the installer window, or pass -GameExe; no unique Steam game was found.' }
+    if ($candidates.Count -ne 1) { throw '请在安装器中选择游戏平台和 PBZ.exe。' }
     $GameExe = $candidates[0].GameExe
 }
 $layout = Resolve-PbzGameLayout $GameExe
+if ($ExpectedGameExe -and $layout.GameExe -ine $ExpectedGameExe) {
+    Stop-PbzInstall 'GAME_PATH_CHANGED' '游戏目录联接在检查后指向了不同的位置，请重新选择目录并检查。' $layout.EntryGameExe
+}
+$epic = $layout.Store -eq 'Epic'
 $game,$platform,$installRoot = $layout.GameExe,$layout.Platform,$layout.InstallRoot
+Assert-PbzPathLength $game
 $active = Join-Path $platform 'ue4ss'
 $proxy = Join-Path $platform 'dwmapi.dll'
-$saveSteamRoot = Join-Path $installRoot 'ProjectPBZ/Saved/SaveGames/Steam'
+$modDirectory = Join-Path $active 'Mods/PBZTestArena'
 $utf8 = New-Object Text.UTF8Encoding($false)
 if (!$UserSid) { $UserSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value }
 if ($UserSid -cnotmatch '^S-1-(?:5-21|12-1)(?:-\d+){4}$') { throw 'A normal Windows user SID is required for private MOD write access.' }
@@ -44,7 +71,14 @@ if ($UserSid -cnotmatch '^S-1-(?:5-21|12-1)(?:-\d+){4}$') { throw 'A normal Wind
 function Assert-OrdinaryPath([string] $Path) {
     $item = Get-Item -LiteralPath $Path -Force
     while ($null -ne $item) {
-        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw "Linked paths are not supported: $Path" }
+        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+            $message = if ($script:pbzInstallerStage -eq 'package') {
+                '安装包内有指向其他位置的链接。请在本机新建一个文件夹并完整解压 ZIP 后重试。'
+            } else {
+                '游戏内部的目录或文件使用了链接，当前安装器无法安全覆盖。请用原 MOD 管理器将前置和 MOD 还原到游戏内的普通目录，再检查。'
+            }
+            Stop-PbzInstall 'LINKED_PATH' $message $item.FullName
+        }
         $item = if ($item.PSIsContainer) { $item.Parent } else { $item.Directory }
     }
 }
@@ -59,7 +93,10 @@ function Ensure-Directory([string] $Path) {
     $ancestor = [IO.Path]::GetFullPath($Path)
     while (!(Test-Path -LiteralPath $ancestor)) { $ancestor = Split-Path -Parent $ancestor }
     Assert-OrdinaryPath $ancestor
-    if (!(Test-Path -LiteralPath $Path -PathType Container)) { New-Item -ItemType Directory -Path $Path -Force | Out-Null }
+    if (!(Test-Path -LiteralPath $Path -PathType Container)) {
+        Assert-PbzPathLength $Path -Directory
+        [void][IO.Directory]::CreateDirectory($Path)
+    }
     Assert-OrdinaryPath $Path
 }
 
@@ -73,6 +110,19 @@ function Get-Hash([string] $Path) {
 
 function Assert-Hash([string] $Path, [string] $Expected) {
     if ((Get-Hash $Path) -cne $Expected.ToLowerInvariant()) { throw "File hash mismatch: $Path" }
+}
+
+function Assert-PbzInstalledRuntimeHash([string] $Relative, [string] $Expected) {
+    $path = Join-Path $platform $Relative
+    if ($Relative -ceq 'ue4ss/Mods/PBZTestArena/Scripts/PBZSaveBarrier.dll' -and
+        $Expected -ceq 'edc65b15172e718039e0937325531a2719bb0d144fbd5e9804b6ec98668372d0') {
+        # Accept the one published internal replacement for this exact installed file.
+        if ((Get-Hash $path) -cnotin @($Expected,'c8679bb8fc01224568cd23e7fb40c811081ed1562cb7df5dcc4ac7c3306102d6')) {
+            throw "File hash mismatch: $path"
+        }
+        return
+    }
+    Assert-Hash $path $Expected
 }
 
 function Copy-NewFile([string] $Source, [string] $Destination) {
@@ -93,12 +143,16 @@ function Write-NewText([string] $Path, [string] $Text) {
     finally { $stream.Dispose() }
 }
 
-function Write-AtomicText([string] $Path, [string] $Text) {
+function Write-AtomicText([string] $Path, [string] $Text, [string] $Workspace, [switch] $CreateOnly) {
     Ensure-Directory (Split-Path -Parent $Path)
     $pending = $Path + '.' + [Guid]::NewGuid().ToString('N') + '.tmp'
-    Write-NewText $pending $Text
+    if ($Workspace) {
+        Ensure-Directory $Workspace
+        $pending = Join-Path $Workspace ([Guid]::NewGuid().ToString('N') + '.tmp')
+    }
     try {
-        if (Test-Path -LiteralPath $Path) { Assert-OrdinaryPath $Path; [IO.File]::Replace($pending,$Path,[NullString]::Value) }
+        Write-NewText $pending $Text
+        if (!$CreateOnly -and (Test-Path -LiteralPath $Path)) { Assert-OrdinaryPath $Path; [IO.File]::Replace($pending,$Path,[NullString]::Value) }
         else { [IO.File]::Move($pending,$Path) }
     } finally { if (Test-Path -LiteralPath $pending) { Remove-Item -LiteralPath $pending } }
 }
@@ -108,16 +162,17 @@ function Test-GameRunning {
 }
 
 function Assert-NotRunning {
-    if (Test-GameRunning) { throw 'Exit PBZ before changing the installed MOD menu.' }
+    if (Test-GameRunning) { Stop-PbzInstall 'GAME_RUNNING' '请完全退出影之刃零，再检查或修改演武安装。' }
 }
 
-function Grant-OwnedWriteAccess([string] $Directory, [string] $Marker) {
+function Grant-OwnedWriteAccess([string] $Directory, [string] $Marker, [switch] $AccountData) {
     Assert-OrdinaryPath $Directory
     $proof = Join-Path $Directory $Marker
     Assert-OrdinaryPath $proof
     if ([IO.File]::ReadAllText($proof).Trim() -cne $owner) { throw 'Refusing ACL changes outside an owned MOD directory.' }
     $identity = New-Object Security.Principal.SecurityIdentifier($UserSid)
-    $acl = [IO.Directory]::GetAccessControl($Directory)
+    $sections = [Security.AccessControl.AccessControlSections]::Access
+    $acl = [IO.Directory]::GetAccessControl($Directory,$sections)
     $inherit = [Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [Security.AccessControl.InheritanceFlags]::ObjectInherit
     foreach ($existing in $acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])) {
         if ($existing.IdentityReference.Value -ceq $UserSid -and
@@ -130,7 +185,12 @@ function Grant-OwnedWriteAccess([string] $Directory, [string] $Marker) {
         [Security.AccessControl.FileSystemRights]::Modify,
         $inherit,
         [Security.AccessControl.PropagationFlags]::None,[Security.AccessControl.AccessControlType]::Allow)
+    $before = $acl.GetSecurityDescriptorSddlForm($sections)
     $acl.SetAccessRule($rule)
+    if ($AccountData) {
+        Add-PbzTransactionStep ([ordered]@{kind='acl';target=$Directory;before=$before;
+            after=$acl.GetSecurityDescriptorSddlForm($sections)})
+    }
     [IO.Directory]::SetAccessControl($Directory,$acl)
 }
 
@@ -142,16 +202,19 @@ function Assert-OwnedRuntime([string] $Directory, [switch] $Integrated) {
         # existing transaction backup; restore it on uninstall or rollback.
         # Never infer ownership of any nonempty third-party installation.
         if (!$Integrated -and @(Get-ChildItem -LiteralPath $Directory -Force).Count -eq 0) { return }
-        throw '检测到遗留的 UE4SS 文件夹，但缺少影境演武归属标记。尚未改动该目录或存档。请退出游戏后，将 platform/steam/ue4ss 文件夹重命名备份，再重试；如仍有其他 MOD 的加载器 DLL，也需按其原卸载说明处理。'
+        Stop-PbzInstall 'LOADER_CONFLICT' '游戏里有无法识别的 UE4SS 文件夹。请先通过原 MOD 管理器修复或还原加载器，再点「检查安装」。' $Directory
     }
     Assert-OrdinaryPath $marker
-    if ([IO.File]::ReadAllText($marker).Trim() -cne $owner) { throw 'An unowned UE4SS installation is present.' }
+    if ([IO.File]::ReadAllText($marker).Trim() -cne $owner) {
+        Stop-PbzInstall 'LOADER_CONFLICT' '游戏里的 UE4SS 由其他安装工具管理，无法自动替换。请在原管理器修复前置后重试。' $Directory
+    }
     if ($Integrated) {
         $persistent = Join-Path $Directory $integratedName
         Assert-OrdinaryPath $persistent
         if ([IO.File]::ReadAllText($persistent).Trim() -cne $owner) { throw 'The persistent menu ownership marker differs.' }
     }
     $mods = Join-Path $Directory 'Mods'
+    if (!(Test-Path -LiteralPath $mods)) { return }
     Assert-OrdinaryPath $mods
     $foreign = @(Get-ChildItem -LiteralPath $mods -Force | Where-Object { $_.Name -notin @('PBZTestArena','shared','mods.txt','mods.json') })
     if ($foreign.Count) { throw 'The owned UE4SS directory contains additional mods; preserve them before installing this package.' }
@@ -164,6 +227,7 @@ function Assert-Payload {
         if ($entry.Name -notmatch '^[A-Za-z0-9_./-]+$' -or $entry.Name -match '(^|/)\.\.(/|$)' -or
             ($entry.Name -ne 'dwmapi.dll' -and !$entry.Name.StartsWith('ue4ss/'))) { throw 'Invalid payload manifest path.' }
         if ($entry.Value -cnotmatch '^[a-f0-9]{64}$') { throw 'Invalid payload manifest hash.' }
+        Assert-PbzPathLength ($payload + '\' + $entry.Name) 'PACKAGE_PATH_TOO_LONG'
         Assert-Hash (Join-Path $payload $entry.Name) $entry.Value
     }
     if (!$manifest.'dwmapi.dll' -or !$manifest.'ue4ss/Mods/PBZTestArena/Scripts/PBZSaveBarrier.dll') {
@@ -191,9 +255,13 @@ function Lua-String([string] $Value) {
 }
 
 function New-Config([string] $SavePath) {
+    $legacyMaps = if ($checkpointFlow -eq 'native-checkpoint' -or !$mapPayload.Count) { 'true' } else { 'false' }
     return @"
 return {
     version = 2,
+    platform = $(Lua-String $layout.Store.ToLowerInvariant()),
+    mapFlow = $(Lua-String $checkpointFlow),
+    legacyMaps = $legacyMaps,
     owner = $(Lua-String $owner),
     profile = $(Lua-String $profile),
     savePath = $(Lua-String $SavePath),
@@ -207,27 +275,52 @@ return {
 "@
 }
 
-function Get-PreviousState {
+function Get-PreviousState([switch] $ForInstall) {
     $readState,$readPrivate = $statePath,$privatePath
     if (!(Test-Path -LiteralPath $readState -PathType Leaf) -and (Test-Path -LiteralPath $legacyStatePath -PathType Leaf)) {
         $readState,$readPrivate = $legacyStatePath,$legacyPrivatePath
     }
     if (!(Test-Path -LiteralPath $readState -PathType Leaf)) { return $null }
     Assert-OrdinaryPath $readState
-    $state = Get-Content -LiteralPath $readState -Raw -Encoding UTF8 | ConvertFrom-Json
-    if ($state.version -notin @(1,2,3) -or $state.owner -cne $owner) { throw 'Unknown integrated-menu installation state.' }
-    if ($state.version -eq 3 -and $state.installKind -cne 'shared-v1') { throw 'Unknown shared-runtime installation state.' }
-    if ($state.installed) {
-        if ([IO.Path]::GetFullPath($state.gameExe) -ine [IO.Path]::GetFullPath($game) -or
-            [IO.Path]::GetFullPath($state.savePath) -ine [IO.Path]::GetFullPath($save)) { throw 'This installation state belongs to another game or account.' }
+    $text = Get-Content -LiteralPath $readState -Raw -Encoding UTF8
+    try { $state = $text | ConvertFrom-Json } catch { $state = $null }
+    if ($state.owner -and $state.owner -cne $owner) {
+        Stop-PbzInstall 'RECEIPT_UNVERIFIED' '旧安装记录属于其他安装器。请使用原工具还原，或导出诊断核对。' $readState
     }
-    if ($state.privateManifestSha256) { Assert-Hash $readPrivate $state.privateManifestSha256 }
-    elseif ($state.installed) { throw 'The installation has no private save ownership receipt.' }
+    if ($state.installed -and (($state.gameExe -and $state.gameExe -ine $game -and $state.gameExe -ine $layout.EntryGameExe) -or
+            ($state.savePath -and $state.savePath -ine $save))) {
+        Stop-PbzInstall 'ACCOUNT_CONFLICT' '旧安装记录属于另一个游戏位置或存档。请重新选择原游戏目录及账号。' $readState
+    }
+    if ($state.owner -cne $owner -or $state.installed -isnot [bool] -or $state.version -notin @(1,2,3) -or
+            ($state.version -eq 3 -and $state.installKind -cne 'shared-v1') -or
+            ($state.installed -and (!$state.gameExe -or !$state.savePath -or !$state.runtimeHashes -or
+                ($state.version -ne 3 -and $state.runtimeHashes.'dwmapi.dll' -cnotmatch '^[a-f0-9]{64}$')))) {
+        if ($ForInstall) { return $null } # The old record is kept in the transaction backup.
+        Stop-PbzInstall 'RECEIPT_UNVERIFIED' '无法核对旧安装记录。请先点「检查安装」备份并覆盖演武，再卸载；若检查失败，请导出诊断。' $readState
+    }
+    if ($state.privateManifestSha256) {
+        $privateHash = if (Test-Path -LiteralPath $readPrivate -PathType Leaf) { Get-Hash $readPrivate }
+        if ($privateHash -cne $state.privateManifestSha256) {
+            if ($ForInstall -and $checkpointFlow -eq 'native-checkpoint') { $state.privateManifestSha256 = $null }
+            else { Stop-PbzInstall 'RECEIPT_UNVERIFIED' '无法核对旧安装的演武槽位记录。请保留原存档和备份，并导出诊断。' $readPrivate }
+        }
+    } elseif ($state.installed -and $state.mapFlow -cne 'native-checkpoint') {
+        if ($ForInstall -and $checkpointFlow -eq 'native-checkpoint') { return $null }
+        Stop-PbzInstall 'RECEIPT_UNVERIFIED' '旧版演武槽位记录缺失。请保留存档和旧安装备份，点「导出诊断」核对。' $readState
+    }
     $state | Add-Member -NotePropertyName verifiedPrivatePath -NotePropertyValue $readPrivate -Force
     return $state
 }
 
-function Assert-PreviousRuntime($State) {
+function Assert-PreviousRuntime($State, [switch] $AllowMissingMod, [switch] $ReplaceMod) {
+    if ((Test-Path -LiteralPath $proxy) -and !(Test-Path -LiteralPath (Join-Path $active 'UE4SS.dll') -PathType Leaf)) {
+        Assert-OrdinaryPath $proxy
+        if (!$State -or !$State.installed -or !$State.runtimeHashes.'dwmapi.dll') {
+            Stop-PbzInstall 'LOADER_ORPHAN' '发现 dwmapi.dll，但找不到配套 UE4SS。请用原 MOD 管理器修复前置。若确认是已卸载 MOD 的残留，可先把它移出游戏目录备份再重试。无法确认时请导出诊断。' $proxy
+        }
+        Assert-PbzMissingRuntimeReceipt $State $false
+        Assert-Hash $proxy $State.runtimeHashes.'dwmapi.dll'
+    }
     if (Test-Path -LiteralPath $active) {
         Assert-OwnedRuntime $active
         $persistent = Join-Path $active $integratedName
@@ -235,12 +328,16 @@ function Assert-PreviousRuntime($State) {
             Assert-OwnedRuntime $active -Integrated
             if (!$State -or !$State.installed) { throw 'The installed menu is missing its ownership receipt; refusing to replace it.' }
             foreach ($entry in $State.runtimeHashes.PSObject.Properties) {
-                Assert-Hash (Join-Path $platform $entry.Name) $entry.Value
+                if (($AllowMissingMod -or $ReplaceMod) -and $entry.Name.StartsWith('ue4ss/Mods/PBZTestArena/',[StringComparison]::Ordinal)) { continue }
+                $existing = Join-Path $platform $entry.Name
+                Assert-Contained $existing $platform
+                if ($ReplaceMod -and $entry.Name.StartsWith('ue4ss/',[StringComparison]::Ordinal) -and
+                        !(Test-Path -LiteralPath $existing)) { continue }
+                Assert-PbzInstalledRuntimeHash $entry.Name $entry.Value
             }
         }
     }
     if (Test-Path -LiteralPath $proxy) {
-        if (!(Test-Path -LiteralPath $active) -and (!$State -or !$State.installed)) { throw 'An unowned dwmapi.dll is present.' }
         $expected = $manifest.'dwmapi.dll'
         if ($State -and $State.installed) { $expected = $State.runtimeHashes.'dwmapi.dll' }
         Assert-Hash $proxy $expected
@@ -252,7 +349,9 @@ function Invoke-SaveTool([string] $SavePath, [string] $Output, [string] $PriorMa
     $arguments = @('stage','--game',$game,'--source',$SavePath,'--presets',$presets,'--output',$Output)
     if ($PriorManifest) { $arguments += @('--prior',$PriorManifest) }
     $json = & $helper @arguments
-    if ($LASTEXITCODE -ne 0) { throw 'The portable save tool refused staging; no formal save was replaced.' }
+    if ($LASTEXITCODE -ne 0) {
+        Stop-PbzInstall 'SAVE_UNVERIFIED' '无法为当前存档准备演武槽位。请从游戏平台正常继续游戏、保存一次并退出后重试。若仍失败，请保留原档并导出诊断。' $save
+    }
     $text = $json -join [Environment]::NewLine
     $result = $text | ConvertFrom-Json
     if ($result.schemaVersion -ne 1 -or $result.owner -cne $saveOwner -or $result.operation -cne 'stage' -or
@@ -271,7 +370,7 @@ function Invoke-SaveTool([string] $SavePath, [string] $Output, [string] $PriorMa
         throw 'The staged private slot namespace is incomplete.'
     }
     $ordinary = @($result.originalSlots.PSObject.Properties.Name | Where-Object { $_ -cmatch '^(?:AutoSave|ManualSave)\d+$' })
-    if (!$ordinary.Count) { throw '请先新游戏并创建一次正常存档，退出后安装。' }
+    if (!$ordinary.Count) { Stop-PbzInstall 'ACCOUNT_REQUIRED' '请先在游戏中创建一次正常存档，退出后重新检查安装。' }
     $verificationArguments = @('verify','--game',$game,'--before',$SavePath,'--after',$Output,'--presets',$presets)
     if ($PriorManifest) { $verificationArguments += @('--prior',$PriorManifest) }
     $verificationJson = & $helper @verificationArguments
@@ -295,25 +394,21 @@ function Replace-Save([string] $Source, [string] $Destination, [string] $BeforeH
     Assert-NotRunning
     Assert-Hash $Destination $BeforeHash
     if ($BeforeHash -ceq $AfterHash) { return $false }
-    $pending = $Destination + '.PBZIntegrated-' + [Guid]::NewGuid().ToString('N') + '.tmp'
-    Assert-Contained $pending (Split-Path -Parent $Destination)
+    $folder = Split-Path -Parent $Source
+    $pending = Join-Path $folder ('Swap-' + [Guid]::NewGuid().ToString('N').Substring(0,8) + '.tmp')
+    Assert-Contained $pending $folder
     Copy-NewFile $Source $pending
     try {
         Assert-Hash $pending $AfterHash
         Assert-Hash $Destination $BeforeHash
         [IO.File]::Replace($pending,$Destination,$Rollback)
+        $replacedHash = Get-Hash $Rollback
+        if ($replacedHash -cne $BeforeHash) {
+            throw '安装期间存档发生变化。请等游戏平台完成同步后再试。'
+        }
         Assert-Hash $Destination $AfterHash
-        Assert-Hash $Rollback $BeforeHash
     } finally { if (Test-Path -LiteralPath $pending) { Remove-Item -LiteralPath $pending } }
     return $true
-}
-
-function Restore-Save([string] $SavePath, [string] $Rollback, [string] $BeforeHash, [string] $AfterHash) {
-    if (!(Test-Path -LiteralPath $Rollback)) { return }
-    Assert-Hash $Rollback $BeforeHash
-    Assert-Hash $SavePath $AfterHash
-    [IO.File]::Replace($Rollback,$SavePath,[NullString]::Value)
-    Assert-Hash $SavePath $BeforeHash
 }
 
 function Copy-LegacyUserFile([string] $Source, [string] $Destination, [string] $Relative) {
@@ -328,9 +423,13 @@ function Copy-LegacyUserFile([string] $Source, [string] $Destination, [string] $
         $script:migrationNotes.Add('Existing newer destination retained; legacy copy: ' + $Relative)
         return
     }
-    Copy-NewFile $Source $Destination
+    Add-PbzFileChange $Destination '' $digest
+    $temporary = Join-Path $run ('Migration-' + [Guid]::NewGuid().ToString('N') + '.tmp')
+    Copy-NewFile $Source $temporary
+    Assert-Hash $temporary $digest
+    Ensure-Directory (Split-Path -Parent $Destination)
+    [IO.File]::Move($temporary,$Destination)
     Assert-Hash $Destination $digest
-    $script:migratedFiles[$Destination] = $digest
     $script:migrationNotes.Add('Copied without changing the legacy source: ' + $Relative)
 }
 
@@ -366,45 +465,159 @@ function Migrate-LegacyUserData($State) {
     Write-NewText (Join-Path $run 'LegacyProfileMigration.json') (([ordered]@{source=$oldProfile;notes=@($migrationNotes);oldFilesRetained=$true}) | ConvertTo-Json -Depth 4)
 }
 
-Assert-OrdinaryPath $integratedRoot
-Assert-OrdinaryPath $platform
-Assert-OrdinaryPath $game
-Assert-NotRunning
-Assert-Payload
-$pendingReceipt=Join-Path $active 'Mods/PBZTestArena/.PBZTestArenaPending-install.json'
-$actualGameHash=Get-Hash $game
-if (Test-Path -LiteralPath $pendingReceipt -PathType Leaf) {
-    . (Join-Path $PSScriptRoot 'CompatibilityInstall.ps1')
-    if ($Install) {
-        throw 'Uninstall the previous pending-only internal MOD with this installer, then install again to try compatibility. UE4SS, other MODs and saves are retained.'
-    } else { Invoke-PbzPendingInstall;return }
+$script:pbzInstallerStage = 'account'
+$accounts = @(Get-PbzSaveAccounts -Layout $layout)
+if (!$AccountId) { $AccountId = $SteamAccount }
+if ($AccountId) {
+    if ($AccountId -cnotmatch $layout.AccountPattern) { throw '所选账号与游戏的存档平台不匹配。' }
+    $accounts = @($accounts | Where-Object { $_.Account -ieq $AccountId })
 }
-if (!$Uninstall) { Assert-PortableTools }
-$accounts = @(Get-ChildItem -LiteralPath $saveSteamRoot -Directory | Where-Object { $_.Name -match '^\d{17}$' })
-if ($SteamAccount) {
-    if ($SteamAccount -cnotmatch '^\d{17}$') { throw 'Invalid Steam account directory name.' }
-    $accounts = @($accounts | Where-Object { $_.Name -ceq $SteamAccount })
+if ($accounts.Count -ne 1 -and !(Test-Path -LiteralPath $game -PathType Leaf)) {
+    Stop-PbzInstall 'GAME_EXE_MISSING' "找不到 $($layout.Store) 版 PBZ.exe。请从游戏平台核对游戏位置并验证游戏文件，也可以直接导出诊断。" $game
 }
-if ($accounts.Count -ne 1) { throw 'Expected one formal Steam save account; use -SteamAccount if more than one exists.' }
-$account = $accounts[0].Name
-$save = Join-Path $accounts[0].FullName 'PBZSaveGame.sav'
-Assert-OrdinaryPath $save
-$dataRoot = Join-Path $installRoot ('ProjectPBZ/Saved/PBZTestArena/' + $account)
+if ($accounts.Count -ne 1) {
+    Stop-PbzInstall 'ACCOUNT_REQUIRED' '请选择一个存档账号。没有存档时，请先在游戏中保存一次。'
+}
+$save = $accounts[0].SavePath
+$dataRoot = $accounts[0].DataRoot
 $stateRoot = Join-Path $dataRoot 'IntegratedMenu'
 $statePath = Join-Path $stateRoot 'InstallState.json'
 $privatePath = Join-Path $stateRoot 'PrivateSlots.json'
 $profile = Join-Path $stateRoot 'ArenaData/Profile'
 $preferences = Join-Path $dataRoot 'ArenaPreferences'
-$prior = Get-PreviousState
-if (Test-PbzSharedRuntime $prior) {
-    Invoke-PbzSharedRuntime $prior
+$script:pbzInstallerStage = 'recovery'
+Assert-PbzOtherTransactions
+if (Test-Path -LiteralPath (Get-PbzPendingPath)) {
+    Read-PbzTransaction
+    if ($Preflight) { return New-PbzPreflight 'recovery_pending' 'Recover' '上次安装有未完成的文件操作。请先恢复，再重新检查。' }
+    if (!$Recover) { Stop-PbzInstall 'RECOVERY_PENDING' '上次安装尚未完成，请先点击「恢复上次操作」。' }
+    Invoke-PbzPendingRecovery
     return
 }
-Assert-PreviousRuntime $prior
-if (!$Install -and !$Uninstall) {
-    Write-Output 'Integrated-menu payload, game build and formal save paths verified. No files changed; no game started.'
+if ($Recover) { Stop-PbzInstall 'NO_RECOVERY' '当前账号没有需要恢复的操作。' }
+
+$script:pbzInstallerStage = 'game_path'
+if (!(Test-Path -LiteralPath $game -PathType Leaf)) {
+    Stop-PbzInstall 'GAME_EXE_MISSING' "找不到 $($layout.Store) 版 PBZ.exe。请从游戏平台核对游戏位置并验证游戏文件，也可以直接导出诊断。" $game
+}
+Assert-OrdinaryPath $platform
+Assert-OrdinaryPath $game
+Assert-OrdinaryPath $save
+Assert-NotRunning
+if (!$Uninstall) { Assert-PbzLuaGamePath $layout }
+$script:pbzInstallerStage = 'package'
+Assert-OrdinaryPath $integratedRoot
+Assert-Payload
+$script:pbzInstallerStage = 'game_version'
+$pendingReceipt=Join-Path $active 'Mods/PBZTestArena/.PBZTestArenaPending-install.json'
+$actualGameHash=Get-Hash $game
+if (!$Uninstall -and !$Recover) {
+    if ($epic) {
+        if (Test-Path -LiteralPath (Join-Path $active 'Mods/PBZTestArena/.PBZEpicInternal-owner')) {
+            Stop-PbzInstall 'INTERNAL_BUILD_PRESENT' '检测到旧的 Epic 隔离内测。请运行原内测包里的「还原」入口，再检查安装。'
+        }
+        $script:pbzInstallerStage = 'package'
+        $requirementsPath = Join-Path $PSScriptRoot 'EpicNativeRequirements.json'
+        Assert-OrdinaryPath $requirementsPath
+        $requirements = Get-Content -LiteralPath $requirementsPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        if ($requirements.Count -ne 18) { throw 'Epic 兼容接口清单不完整。' }
+        . (Join-Path $PSScriptRoot 'EpicNativeCheck.ps1')
+        $script:pbzInstallerStage = 'game_version'
+        if (@(Check-NativeFile $game $requirements).Count) {
+            Stop-PbzInstall 'UNSUPPORTED_BUILD' '这个 Epic 游戏版本暂无法适配。请在 Epic 中验证游戏文件并检查是否有新版演武安装包。仍失败时请导出诊断。' $game
+        }
+    } elseif ($actualGameHash -cnotin @($expectedGameHash,$legacyGameHash)) {
+        Stop-PbzInstall 'UNSUPPORTED_BUILD' '这个 Steam 游戏版本暂无法适配。请验证游戏文件并检查是否有新版演武安装包。仍失败时请导出诊断。' $game
+    }
+}
+$script:pbzInstallerStage = 'package'
+$mapPayload = [ordered]@{}
+$loaderBridgePayload = [ordered]@{}
+$checkpointFlow = 'compatibility'
+if (!$Uninstall -and !$Recover) {
+    $stockSteam = !$epic -and $actualGameHash -ceq $expectedGameHash
+    $stockEpic = $epic -and $actualGameHash -ceq $epicGameHash -and (Test-PbzArenaMapBase)
+    if ($hasCheckpoint -and ($stockSteam -or ($stockEpic -and (Test-PbzEpicCheckpointInterface)))) {
+        Select-PbzCheckpointPayload
+        $loaderBridgePayload = Get-PbzLoaderBridgePayload
+        $mapPayload = Get-PbzSettlementAudioPayload
+        $checkpointFlow = 'native-checkpoint'
+    } elseif (!$hasCheckpoint -and ($stockSteam -or $stockEpic)) {
+        $mapPayload = Get-PbzMapPayload
+    }
+    Assert-PortableTools
+}
+if ($Uninstall -and (Test-Path -LiteralPath $pendingReceipt -PathType Leaf)) {
+    if ($Preflight) { return New-PbzPreflight 'pending_internal' 'Uninstall' '可以卸载上次的兼容内测，保留其他 MOD 和存档。' }
+    . (Join-Path $PSScriptRoot 'CompatibilityInstall.ps1')
+    Remove-PbzPendingInstall
     return
 }
+$script:pbzInstallerStage = 'receipt'
+$prior = Get-PreviousState -ForInstall:(!$Uninstall -and !$Repair)
+$script:pbzInstallerStage = 'loader'
+$shared = Test-PbzSharedRuntime $prior
+if ($KeepExistingLoader -and !$shared -and !$Uninstall) {
+    Stop-PbzInstall 'LOADER_CONFLICT' '原 UE4SS 在检查后发生变化。请重新点击「检查安装」，再选择安装方式。'
+}
+$missing = $prior -and $prior.installed -and !(Test-Path -LiteralPath $modDirectory)
+if ($missing) { Assert-PbzMissingRuntimeReceipt $prior $shared }
+if (!$Uninstall -and !$prior.installed) {
+    Assert-PbzNoOtherInstallReceipt
+}
+if ($Uninstall -and (!$prior -or !$prior.installed)) {
+    Stop-PbzInstall 'NOT_INSTALLED' '所选账号没有可卸载的演武安装登记。'
+}
+if ($Repair -and !$missing) { Stop-PbzInstall 'NO_REPAIR_REQUIRED' '没有检测到可修复的演武目录缺失。请重新检查。' }
+$runtimeOnly = $missing -and ($shared -or (Test-Path -LiteralPath $active -PathType Container))
+$script:pbzInstallerStage = 'loader'
+if ($Uninstall -and !$missing) {
+    Assert-PbzMoveReady $(if ($shared) { $modDirectory } else { $active })
+}
+if ($shared) {
+    if (!$missing -and (Test-Path -LiteralPath $modDirectory)) { Assert-PbzSharedMod $prior $modDirectory -ReplaceMod:(!$Uninstall) }
+    if (!$Uninstall) {
+        if ((Test-Path -LiteralPath $proxy -PathType Leaf) -and
+                !(Test-Path -LiteralPath (Join-Path $active 'UE4SS.dll') -PathType Leaf)) {
+            Stop-PbzInstall 'LOADER_ORPHAN' '发现 dwmapi.dll，但 UE4SS 核心缺失。请用原 MOD 管理器修复前置，再点「检查安装」。如果找不到原管理器，请导出诊断。' $proxy
+        }
+        $dependencies = Get-PbzSharedDependencies
+    }
+} else {
+    Assert-PreviousRuntime $prior -AllowMissingMod:$missing -ReplaceMod:(!$Uninstall)
+}
+if ($runtimeOnly -and !$Uninstall -and $checkpointFlow -eq 'native-checkpoint') {
+    if ($Preflight) {
+        $accessNote = Test-PbzPreflightAccess $true $null $null -RuntimeOnly
+        return New-PbzPreflight 'runtime_missing' 'Repair' ('已核对原账号的安装登记。可修复演武目录，也可清理残留并保留进度。' + $accessNote)
+    }
+    if ($Repair -or $Install) { Invoke-PbzRuntimeRepair $prior $shared; return }
+}
+if ($Repair) {
+    $Repair = $false
+    $Install = $true
+}
+
+$script:pbzInstallerStage = 'content'
+$maps = New-PbzMapTransaction $prior $mapPayload
+$loaderBridges = New-PbzLoaderBridgeTransaction $prior $loaderBridgePayload
+if ($Preflight) {
+    $accessNote = Test-PbzPreflightAccess $shared $maps $loaderBridges
+    if ($Uninstall) {
+        if ($missing) { return New-PbzPreflight 'runtime_missing' 'Uninstall' ('可以清理残留，保留存档、配装和战报。' + $accessNote) }
+        return New-PbzPreflight 'installed' 'Uninstall' ('已核对可卸载的演武文件。' + $accessNote)
+    }
+    if ($shared) {
+        $state = if ($prior.installed) { 'installed' } else { 'ready' }
+        return New-PbzPreflight $state 'Install' ('可以沿用现有 UE4SS。点击「仅覆盖演武 MOD」，安装器会先备份旧演武文件。' + $accessNote)
+    }
+    if (($prior -and $prior.installed) -or (Test-Path -LiteralPath $modDirectory)) {
+        return New-PbzPreflight 'installed' 'Install' ('已找到现有演武，可以备份后覆盖安装。' + $accessNote)
+    }
+    return New-PbzPreflight 'ready' 'Install' ('安装检查通过。可以备份存档并安装。' + $accessNote)
+}
+if (!$Install -and !$Uninstall) { Write-Output '检查通过，未修改游戏和存档。'; return }
+if ($shared) { Invoke-PbzSharedRuntime $prior; return }
 
 $mutex = New-Object Threading.Mutex($false,'Local\PBZTestArenaNativeSession')
 $held = $false
@@ -413,39 +626,38 @@ $runtimeStage = $null
 $proxyStage = $null
 $movedActive = $null
 $movedProxy = $null
-$installedActive = $false
-$installedProxy = $false
-$saveReplaced = $false
-$restoreInitialActive = $null
-$restoreInitialProxy = $null
-$writtenReceipts = @{}
-$migratedFiles = @{}
 $migrationNotes = New-Object 'System.Collections.Generic.List[string]'
 $report = $null
-$rollback = $save + '.PBZIntegrated-rollback-' + [Guid]::NewGuid().ToString('N')
+$rollback = $null
 try {
     try { $held = $mutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $held = $true }
-    if (!$held) { throw 'Another PBZ MOD installation or isolated test launcher is running.' }
+    if (!$held) { Stop-PbzInstall 'INSTALLER_BUSY' '另一个演武安装器或内测启动器正在运行。请先关闭它，再重试。' }
     Assert-NotRunning
-    $prior = Get-PreviousState
-    Assert-PreviousRuntime $prior
+    Assert-PbzOtherTransactions
+    $script:pbzInstallerStage = 'receipt'
+    $prior = Get-PreviousState -ForInstall:$Install
+    $script:pbzInstallerStage = 'loader'
+    if (Test-PbzSharedRuntime $prior) { Stop-PbzInstall 'LOADER_CONFLICT' '检查后加载器发生了变化。请重新检查，根据提示安装。' }
+    $missing = $prior -and $prior.installed -and !(Test-Path -LiteralPath $modDirectory)
+    if ($missing) { Assert-PbzMissingRuntimeReceipt $prior $false }
+    if (!$Uninstall -and !$prior.installed) { Assert-PbzNoOtherInstallReceipt }
+    Assert-PreviousRuntime $prior -AllowMissingMod:$missing -ReplaceMod:$Install
+    $maps = New-PbzMapTransaction $prior $mapPayload
+    $loaderBridges = New-PbzLoaderBridgeTransaction $prior $loaderBridgePayload
     if ($Uninstall -and (!$prior -or !$prior.installed)) { throw 'No owned persistent menu installation was found.' }
+    Assert-PbzInstallAccess $false $maps $loaderBridges
+    $script:pbzInstallerStage = 'backup'
     $stamp = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0,8)
     $operationName = if ($Install) { 'Install' } else { 'Uninstall' }
     if (Test-Path -LiteralPath $dataRoot) { Assert-OrdinaryPath $dataRoot }
-    $dataMarker = Join-Path $dataRoot '.PBZTestArenaData-owner'
-    if (Test-Path -LiteralPath $dataMarker) {
-        Assert-OrdinaryPath $dataMarker
-        if ([IO.File]::ReadAllText($dataMarker).Trim() -cne $owner) { throw 'The persistent arena data belongs to another owner.' }
-    } elseif ((Test-Path -LiteralPath $dataRoot) -and @(Get-ChildItem -LiteralPath $dataRoot -Force).Count) {
-        throw 'An unowned arena data directory already exists; no contents were overwritten.'
-    } else { Ensure-Directory $dataRoot;Write-NewText $dataMarker $owner }
-    Grant-OwnedWriteAccess $dataRoot '.PBZTestArenaData-owner'
-    $run = Join-Path $stateRoot "Backups/$stamp"
-    Ensure-Directory $run
-    if ($Install) {
+    $run = New-PbzBackupRun $stamp
+    $rollback = Join-Path $run 'Replaced.sav'
+    $script:pbzInstallerStage = 'stage'
+    Start-PbzTransaction $run $operationName
+    if ($Install -and $checkpointFlow -eq 'compatibility') {
         $sourceHelper,$sourcePresets = $helper,$presets
-        $transaction = Join-Path $dataRoot "Transactions/$operationName-$stamp/IntegratedMenu"
+        # Keep native staging paths short, including the tool's .manifest.json output.
+        $transaction = Initialize-PbzToolWork
         $staging = Join-Path $transaction 'Staging'
         Ensure-Directory $staging
         $helper = Join-Path $transaction 'Tools/PBZSaveTool.exe'
@@ -461,9 +673,11 @@ try {
     foreach ($file in @($statePath,$privatePath)) {
         if (Test-Path -LiteralPath $file -PathType Leaf) { Copy-NewFile $file (Join-Path $run ([IO.Path]::GetFileName($file))) }
     }
-    $pendingSave = if ($Install) { Join-Path $staging 'Pending.sav' } else { $null }
+    $pendingSave = if ($Install -and $checkpointFlow -eq 'compatibility') { Join-Path $staging 'Pending.sav' } else { $null }
     $priorManifest = if ($prior -and $prior.privateManifestSha256) { $prior.verifiedPrivatePath } else { '' }
-    if ($Install) { $prepared = Invoke-SaveTool $save $pendingSave $priorManifest }
+    if ($epic) { $priorManifest = '' }
+    if ($pendingSave) { $prepared = Invoke-SaveTool (Join-Path $run 'Before.sav') $pendingSave $priorManifest }
+    elseif ($Install) { $prepared = New-PbzUnchangedSaveReport $beforeHash }
     else {
         $retained = [ordered]@{schemaVersion=1;owner=$saveOwner;operation='uninstall-retain';sourceSha256=$beforeHash;
             outputSha256=$beforeHash;dedicatedSaveBlocksRetained=$true;reportsRetained=$true;
@@ -474,35 +688,21 @@ try {
     if ($report.sourceSha256 -cne $beforeHash) { throw 'The formal save changed during preparation.' }
     Write-NewText (Join-Path $run 'SaveChange.json') $prepared.json
     if ($Install) {
-        $preferenceMarker = Join-Path $preferences '.PBZTestArenaArenaPrefs-owner'
-        if (Test-Path -LiteralPath $preferenceMarker) {
-            Assert-OrdinaryPath $preferenceMarker
-            if ([IO.File]::ReadAllText($preferenceMarker).Trim() -cne $owner) { throw 'The equipment preference directory belongs to another owner.' }
-        } elseif ((Test-Path -LiteralPath $preferences) -and @(Get-ChildItem -LiteralPath $preferences -Force).Count) {
-            throw 'Existing unowned preferences were not modified.'
-        } else { Ensure-Directory $preferences;Write-NewText $preferenceMarker $owner }
-        Ensure-Directory $profile
-        Ensure-Directory (Join-Path $profile 'ChallengeReports')
-        $profileMarker = Join-Path $profile 'PBZIntegratedProfile.txt'
-        if (Test-Path -LiteralPath $profileMarker) {
-            Assert-OrdinaryPath $profileMarker
-            if ([IO.File]::ReadAllText($profileMarker).Trim() -cne $owner) { throw 'The integrated profile marker differs.' }
-        } else { Write-NewText $profileMarker $owner }
+        Initialize-PbzOwnedProfile
         Migrate-LegacyUserData $prior
-        $runtimeStage = Join-Path $platform ('.PBZIntegrated-stage-' + [Guid]::NewGuid().ToString('N'))
-        Assert-Contained $runtimeStage $platform
+        $runtimeStage = Join-Path (Get-PbzTransactionWork) 'Runtime'
         Ensure-Directory $runtimeStage
         foreach ($entry in $manifest.PSObject.Properties) {
             if (!$entry.Name.StartsWith('ue4ss/')) { continue }
             $destination = Join-Path $runtimeStage $entry.Name.Substring(6)
-            Copy-NewFile (Join-Path $payload $entry.Name) $destination
+            Copy-NewFile (Get-PbzRuntimePayloadFile $entry.Name) $destination
             Assert-Hash $destination $entry.Value
         }
         Write-NewText (Join-Path $runtimeStage $ownerName) $owner
         Write-NewText (Join-Path $runtimeStage $integratedName) $owner
         $config = Join-Path $runtimeStage 'Mods/PBZTestArena/Scripts/IntegratedConfig.lua'
         Write-NewText $config (New-Config $save)
-        $proxyStage = Join-Path $platform ('.PBZIntegrated-proxy-' + [Guid]::NewGuid().ToString('N') + '.dll')
+        $proxyStage = Join-Path (Get-PbzTransactionWork) 'Proxy.dll'
         Copy-NewFile (Join-Path $payload 'dwmapi.dll') $proxyStage
         Assert-Hash $proxyStage $manifest.'dwmapi.dll'
         Assert-OwnedRuntime $runtimeStage -Integrated
@@ -510,22 +710,31 @@ try {
     }
 
     Assert-NotRunning
-    if ($Install) { $saveReplaced = Replace-Save $pendingSave $save $report.sourceSha256 $report.outputSha256 $rollback }
+    Assert-Hash $game $actualGameHash
+    Assert-PreviousRuntime $prior -AllowMissingMod:$missing -ReplaceMod:$Install
+    $script:pbzInstallerStage = 'commit'
+    Set-PbzMapTransaction $maps $run
+    Set-PbzLoaderBridgeTransaction $loaderBridges $run
+    if ($pendingSave) {
+        Add-PbzFileChange $save $report.sourceSha256 $report.outputSha256
+        [void](Replace-Save $pendingSave $save $report.sourceSha256 $report.outputSha256 $rollback)
+    }
     else { Assert-Hash $save $beforeHash }
     if (Test-Path -LiteralPath $active) {
         Assert-OwnedRuntime $active
         $movedActive = Join-Path $platform ('.PBZIntegrated-runtime-backup-' + $stamp)
         Assert-Contained $movedActive $platform
-        [IO.Directory]::Move($active,$movedActive)
+        Move-PbzTransactionPath $active $movedActive
+        Assert-OwnedRuntime $movedActive
     }
     if (Test-Path -LiteralPath $proxy) {
         $movedProxy = Join-Path $platform ('.PBZIntegrated-proxy-backup-' + $stamp + '.dll')
         Assert-Contained $movedProxy $platform
-        [IO.File]::Move($proxy,$movedProxy)
+        Move-PbzTransactionPath $proxy $movedProxy
     }
     if ($Install) {
-        [IO.Directory]::Move($runtimeStage,$active); $runtimeStage = $null; $installedActive = $true
-        [IO.File]::Move($proxyStage,$proxy); $proxyStage = $null; $installedProxy = $true
+        Move-PbzTransactionPath $runtimeStage $active
+        Move-PbzTransactionPath $proxyStage $proxy
         $hashes = [ordered]@{}
         foreach ($entry in $manifest.PSObject.Properties) { $hashes[$entry.Name] = $entry.Value }
         foreach ($relative in @("ue4ss/$ownerName","ue4ss/$integratedName",'ue4ss/Mods/PBZTestArena/Scripts/IntegratedConfig.lua')) {
@@ -539,84 +748,48 @@ try {
             $initialActive = $prior.previousActiveBackup; $initialProxy = $prior.previousProxyBackup
             $initialProxyHash = $prior.previousProxySha256
         }
-        Write-AtomicText $privatePath $prepared.json
-        $writtenReceipts[$privatePath] = Get-Hash $privatePath
+        $privateReceipt = Set-PbzPrivateSaveReceipt $prepared $prior
         $state = [ordered]@{ version=2; owner=$owner; installed=$true; installedAt=(Get-Date).ToUniversalTime().ToString('o');
             launcherRoot=$root; gameExe=[IO.Path]::GetFullPath($game); savePath=[IO.Path]::GetFullPath($save);
-            profile=[IO.Path]::GetFullPath($profile); userSid=$UserSid; privateManifestSha256=(Get-Hash $privatePath);
-            runtimeHashes=$hashes; previousActiveBackup=$initialActive; previousProxyBackup=$initialProxy;
+            profile=[IO.Path]::GetFullPath($profile); userSid=$UserSid; privateManifestSha256=$privateReceipt;mapFlow=$checkpointFlow;
+            runtimeHashes=$hashes; mapHashes=$maps.Next; loaderBridgeHashes=$loaderBridges.Next; previousActiveBackup=$initialActive; previousProxyBackup=$initialProxy;
             previousProxySha256=$initialProxyHash; backup=$run }
-        Write-AtomicText $statePath ($state | ConvertTo-Json -Depth 8)
-        $writtenReceipts[$statePath] = Get-Hash $statePath
+        Write-PbzTransactionText $statePath ($state | ConvertTo-Json -Depth 8)
     } else {
         if ($prior.previousActiveBackup) {
             Assert-Contained $prior.previousActiveBackup $platform
             Assert-OwnedRuntime $prior.previousActiveBackup
             if (Test-Path -LiteralPath (Join-Path $prior.previousActiveBackup $integratedName)) { throw 'Refusing to restore another integrated installation during uninstall.' }
-            [IO.Directory]::Move($prior.previousActiveBackup,$active)
-            $restoreInitialActive = $prior.previousActiveBackup
+            Move-PbzTransactionPath $prior.previousActiveBackup $active
         }
         if ($prior.previousProxyBackup) {
             Assert-Contained $prior.previousProxyBackup $platform
             Assert-Hash $prior.previousProxyBackup $prior.previousProxySha256
-            [IO.File]::Move($prior.previousProxyBackup,$proxy)
-            $restoreInitialProxy = $prior.previousProxyBackup
+            Move-PbzTransactionPath $prior.previousProxyBackup $proxy
         }
         $state = [ordered]@{version=2;owner=$owner;installed=$false;uninstalledAt=(Get-Date).ToUniversalTime().ToString('o');
             privateManifestSha256=$prior.privateManifestSha256;savePath=[IO.Path]::GetFullPath($save);
             dedicatedSaveBlocksRetained=$true;reportsRetained=$true;backup=$run}
-        Write-AtomicText $statePath ($state | ConvertTo-Json -Depth 4)
-        $writtenReceipts[$statePath] = Get-Hash $statePath
+        Write-PbzTransactionText $statePath ($state | ConvertTo-Json -Depth 4)
     }
     Assert-Hash $save $report.outputSha256
-    if (Test-Path -LiteralPath $rollback) { Assert-Hash $rollback $report.sourceSha256; Remove-Item -LiteralPath $rollback }
+    if (Test-Path -LiteralPath $rollback) { Assert-Hash $rollback $report.sourceSha256 }
     Write-NewText (Join-Path $run 'Result.json') (([ordered]@{operation=$operationName;success=$true;
         sourceSha256=$report.sourceSha256;outputSha256=$report.outputSha256;runtimeBackup=$movedActive;proxyBackup=$movedProxy;
         gameStarted=$false}) | ConvertTo-Json -Depth 5)
+    Complete-PbzTransaction 'TransactionComplete.json'
+    if (Test-Path -LiteralPath $rollback) { Remove-Item -LiteralPath $rollback -ErrorAction SilentlyContinue }
     if ($Uninstall) { Write-Output "Uninstall completed; dedicated saves and reports were retained. PBZ was not started. Backup: $run" }
     else { Write-Output "Install completed. PBZ was not started. Backup: $run" }
 } catch {
     $failure = $_
-    $rollbackErrors = New-Object 'System.Collections.Generic.List[string]'
-    try {
-        if ($installedProxy -and (Test-Path -LiteralPath $proxy)) {
-            Assert-Hash $proxy $manifest.'dwmapi.dll'
-            [IO.File]::Move($proxy,(Join-Path $platform ('.PBZIntegrated-failed-proxy-' + [Guid]::NewGuid().ToString('N') + '.dll')))
-        }
-        if ($installedActive -and (Test-Path -LiteralPath $active)) {
-            Assert-OwnedRuntime $active -Integrated
-            [IO.Directory]::Move($active,(Join-Path $platform ('.PBZIntegrated-failed-runtime-' + [Guid]::NewGuid().ToString('N'))))
-        }
-        if ($restoreInitialProxy -and (Test-Path -LiteralPath $proxy)) { [IO.File]::Move($proxy,$restoreInitialProxy) }
-        if ($restoreInitialActive -and (Test-Path -LiteralPath $active)) { [IO.Directory]::Move($active,$restoreInitialActive) }
-        if ($movedActive -and (Test-Path -LiteralPath $movedActive) -and !(Test-Path -LiteralPath $active)) { [IO.Directory]::Move($movedActive,$active) }
-        if ($movedProxy -and (Test-Path -LiteralPath $movedProxy) -and !(Test-Path -LiteralPath $proxy)) { [IO.File]::Move($movedProxy,$proxy) }
-    } catch { $rollbackErrors.Add('Runtime rollback: ' + $_.Exception.Message) }
-    try {
-        if ($report -and (Test-Path -LiteralPath $rollback)) { Restore-Save $save $rollback $report.sourceSha256 $report.outputSha256 }
-    } catch { $rollbackErrors.Add('Save rollback refused: ' + $_.Exception.Message) }
-    foreach ($file in @($migratedFiles.Keys)) {
-        try { if (Test-Path -LiteralPath $file) { Assert-Hash $file $migratedFiles[$file];Remove-Item -LiteralPath $file } }
-        catch { $rollbackErrors.Add('Legacy profile rollback refused: ' + $_.Exception.Message) }
-    }
-    try {
-        if ($run) {
-            foreach ($file in @($statePath,$privatePath)) {
-                if (!$writtenReceipts.ContainsKey($file)) { continue }
-                $backupFile = Join-Path $run ([IO.Path]::GetFileName($file))
-                if ($writtenReceipts[$file] -eq 'missing') {
-                    if (Test-Path -LiteralPath $file) { throw 'A receipt changed during rollback.' }
-                } else { Assert-Hash $file $writtenReceipts[$file] }
-                if (Test-Path -LiteralPath $backupFile) { Write-AtomicText $file ([IO.File]::ReadAllText($backupFile)) }
-                elseif (Test-Path -LiteralPath $file) { Remove-Item -LiteralPath $file }
-            }
-            Write-AtomicText (Join-Path $run 'Failure.json') (([ordered]@{success=$false;message=$failure.Exception.Message;
-                rollbackErrors=@($rollbackErrors);runtimeStage=$runtimeStage;proxyStage=$proxyStage;gameStarted=$false}) | ConvertTo-Json -Depth 5)
-        }
-    } catch { $rollbackErrors.Add('Receipt rollback: ' + $_.Exception.Message) }
-    if ($rollbackErrors.Count) { Write-Warning ($rollbackErrors -join [Environment]::NewLine) }
+    Set-PbzTransactionFailure $failure $run
     throw $failure
 } finally {
     if ($held) { $mutex.ReleaseMutex() }
     $mutex.Dispose()
+}
+} catch {
+    if (!$_.Exception.Data['PbzStage']) { $_.Exception.Data['PbzStage'] = $script:pbzInstallerStage }
+    throw
 }

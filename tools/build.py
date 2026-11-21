@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 JSON_SHA256 = "9bea4c8066ef4a1c206b2be5a36302f8926f7fdc6087af5d20b417d0cf103ea6"
 GAME_SHA256 = "4415933ce33476f14c837abb61a1b60af8b78cd81783896501913a7aac69e423"
 RUNTIME_DATA = ("BossCatalog.lua", "GeneratedEncounterCatalog.lua",
-                "GeneratedArenaScenes.lua", "NativeUiAssetsData.lua")
+                "GeneratedArenaScenes.lua", "TrainingMobCatalog.lua", "NativeUiAssetsData.lua")
 
 
 def sha256(path: Path) -> str:
@@ -88,7 +88,7 @@ def run(command: list[str], output: Path, env: dict[str, str] | None = None) -> 
 
 
 def native(args: argparse.Namespace) -> None:
-    parts = ("barrier", "save-tool") if args.component == "all" else (args.component,)
+    parts = ("barrier", "save-tool", "pressure", "path-identity") if args.component == "all" else (args.component,)
     preset_sha = legacy_sha = ""
     if "save-tool" in parts:
         if not args.presets:
@@ -117,6 +117,15 @@ def native(args: argparse.Namespace) -> None:
                                 "/Fo" + str(output / (name + ".obj")), "/link", "/Brepro", "/OUT:" + str(test)], output, env)
                     run([str(test)], output)
                 run([sys.executable, str(source / "tests/test_wrong_host.py"), "--dll", str(target)], output)
+        elif part == "pressure":
+            target = output / "PBZDreamPressureNative.dll"
+            source = ROOT / "src/pressure/DreamPalacePressure.cpp"
+            run([compiler, "/nologo", "/std:c++20", "/W4", "/WX", "/O2", "/MT", "/utf-8",
+                 "/LD", str(source), f"/Fe:{target.name}", "/link", "/Brepro", "kernel32.lib"], output, env)
+        elif part == "path-identity":
+            source = ROOT / "src/save_barrier/PathIdentity.cpp"
+            target = output / "PBZPathIdentity.dll"
+            run(base + ["/LD", str(source), "/link", "/Brepro", "/OUT:" + str(target)], output, env)
         else:
             source = ROOT / "src/save_tool"
             generated = output / "generated"
@@ -194,7 +203,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--require-release-inputs", action="store_true")
     p.set_defaults(action=check)
     p = sub.add_parser("native", help="Compile Windows native components")
-    p.add_argument("--component", choices=("barrier", "save-tool", "all"), default="barrier")
+    p.add_argument("--component", choices=("barrier", "save-tool", "pressure", "path-identity", "all"), default="barrier")
     p.add_argument("--output", default=str(ROOT / "build"))
     p.add_argument("--cl")
     p.add_argument("--msvc-root", help="MSVC toolset directory containing bin/Hostx64/x64/cl.exe")

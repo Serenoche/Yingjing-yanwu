@@ -25,7 +25,8 @@ function Profile.id(cycle)
 end
 function Profile.slot(cycle, prefix, sceneId)
     assert(Profile.valid(cycle) and type(prefix) == "string", "玩家预设无效")
-    sceneId = require("ArenaScenes").normalize(sceneId)
+    local scenes = require("ArenaScenes")
+    sceneId = scenes.preset(scenes.get(sceneId)).id
     if sceneId == "lake" then return cycle == -1 and "PBZArenaIntegratedLakeLao" or "PBZArenaIntegratedLakeCycle" .. cycle end
     assert(sceneId == "night", "场景预设已撤下")
     return cycle == -1 and "PBZArenaIntegratedLao" or prefix .. cycle

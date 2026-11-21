@@ -145,7 +145,7 @@ function Session:close()
 end
 
 function Arena.new(pawn,scene,gameplay,system)
-    assert(scene and (scene.id=="night" or scene.id=="lake"),"舞狮机制仅用于独立演武场")
+    assert(scene and (scene.id=="night" or scene.id=="lake" or scene.runtimeModule),"舞狮机制仅用于独立演武场")
     local world=pawn:GetWorld()
     local classes={}
     for _,path in ipairs({AREA,POLE,EXIT,STANDING}) do
@@ -209,9 +209,14 @@ function Arena.new(pawn,scene,gameplay,system)
         for _,offset in ipairs({{X=-1300,Y=0},{X=1300,Y=0},{X=0,Y=-1300},{X=0,Y=1300}}) do
             local x,y=battle.X+offset.X,battle.Y+offset.Y
             local hit={}
-            if system:LineTraceSingle(pawn,{X=x,Y=y,Z=scene.spawnTrace.top},
-                {X=x,Y=y,Z=scene.spawnTrace.bottom},0,false,{},0,hit,true,COLOR,COLOR,0)
-                and hit.ImpactPoint and hit.ImpactNormal and hit.ImpactNormal.Z>=0.75 then
+            local top={X=x,Y=y,Z=scene.spawnTrace.top}
+            local bottom={X=x,Y=y,Z=scene.spawnTrace.bottom}
+            local found=system:LineTraceSingle(pawn,top,bottom,0,false,{},0,hit,true,COLOR,COLOR,0)
+            if not found and scene.spawnTrace.worldStaticFallback then
+                hit={}
+                found=system:LineTraceSingleForObjects(pawn,top,bottom,{0},false,{},0,hit,true,COLOR,COLOR,0)
+            end
+            if found and hit.ImpactPoint and hit.ImpactNormal and hit.ImpactNormal.Z>=0.75 then
                 local floor=copy(hit.ImpactPoint)
                 local exit=area:SpawnPole(math:MakeTransform({X=x,Y=y,Z=floor.Z-500},ZERO,ONE),true,classes[EXIT],false)
                 assert(valid(exit),"原版舞狮落地点生成失败")

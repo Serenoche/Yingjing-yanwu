@@ -7,7 +7,7 @@ import unittest
 from arena_scenes import load_scenes
 from create_encounter_catalog import make_catalog
 from encounter_catalog import DEFAULT_BOSSES, load_and_validate
-from generate_runtime_data import BOSS_FIELDS, DEFAULT_OUTPUT, ROOT, generated_files
+from generate_runtime_data import BOSS_FIELDS, DEFAULT_OUTPUT, ROOT, TRAINING_MOBS, generated_files
 
 
 class PublicDataTests(unittest.TestCase):
@@ -46,6 +46,14 @@ class PublicDataTests(unittest.TestCase):
         self.assertEqual([scene["bellSaveId"] for scene in scenes],
                          ["BrokenBell_TheEnd01", "BrokenBell_LJC_02"])
 
+    def test_training_mob_catalog_contains_the_approved_ordinary_and_unnamed_elite_roster(self):
+        rows = json.loads(TRAINING_MOBS.read_text(encoding="utf-8"))["mobs"]
+        self.assertEqual(len(rows), 109)
+        self.assertEqual(sum(row["rank"] == "ordinary" for row in rows), 85)
+        self.assertEqual(sum(row["rank"] == "elite" for row in rows), 24)
+        self.assertEqual(len({row["classPath"] for row in rows}), len(rows))
+        self.assertTrue(all(row["family"] != "具名精英" for row in rows))
+
     def test_deterministic_generation_keeps_config_read_only(self):
         inputs = sorted((ROOT / "config").glob("*.json"))
         for path in inputs:
@@ -54,7 +62,8 @@ class PublicDataTests(unittest.TestCase):
         before = {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in inputs}
         one, two = generated_files(), generated_files()
         self.assertEqual(one, two)
-        self.assertEqual(set(one), {"BossCatalog.lua", "GeneratedEncounterCatalog.lua", "GeneratedArenaScenes.lua"})
+        self.assertEqual(set(one), {"BossCatalog.lua", "GeneratedEncounterCatalog.lua", "GeneratedArenaScenes.lua",
+                                    "TrainingMobCatalog.lua"})
         self.assertEqual(before, {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in inputs})
         for name, content in one.items():
             self.assertNotIn(b"\r", content)

@@ -34,22 +34,36 @@ LOADER_FILES = (
 RUNTIME_FILES = (
     "main.lua", "Health.lua", "Panel.lua", "ClosedArena.lua", "CombatSpawn.lua", "ChallengeSignals.lua",
     "ChallengeMenu.lua", "ChallengeVictory.lua", "AbilityChallenge.lua", "Challenge.lua", "TitleProbe.lua",
-    "TitleSession.lua", "SaveBarrier.lua", "Integration.lua", "ParameterStyle.lua", "ParameterFeedback.lua",
+    "TitleSession.lua", "SaveBarrier.lua", "Integration.lua", "InstalledPathIdentity.lua", "ParameterStyle.lua", "ParameterFeedback.lua",
     "ParameterForm.lua", "ChallengeTarget.lua", "TitleHome.lua", "TrainingHud.lua", "BossCatalog.lua",
     "EncounterCatalog.lua", "EncounterPlayerState.lua", "StageFade.lua", "StageScreen.lua", "EncounterEngage.lua",
     "SpawnClass.lua", "PlayerProfile.lua", "GameplayDifficulty.lua", "PracticeMode.lua", "PracticeHud.lua",
-    "ArtAssets.lua", "NativeUiAssetsData.lua", "NativeScreen.lua", "NativeSelection.lua", "ChallengeLoadout.lua",
-    "PortraitLayout.lua", "HistoryReport.lua", "ArenaLoadout.lua", "ArenaLoadoutMemory.lua", "ArenaEconomy.lua",
-    "ArenaMapPolicy.lua", "LengTuArena.lua", "LengTuSummons.lua", "DayArena.lua", "SceneArena.lua", "ArenaScenes.lua",
+    "ArtAssets.lua", "NativeUiAssetsData.lua", "NativeScreen.lua", "NativeSelection.lua", "InputActionHint.lua",
+    "ChallengeLoadout.lua",
+    "PortraitLayout.lua", "HistoryReport.lua", "ArenaLoadout.lua", "ArenaLoadoutRestore.lua", "ArenaLoadoutMemory.lua", "ArenaEconomy.lua",
+    "ArenaMapPolicy.lua", "ArenaSummonAccess.lua", "LengTuArena.lua", "LengTuSummons.lua", "DayArena.lua", "SceneArena.lua", "ArenaScenes.lua",
     "GeneratedEncounterCatalog.lua", "GeneratedArenaScenes.lua", "LionArena.lua", "EnemyHealthGuard.lua", "StampPress.lua",
     "JingYeMount.lua", "ChiLianArena.lua", "PlayerDamageGuard.lua", "CustomChallenges.lua", "KryptonDemo.lua", "PendingEntry.lua",
     "StatusBuildup.lua", "StatusBuildupHud.lua", "StatusEffectClock.lua", "PracticeBossInfo.lua", "ChallengeMedicine.lua",
+    "XiguArena.lua", "XiguStreaming.lua", "MeiGuHuArena.lua", "MeiGuHuStandaloneLayout.lua",
+    "LakeUpperArena.lua", "LakeUpperLayout.lua",
+    "BattleMusic.lua", "BattleMusicData.lua",
+    "TrainingBell.lua", "TrainingTarget.lua", "TrainingMobCatalog.lua",
+    "ShuangYueCharge.lua", "FirstEntryPrompts.lua",
 )
-EXPECTED_RUNTIME_COUNT = 63
-EXPECTED_PAYLOAD_COUNT = 89
-GENERATED = ("BossCatalog.lua", "GeneratedEncounterCatalog.lua", "GeneratedArenaScenes.lua")
-INSTALLER_FILES = ("Install-PbzIntegratedMenu.ps1", "Open-PbzInstaller.ps1", "PortablePaths.ps1", "SharedRuntime.ps1", "CompatibilityInstall.ps1",
-                   "安装主菜单入口.cmd", "卸载主菜单入口.cmd")
+EXPECTED_RUNTIME_COUNT = 80
+EXPECTED_PAYLOAD_COUNT = 106
+PRESSURE_RUNTIME_FILES = ("DreamPalacePressure.lua", "PressureControls.lua")
+PRESSURE_NATIVE_FILE = "PBZDreamPressureNative.dll"
+GENERATED = ("BossCatalog.lua", "GeneratedEncounterCatalog.lua", "GeneratedArenaScenes.lua", "TrainingMobCatalog.lua")
+INSTALLER_FILES = (
+    "Install-PbzIntegratedMenu.ps1", "Open-PbzInstaller.ps1", "PortablePaths.ps1",
+    "SharedRuntime.ps1", "CompatibilityInstall.ps1", "Export-PbzDiagnostics.ps1",
+    "ArenaMaps.ps1", "CheckpointPayload.ps1", "PBZModLoaderBridges.ps1",
+    "PBZInstallHealth.ps1", "PBZInstallRecovery.ps1", "PBZRuntimeRepair.ps1",
+    "安装主菜单入口.cmd", "卸载主菜单入口.cmd",
+)
+INSTALLER_REVISION = "P2"
 ASSET_NAMES = {"home-test.png", "home-practice.png", "home-challenge.jpg", "ink-background.png",
                "challenge-zhan.png", "soul-lao.png", *(f"soul-{index}.png" for index in range(7))}
 PRIVATE_NAMES = ("PBZArenaIntegratedTraining", *(f"PBZArenaIntegratedCycle{x}" for x in range(7)),
@@ -368,10 +382,13 @@ def load_runtime(directory: Path, data_directory: Path | None = None) -> tuple[d
     actual = {path.name for path in script_directory.iterdir() if path.suffix.lower() == ".lua"}
     require(len(RUNTIME_FILES) == EXPECTED_RUNTIME_COUNT and len(declared) == EXPECTED_RUNTIME_COUNT,
             "Unexpected runtime allowlist; update the release contract explicitly")
+    pressure_files = set(PRESSURE_RUNTIME_FILES)
+    if actual & pressure_files:
+        declared |= pressure_files
     require(actual == declared,
             f"Runtime module set differs (missing: {', '.join(sorted(declared - actual)) or 'none'}; "
             f"extra: {', '.join(sorted(actual - declared)) or 'none'})")
-    scripts = {name: read(script_directory / name) for name in RUNTIME_FILES}
+    scripts = {name: read(script_directory / name) for name in sorted(declared)}
     enabled = read(directory / "enabled.txt")
     require(len(enabled) <= 64 and not enabled.strip(), "Runtime enabled.txt must be an empty/whitespace UE4SS sentinel")
     expected = generated_data(data_directory if data_directory is not None else script_directory)
@@ -412,11 +429,18 @@ def assemble(args: argparse.Namespace) -> dict:
     payload[base + "enabled.txt"] = enabled
     payload.update({base + "Scripts/" + name: data for name, data in scripts.items()})
     payload[base + "Scripts/PBZSaveBarrier.dll"] = barrier
+    components = {"barrier": barrier_build, "saveTool": save_build}
+    pressure_count = 0
+    if all(name in scripts for name in PRESSURE_RUNTIME_FILES):
+        pressure, pressure_build = component(build / "pressure", "pressure", PRESSURE_NATIVE_FILE)
+        payload[base + "Scripts/" + PRESSURE_NATIVE_FILE] = pressure
+        components["pressure"] = pressure_build
+        pressure_count = len(PRESSURE_RUNTIME_FILES) + 1
     payload.update({base + "Scripts/UiAssets/" + name: data for name, data in assets.items()})
     payload[base + "Scripts/UiAssets/Manifest.json"] = json_bytes(deployed_assets)
     payload["ue4ss/Mods/mods.txt"] = b"PBZTestArena : 1\r\n"
     payload["ue4ss/Mods/mods.json"] = b'[{"mod_name":"PBZTestArena","mod_enabled":true}]\n'
-    require(len(payload) == EXPECTED_PAYLOAD_COUNT, "Incomplete native runtime payload")
+    require(len(payload) == EXPECTED_PAYLOAD_COUNT + pressure_count, "Incomplete native runtime payload")
     files = {"NativeEnemyRuntime/Payload/" + name: data for name, data in payload.items()}
     payload_hashes = {name: digest(data) for name, data in payload.items()}
     files["NativeEnemyRuntime/PayloadHashes.json"] = json_bytes(payload_hashes)
@@ -454,7 +478,7 @@ def assemble(args: argparse.Namespace) -> dict:
             "sourceManifestDataSha256": read_json(assets_dir / "Manifest.json", source_ui)["dataSha256"],
             "acceptedNormalization": "exact-content-or-LF/CRLF-only"},
         "privatePresets": {"sha256": digest(preset_data), "blocks": private, "authentication": "all-GCM-blocks-canonical-private-names"},
-        "components": {"barrier": barrier_build, "saveTool": save_build, "installer": installer_build},
+        "components": {**components, "installer": installer_build},
         "config": {path.name: sha256(path) for path in sorted((ROOT / "config").glob("*.json"))},
         "generatedData": {name: digest(data) for name, data in expected.items()},
         "sourceRuntime": {name: digest(data) for name, data in scripts.items()},
@@ -462,8 +486,9 @@ def assemble(args: argparse.Namespace) -> dict:
                           "enabledSha256": digest(enabled), "generatedDataPolicy": "validate-selected-runtime-no-overrides"},
     }
     files["BuildProvenance.json"] = json_bytes({"schemaVersion": 1, "inputs": inputs,
-        "payloadFiles": EXPECTED_PAYLOAD_COUNT, "gameLaunched": False, "installed": False, "saveDecompressed": False})
+        "payloadFiles": len(payload), "gameLaunched": False, "installed": False, "saveDecompressed": False})
     manifest = {"schemaVersion": 1, "owner": "PBZTestArena.PortableDistribution", "name": "影境演武",
+         "installerRevision": INSTALLER_REVISION,
         "version": args.version, "gameSha256": GAME_SHA256, "supportedBuild": "CL-302256_JKS-17280",
         "files": {name: {"sha256": digest(data), "bytes": len(data)} for name, data in sorted(files.items())}}
     files["PackageManifest.json"] = json_bytes(manifest)
@@ -479,7 +504,7 @@ def assemble(args: argparse.Namespace) -> dict:
             stream.write(data)
         require(sha256(target) == digest(data), f"Release read-back differs: {name}")
     stage.rename(output)
-    return {"passed": True, "output": str(output), "payloadFiles": EXPECTED_PAYLOAD_COUNT, "images": 13, "privateSlots": 18,
+    return {"passed": True, "output": str(output), "payloadFiles": len(payload), "images": 13, "privateSlots": 18,
             "gameSha256": GAME_SHA256, "presetsSha256": digest(preset_data), "installed": False,
             "gameLaunched": False, "manifestSha256": sha256(output / "PackageManifest.json")}
 

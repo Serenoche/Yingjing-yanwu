@@ -1,5 +1,5 @@
--- Passive native HUD: five practice switches use only F5..F9.
-local Hud, current = {}, nil
+-- Passive native HUD for the practice controls.
+local Hud, current = { toggleKey = "F4" }, nil
 local LIB = "/Script/ProjectPBZ.Default__PBZBlueprintFunctionLibrary"
 local WRAPPERS = { SafeZone = true, SizeBox = true, ScaleBox = true, Border = true }
 local function valid(o) return o ~= nil and type(o.IsValid) == "function" and o:IsValid() end
@@ -82,7 +82,7 @@ function Hud.update(controller,state,target)
     end
     local function value(name) return state[name] and "开启" or "关闭" end
     local protection=({off="关闭",no_damage="无伤模式",invulnerable="无敌模式"})[state.damageMode or (state.invulnerable and "invulnerable" or "off")] or "关闭"
-    local lines={"练习模式", "F5  敌人 AI　"..value("ai"),"F6  回血／锁血　"..value("enemyRegen"),
+    local lines={"练习模式　"..Hud.toggleKey.." 隐藏", "F5  敌人 AI　"..value("ai"),"F6  回血／锁血　"..value("enemyRegen"),
         "F7  无伤模式　"..protection,"F8  无限大招　"..value("infiniteUltimate"),
         "F9  无限暗源　"..value("infiniteSpiritShadow")}
     for index,text in ipairs(lines) do current.labels[index]:SetText(FText(text)) end

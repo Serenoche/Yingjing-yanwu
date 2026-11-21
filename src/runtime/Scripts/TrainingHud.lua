@@ -20,12 +20,13 @@ local COLORS = {
 }
 local DEFAULT_CONTROLS = {
     { key = "F5", action = "切换目标" },
-    { key = "F6", action = "自动回血" },
+    { key = "F6", action = "切换生命模式" },
     { key = "F7", action = "显示面板" },
     { key = "F8", action = "生成目标" },
     { key = "F9", action = "攻击 AI" },
     { key = "F10", action = "清除目标" },
 }
+local HEALTH_MODE_LABELS = { normal = "正常", regen = "自动回血", lock = "锁血＋回血" }
 
 local function valid(object)
     return object ~= nil and type(object.IsValid) == "function" and object:IsValid()
@@ -163,10 +164,12 @@ local function mount(session, root, rootClass)
     addRow(body, session.count, 0, 2)
     session.status = label(body, 14, COLORS.muted)
     addRow(body, session.status, 0, 2)
+    session.target = label(body, 14, COLORS.muted)
+    addRow(body, session.target, 0, 2)
     session.notice = label(body, 14, COLORS.muted)
     addRow(body, session.notice, 0, 2)
     session.empty = label(body, 14, COLORS.muted)
-    session.empty:SetText(FText("尚无测试目标，按 F8 生成"))
+    session.empty:SetText(FText("尚无测试目标"))
     addRow(body, session.empty, 4, 2)
     session.units = {}
     for index = 1, MAX_TARGETS do
@@ -220,8 +223,15 @@ local function refresh(session, snapshot)
     local cycle = integer(snapshot.enemyCycle, 0, 6, 0)
     local selected = snapshot.selectedId ~= nil and clean(snapshot.selectedId, 8) or nil
     session.count:SetText(FText(("目标 %d / %d  ·  敌人轮回 %d"):format(#rows, maximum, cycle)))
-    session.status:SetText(FText("生命自动恢复 " .. (snapshot.autoheal == true and "开启" or "关闭") .. "  ·  "
+    local healthMode = HEALTH_MODE_LABELS[snapshot.healthMode] or (snapshot.autoheal and "自动回血" or "正常")
+    session.status:SetText(FText("生命：" .. healthMode .. "  ·  "
         .. (selected and "当前 #" .. selected or "未选择目标")))
+    local target = clean(snapshot.trainingTarget, 16)
+    if session.targetName ~= target then
+        session.target:SetText(FText(target ~= "" and "生成对象：" .. target or ""))
+        session.targetName = target
+        session.target:SetVisibility(target ~= "" and HIT_TEST_INVISIBLE or COLLAPSED)
+    end
     local notice = clean(snapshot.message, 22)
     session.notice:SetText(FText(notice))
     session.notice:SetVisibility(notice ~= "" and HIT_TEST_INVISIBLE or COLLAPSED)
@@ -234,12 +244,14 @@ local function refresh(session, snapshot)
             local health = finite(item.health, 0, 1e15) and item.health or nil
             local maxHealth = finite(item.maxHealth, 0, 1e15) and item.maxHealth or nil
             local alive = item.alive ~= false and (health == nil or health > 0)
-            local status = not alive and "已死亡" or item.ai == true and "AI 开启" or "AI 关闭"
+            local status = not alive and "已死亡" or item.engaging and "接战中" or item.ai == true and "AI 开启" or "AI 关闭"
             local level = integer(item.level, 0, 1000000)
-            unit.title:SetText(FText((selected == id and "◆ " or "") .. "#" .. id .. "  Lv."
-                .. (level and tostring(level) or "—") .. "  " .. status))
+            local name = clean(item.name, 8)
+            local caption = (selected == id and "◆ " or "") .. "#" .. id .. "  "
+            if name ~= "" then caption = caption .. name .. "  " end
+            unit.title:SetText(FText(caption .. status))
             color(unit.title, selected == id and COLORS.selected or alive and COLORS.text or COLORS.dead)
-            unit.health:SetText(FText(metric(health) .. " / " .. metric(maxHealth)))
+            unit.health:SetText(FText("Lv." .. (level and tostring(level) or "—") .. "  ·  " .. metric(health) .. " / " .. metric(maxHealth)))
             unit.bar:SetPercent(health and maxHealth and maxHealth > 0 and math.max(0, math.min(1, health / maxHealth)) or 0)
         end
     end

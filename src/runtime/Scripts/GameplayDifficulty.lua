@@ -15,6 +15,21 @@ local ROW_EVENT = ROW_CLASS .. ":OnListItemObjectSet"
 local PENDING = 0x08023600
 Difficulty.choices = { { id = 1, name = "入阵者" }, { id = 2, name = "破局者" }, { id = 3, name = "逆天者" } }
 
+Difficulty.customBase = 3
+
+function Difficulty.valid(id)
+    return type(id) == "number" and Difficulty.choices[id] ~= nil
+end
+
+function Difficulty.copyPressure(rule)
+    if rule == nil then return nil end
+    assert(type(rule) == "table" and (rule.mode == "fixed" or rule.mode == "minimum"), "自订压力模式无效")
+    local value = rule.value
+    assert(type(value) == "number" and value % 1 == 0 and value >= -100 and value <= 100,
+        "自订压力必须是 -100 到 100 之间的整数")
+    return { value = value, mode = rule.mode }
+end
+
 local function valid(object)
     return object ~= nil and type(object.IsValid) == "function" and object:IsValid()
 end
@@ -88,8 +103,7 @@ function Session:installRowHook()
 end
 
 function Difficulty.new(pawn, selected)
-    assert(type(selected) == "number" and selected % 1 == 0 and selected >= 1 and selected <= 3,
-        "MOD difficulty must be 1, 2 or 3")
+    assert(Difficulty.valid(selected), "MOD difficulty must be 1, 2 or 3")
     assert(valid(pawn) and worldOf(pawn), "MOD difficulty player is unavailable")
     if current and not current.cleaned then current:close() end
     local original = read(pawn)

@@ -83,8 +83,10 @@ function Integration.load(system)
     assert((read(config.profile .. "/PBZIntegratedProfile.txt") or ""):match("^%s*(.-)%s*$") == OWNER,
         "installed MOD data ownership marker is missing")
     local install = assert(platform:match("^(.*)/platform/steam$"), "installed MOD is outside the pinned game layout")
-    local accountPrefix = install .. "/projectpbz/saved/savegames/steam/"
+    local accountPrefix = "/projectpbz/saved/savegames/steam/"
     local path = config.savePath:lower()
+    install = require("InstalledPathIdentity").installRoot(install, path, accountPrefix)
+    accountPrefix = install .. accountPrefix
     local account = path:sub(#accountPrefix + 1):match("^(%d+)/pbzsavegame%.sav$")
     assert(path:sub(1, #accountPrefix) == accountPrefix and account and #account == 17,
         "installed MOD save provider differs from this game installation")

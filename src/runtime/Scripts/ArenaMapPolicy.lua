@@ -1,4 +1,4 @@
--- Use the game's instance-local tab lock before it can activate the Map page.
+-- Use the game's instance-local tab lock before a tab can be activated.
 -- No key binding, input action, shared descriptor, CDO or map widget is changed.
 local Scene = require("SceneArena")
 local Policy, Session = {}, {}
@@ -8,6 +8,8 @@ local TABS = "/Script/ProjectPBZ.PBZTabListWidgetBase"
 local GAMEPLAY = "/Script/Engine.Default__GameplayStatics"
 local FORBIDDEN = 0x08023630
 local MAP = "Map"
+local SYSTEM_TABS = { MAP, "Quest", "Character", "Inventory", "Literature", "System" }
+local COLLAPSED = 1
 local HOOKS = { ROOT .. ":InitWidget", ROOT .. ":OpenByTabID", ROOT .. ":SelectTab", TABS .. ":RegisterTabs" }
 local owners = {} -- only owned current-instance locks, never shared descriptors.
 local function valid(v) return v ~= nil and type(v.IsValid) == "function" and v:IsValid() end
@@ -28,10 +30,10 @@ local function uiWorld(v)
     local actual = v:GetWorld() -- UWidget UObject native virtual, not LuaAActor outer-world helper.
     return valid(actual) and actual:GetAddress() or nil
 end
-local function locked(tabs)
+local function locked(tabs, tab)
     local ids = tabs.LockedIDs
     assert(ids ~= nil, "original tab lock array is unavailable")
-    for index = 1, #ids do if name(ids[index]):lower() == "map" then return true end end
+    for index = 1, #ids do if name(ids[index]):lower() == tab:lower() then return true end end
     return false
 end
 local function buttonsReady(tabs)
@@ -42,23 +44,31 @@ local function buttonsReady(tabs)
     end
     return true
 end
-local function removeEarlyLock(tabs)
+local function removeEarlyLock(tabs, tab)
     local ids,remaining=tabs.LockedIDs,{}
     -- Convert each name into an independent Lua string before Empty reallocates
     -- the native array. Keep order, duplicates, case and FName number suffixes.
     for index=1,#ids do
-        local value=name(ids[index]);if value:lower()~="map"then remaining[#remaining+1]=value end
+        local value=name(ids[index]);if value:lower()~=tab:lower()then remaining[#remaining+1]=value end
     end
     ids:Empty()
     for index,value in ipairs(remaining)do ids[index]=FName(value)end
 end
 function Session:active()
-    if self.closed then return false end
+    if self.closed then return false, "policy closed" end
     local ok, active = pcall(self.gate)
-    if not ok or active ~= true then return false end
-    return clean(self.pawn) and self.pawn:GetAddress() == self.pawnId and world(self.pawn) == self.world
-        and clean(self.controller) and world(self.controller) == self.world
-        and same(self.gameplay:GetPlayerPawn(self.controller,0), self.pawn)
+    if not ok or active ~= true then return false, "private admission ended" end
+    if not clean(self.pawn) or self.pawn:GetAddress() ~= self.pawnId or world(self.pawn) ~= self.world then
+        return false, "private pawn changed worlds"
+    end
+    if not clean(self.controller) then return false, "controller not ready" end
+    if self.possession then
+        -- The streamed pawn establishes the live world. Its possessing local
+        -- controller can have a different outer package in the UE4SS wrapper.
+        return same(unwrap(self.controller:K2_GetPawn()), self.pawn), "controller does not possess private pawn"
+    end
+    return world(self.controller) == self.world and same(self.gameplay:GetPlayerPawn(self.controller,0), self.pawn),
+        "controller not in private world"
 end
 function Session:rootMatches(root)
     return clean(root) and clean(self.rootClass) and root:IsA(self.rootClass)
@@ -71,11 +81,8 @@ function Session:recordMatches(record)
         and record.tabs:GetFullName() == record.tabName and uiWorld(record.tabs) == self.world
         and record.tabs:IsA(self.tabClass)
 end
-function Session:ensure(root)
-    if not self:active() or not self:rootMatches(root) then return false end
-    local tabs = root.TabList
-    if not clean(tabs) or not tabs:IsA(self.tabClass) or uiWorld(tabs) ~= self.world then return false end
-    local key = tostring(tabs:GetAddress())
+function Session:ensureTab(root, tabs, tab, ready)
+    local key = tostring(tabs:GetAddress()) .. ":" .. tab
     local prior=owners[key]
     if prior and prior.session~=self and prior.record.tabName==tabs:GetFullName()
         and prior.session.world==self.world then
@@ -88,29 +95,51 @@ function Session:ensure(root)
     if record and not self:recordMatches(record) then return false end
     if not record then
         record = { root=root, rootId=root:GetAddress(), rootName=root:GetFullName(), tabs=tabs,
-            tabId=tabs:GetAddress(), tabName=tabs:GetFullName(), originalLocked=locked(tabs), owned=false }
+            tabId=tabs:GetAddress(), tabName=tabs:GetFullName(), tab=tab, originalLocked=locked(tabs,tab), owned=false }
         self.records[key] = record
     end
-    if not locked(tabs) then
+    if not locked(tabs,tab) then
         -- Register ownership before a native setter can mutate then fail.
         record.owned = not record.originalLocked
         if record.owned then owners[key]={session=self,record=record}end
-        if buttonsReady(tabs) then
+        if ready then
             record.nativeApplied=true
-            tabs:SetTabRuntimeHidden(FName(MAP),true)
+            tabs:SetTabRuntimeHidden(FName(tab),true)
         else
             -- Pinned LuaTArray NewIndex extends its real FName array. The
             -- original setter's AddLockedId loop dereferences every button;
             -- only this early native-array guard is safe before all exist.
-            local ids=tabs.LockedIDs;ids[#ids+1]=FName(MAP);record.early=true
+            local ids=tabs.LockedIDs;ids[#ids+1]=FName(tab);record.early=true
         end
-        assert(locked(tabs), "original Map tab lock was rejected")
+        assert(locked(tabs,tab), "original tab lock was rejected: " .. tab)
     end
-    if record.early and buttonsReady(tabs) then
-        record.nativeApplied=true;tabs:SetTabRuntimeHidden(FName(MAP),true);record.early=nil
+    if record.early and ready then
+        record.nativeApplied=true;tabs:SetTabRuntimeHidden(FName(tab),true);record.early=nil
     end
-    self.status = "native-map-tab-locked"
+    if self.allowed then
+        local button = tabs:GetTabButtonBaseByID(FName(tab))
+        if clean(button) then
+            local visibility = button:GetVisibility()
+            if not same(record.button, button) then record.button, record.visibility = button, nil end
+            if visibility ~= COLLAPSED then
+                record.visibility = visibility
+                button:SetVisibility(COLLAPSED)
+            end
+        end
+    end
     return true
+end
+
+function Session:ensure(root)
+    if not self:active() or not self:rootMatches(root) then return false end
+    local tabs = root.TabList
+    if not clean(tabs) or not tabs:IsA(self.tabClass) or uiWorld(tabs) ~= self.world then return false end
+    local ready = buttonsReady(tabs)
+    for _,tab in ipairs(self.hidden) do
+        if not self:ensureTab(root, tabs, tab, ready) then return false end
+    end
+    self.status = self.allowed and "native-tabs-filtered" or "native-map-tab-locked"
+    return true, ready
 end
 function Session:discover(onlyTabs)
     if not self:active() then return end
@@ -118,21 +147,36 @@ function Session:discover(onlyTabs)
         if self:rootMatches(root) and (not onlyTabs or same(root.TabList,onlyTabs)) then self:ensure(root) end
     end
 end
-function Session:callback(path,context)
+function Session:callback(path,context,tabParam)
     if not self:active() then return end
     local object = unwrap(context)
     if path == TABS .. ":RegisterTabs" then
         if clean(object) and object:IsA(self.tabClass) and uiWorld(object) == self.world then self:discover(object) end
-    else self:ensure(object) end
+    elseif self:rootMatches(object) then
+        self:ensure(object)
+        if self.allowed and tabParam and not self.allowed[name(unwrap(tabParam)):lower()] then
+            tabParam:set(FName(self.defaultTab))
+        end
+    end
 end
-function Policy.new(pawn,gate)
+local function newPolicy(pawn, gate, controller, defaultTab, alternateTab)
     assert(type(gate) == "function", "private map policy requires a live scope gate")
     local gameplay,rootClass,tabClass = StaticFindObject(GAMEPLAY),StaticFindObject(ROOT),StaticFindObject(TABS)
     assert(valid(gameplay) and not gameplay:HasAnyFlags(0x08023600) and clean(rootClass) and clean(tabClass), "native map-tab policy metadata is not ready")
-    local controller = gameplay:GetPlayerController(pawn,0)
-    local self = setmetatable({pawn=pawn,pawnId=valid(pawn) and pawn:GetAddress(),world=world(pawn),controller=controller,
-        gameplay=gameplay,rootClass=rootClass,tabClass=tabClass,gate=gate,records={},hooks={},status="waiting-for-native-system-menu"},Session)
-    assert(self.world and self:active(), "map policy cannot own this private player")
+    local hidden = { MAP }
+    local allowed
+    if defaultTab then
+        allowed = { [defaultTab:lower()] = true }
+        if alternateTab then allowed[alternateTab:lower()] = true end
+        hidden = {}
+        for _,tab in ipairs(SYSTEM_TABS) do if not allowed[tab:lower()] then hidden[#hidden+1] = tab end end
+    end
+    local self = setmetatable({pawn=pawn,pawnId=valid(pawn) and pawn:GetAddress(),world=world(pawn),
+        controller=controller or gameplay:GetPlayerController(pawn,0), gameplay=gameplay,rootClass=rootClass,tabClass=tabClass,
+        gate=gate,allowed=allowed,defaultTab=defaultTab,possession=controller ~= nil,hidden=hidden,
+        records={},hooks={},status="waiting-for-native-system-menu"},Session)
+    local active, reason = self:active()
+    assert(self.world and active, "map policy cannot own this private player: " .. tostring(reason))
     local ok, why = pcall(function()
         assert(type(RegisterHook) == "function", "native map policy hooks are unavailable")
         for _,path in ipairs({TABS..":SetTabRuntimeHidden",TABS..":RemoveLockedID",
@@ -141,9 +185,10 @@ function Policy.new(pawn,gate)
         end
         for _,path in ipairs(HOOKS) do
             assert(clean(StaticFindObject(path)), "missing original map-tab entry: " .. path)
-            local function dispatch(context)
+            local function dispatch(context, tabParam)
                 if self.closed then return end
-                local good, failure = pcall(self.callback,self,path,context)
+                local good, failure = pcall(self.callback,self,path,context,
+                    (path == ROOT .. ":OpenByTabID" or path == ROOT .. ":SelectTab") and tabParam or nil)
                 if not good and not self.lastError then
                     self.lastError=tostring(failure)
                     print("[PBZTestArenaNative] Arena map-tab policy: " .. self.lastError .. "\n")
@@ -167,6 +212,17 @@ function Policy.new(pawn,gate)
     end
     return self
 end
+
+function Policy.new(pawn, gate, controller)
+    return newPolicy(pawn, gate, controller)
+end
+
+function Policy.only(pawn, controller, gate, defaultTab, alternateTab)
+    assert(defaultTab == "Character" or defaultTab == "System", "unsupported native tab")
+    assert(alternateTab == nil or (defaultTab == "Character" and alternateTab == "System"), "unsupported native tab pair")
+    return newPolicy(pawn, gate, controller, defaultTab, alternateTab)
+end
+
 function Session:update(pawn,now)
     if not same(pawn,self.pawn) or not self:active() then return false,"private-map-policy-scope-ended" end
     assert(type(now) == "number" and now > -math.huge and now < math.huge, "map policy clock is unavailable")
@@ -174,30 +230,41 @@ function Session:update(pawn,now)
         self.nextAt=now+1
         -- No idle GUObject scan. New roots are captured by exact native entry
         -- hooks; RegisterTabs discovery runs only on that finite rebuild event.
-        for _,record in pairs(self.records)do self:ensure(record.root)end
+        local seen = {}
+        for _,record in pairs(self.records)do
+            if not seen[record.rootId] then self:ensure(record.root); seen[record.rootId] = true end
+        end
     end
     return true
 end
 function Session:close()
     self.closed=true -- late native callbacks are inert even if unregistration fails.
     self.closeError=nil
-    local remaining={}
+    local remaining = {}
     for key,record in pairs(self.records) do
+        local tab = record.tab
         local ok, why = pcall(function()
             if not valid(record.root) or not valid(record.tabs) then return end
             if not self:recordMatches(record) then error("map tab identity/world changed before cleanup") end
-            if record.owned and (locked(record.tabs)or record.refreshPending) then
+            if record.visibility ~= nil then
+                local button = record.tabs:GetTabButtonBaseByID(FName(tab))
+                if same(button, record.button) and button:GetVisibility() == COLLAPSED then
+                    button:SetVisibility(record.visibility)
+                end
+                record.visibility = nil
+            end
+            if record.owned and (locked(record.tabs,tab)or record.refreshPending) then
                 -- Do NOT call SetTabRuntimeHidden(false): its final force-unlock
                 -- would override native descriptor/story locks. This original
                 -- remover recomputes those conditions after removing our ID.
-                if buttonsReady(record.tabs)then record.tabs:RemoveLockedID(FName(MAP))
+                if buttonsReady(record.tabs)then record.tabs:RemoveLockedID(FName(tab))
                 else
                     record.refreshPending=record.nativeApplied
-                        or clean(record.tabs:GetTabButtonBaseByID(FName(MAP)))
-                    removeEarlyLock(record.tabs)
+                        or clean(record.tabs:GetTabButtonBaseByID(FName(tab)))
+                    removeEarlyLock(record.tabs,tab)
                     if record.refreshPending then error("waiting for native Map-button cleanup readiness")end
                 end
-                assert(not locked(record.tabs), "owned Map tab lock cleanup was rejected")
+                assert(not locked(record.tabs,tab), "owned tab lock cleanup was rejected: " .. tab)
             end
         end)
         if not ok then remaining[key]=record;self.closeError=tostring(why)

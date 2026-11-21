@@ -139,6 +139,7 @@ local function preflight(bp, snapshot, inventory)
     end
 end
 local function perform(bp, current, wanted)
+    local confirmed = 0
     for _, group in ipairs(GROUPS) do
         local from, to = current[group.name], wanted[group.name]
         local order = {}
@@ -175,8 +176,9 @@ local function perform(bp, current, wanted)
                     elseif item then bp:ReplaceMedicineByIndex(nativeIndex, FName(item), false)
                     else bp:TakeOffMedicineByIndex(nativeIndex) end
                 end
-                return false, "waiting:native equip commit " .. group.name .. ":" .. index
+                return false, "waiting:native equip commit " .. group.name .. ":" .. index, confirmed
             end
+            confirmed = confirmed + 1
         end
     end
     return true
@@ -193,7 +195,7 @@ function Loadout.capture(pawn)
     return nil, tostring(result)
 end
 function Loadout.apply(pawn, snapshot)
-    local ok, result, reason = pcall(function()
+    local ok, result, reason, confirmed = pcall(function()
         validate(snapshot)
         local bp, current, inventory = read(pawn)
         preflight(bp, snapshot, inventory)
@@ -201,12 +203,12 @@ function Loadout.apply(pawn, snapshot)
         -- Native equip/config delivery is asynchronous. Wait for the existing
         -- preset/previous operation to commit before issuing another mutation.
         configurationsReady(pawn, bp, current, inventory)
-        local complete, wait = perform(bp, current, snapshot)
-        if not complete then return false, wait end
+        local complete, wait, matched = perform(bp, current, snapshot)
+        if not complete then return false, wait, matched end
         configurationsReady(pawn, bp, snapshot, inventory)
         return true
     end)
-    if ok then return result, reason end
+    if ok then return result, reason, confirmed end
     return false, tostring(result)
 end
 

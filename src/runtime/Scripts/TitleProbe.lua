@@ -49,12 +49,20 @@ local function required(path)
     return object
 end
 
+local reportedTitleWait = {}
+
 local function activeTitle(gameplay)
+    local waiting = "title_widget_not_active"
     for _, menu in ipairs(FindAllOf(TITLE_CLASS) or {}) do
         if valid(menu) and menu:IsActivated() and name(gameplay:GetCurrentLevelName(menu, true)) == TITLE_LEVEL then
             local controller, group = menu:GetOwningPlayer(), menu.ButtonGroup
             if valid(controller) and valid(group) then return menu, controller, group end
+            waiting = valid(controller) and "title_button_group_not_ready" or "title_controller_not_ready"
         end
+    end
+    if not reportedTitleWait[waiting] then
+        reportedTitleWait[waiting] = true
+        print("[PBZTitleDiag] entry=" .. waiting .. "\n")
     end
 end
 

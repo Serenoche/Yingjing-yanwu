@@ -300,6 +300,9 @@ local function markDead(observer, record, at)
     if not record.dead then
         record.dead = true
         if finite(at) then record.endedAt = at end
+        if record.groupSize > 1 then
+            print(("[PBZTestArenaNative] Group member defeated stage=%d actor=%s\n"):format(record.stage, record.name))
+        end
     end
     if allCurrentDead(observer) then
         local last
@@ -326,7 +329,12 @@ local function startBossDestroyHook(observer)
             if not actor then return end
             local record = observer.recordsByAddress[actor:GetAddress()]
             if not record then return end
-            if not isDead(actor, observer.deadTag) then return end
+            if not isDead(actor, observer.deadTag) then
+                -- Native removal can arrive after the ability component is gone.
+                -- Preserved zero health is evidence only at this removal event.
+                local hp = record.groupSize > 1 and health(actor) or nil
+                if hp == nil or hp > 0 then return end
+            end
             local gameplay = StaticFindObject("/Script/Engine.Default__GameplayStatics")
             local at = valid(gameplay) and gameplay:GetTimeSeconds(observer.pawn) or observer.lastNow
             markDead(observer, record, at)
@@ -401,6 +409,14 @@ function Observer:setBosses(bosses, finalStage)
     for _, record in ipairs(records) do self.bosses[#self.bosses + 1] = record.actor end
     self.boss, self.bossAddress, self.bossName = records[1].actor, records[1].address, records[1].name
     return true
+end
+
+function Observer:livingGroup()
+    local living = {}
+    for _, record in ipairs(self.currentRecords) do
+        if not record.dead then living[#living + 1] = record.actor end
+    end
+    return living
 end
 
 function Observer:read(now)

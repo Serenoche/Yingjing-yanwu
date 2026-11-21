@@ -9,6 +9,7 @@ local lastProbeReason
 local groundDiagAt,groundDiagReason=0,nil
 local nextBellScan, preparationError, needsRescue
 local streaming
+local liftCoverAttempted
 local discovery = {}
 local restores, handled = {}, {}
 local pending = {}
@@ -153,12 +154,97 @@ function Arena.reset()
     entryNodes={}
     interactionState=nil
     streaming=nil
+    liftCoverAttempted=false
     queryContext=nil
 end
+
+local function addLakeLiftDeck(actor,box,extent)
+    local path="/Game/PBZContent/Environments/Arch/Town/SM_bgg/Mesh/SM_share_woodfloor_001.SM_share_woodfloor_001"
+    local mesh=StaticFindObject(path)
+    if not valid(mesh) or mesh:HasAnyFlags(PENDING) then
+        LoadAsset(path)
+        mesh=StaticFindObject(path)
+    end
+    assert(valid(mesh) and not mesh:HasAnyFlags(PENDING) and mesh:IsA(required("/Script/Engine.StaticMesh")),
+        "lake lift deck mesh unavailable")
+    local library=required("/Script/Engine.Default__KismetMathLibrary")
+    local flat={Pitch=0,Yaw=0,Roll=0}
+    local origin=library:MakeTransform({X=0,Y=0,Z=0},flat,{X=1,Y=1,Z=1})
+    local deck=actor:AddComponentByClass(required("/Script/Engine.InstancedStaticMeshComponent"),false,origin,false)
+    assert(world(deck),"lake lift deck component unavailable")
+    deck:SetVisibility(false,false)
+    deck:SetGenerateOverlapEvents(false)
+    deck:SetCollisionEnabled(0)
+    deck:SetMobility(2) -- Movable permits runtime mesh assignment on a registered component.
+    assert(deck:SetStaticMesh(mesh),"lake lift deck mesh assignment failed")
+    -- Cooked mesh bounds are ±100 x ±350 cm with a top at +11.17 cm.
+    -- Tile three panels in local space, with the wood surface just under the collision plane.
+    local width=2*extent.X/3
+    local scale={X=width/200,Y=2*extent.Y/700,Z=1}
+    for index=0,2 do
+        local offset={X=(index-1)*width,Y=0,Z=extent.Z-11.17-.5}
+        assert(deck:AddInstance(library:MakeTransform(offset,flat,scale),false)==index,"lake lift deck panel placement failed")
+    end
+    -- Revealing the actor for the wood would also reveal the TriggerBox wireframe.
+    box:SetVisibility(false,false)
+    actor:SetActorHiddenInGame(false)
+    deck:SetVisibility(true,false)
+end
+
+local function coverLakeLift(gameplay,pawn,scene)
+    if scene.id~="lake" or liftCoverAttempted then return end
+    liftCoverAttempted=true
+    -- Upper opening of the authored BP_Lift_Elevator behind BrokenBell_LJC_02.
+    -- Align to the shaft walls and overlap their inner edges below the upper landing.
+    local at={X=-65188,Y=84239,Z=1010}
+    local extent={X=330,Y=300,Z=45}
+    local actor,box
+    local ownedWorld=worldId
+    local function removeCover()
+        if inWorld(actor,ownedWorld) and not actor:IsActorBeingDestroyed() then
+            if valid(box) then box:SetCollisionEnabled(0) end
+            actor:K2_DestroyActor()
+        end
+    end
+    local ok,reason=pcall(function()
+        local transform=required("/Script/Engine.Default__KismetMathLibrary"):MakeTransform(at,
+            {Pitch=0,Yaw=160,Roll=0},{X=1,Y=1,Z=1})
+        actor=gameplay:BeginDeferredActorSpawnFromClass(pawn,required("/Script/Engine.TriggerBox"),transform,1,nil,1)
+        assert(world(actor),"unable to create lake lift cover")
+        local finished=gameplay:FinishSpawningActor(actor,transform,1)
+        assert(world(finished) and finished:GetAddress()==actor:GetAddress(),"lake lift cover spawn failed")
+        local location=vector(actor:K2_GetActorLocation())
+        assert(location and math.abs(location.X-at.X)<=1 and math.abs(location.Y-at.Y)<=1
+            and math.abs(location.Z-at.Z)<=1,"lake lift cover position differs from the shaft")
+        box=actor:GetComponentByClass(required("/Script/Engine.BoxComponent"))
+        assert(world(box),"lake lift cover has no box component")
+        box:SetGenerateOverlapEvents(false)
+        box:SetCollisionEnabled(0)
+        box:SetBoxExtent(extent,false)
+        box:SetCollisionObjectType(0) -- WorldStatic
+        box:SetCollisionResponseToAllChannels(0)
+        box:SetCollisionResponseToChannel(2,2) -- Pawn, Block
+        box:SetCollisionResponseToChannel(19,2) -- AIPawn (GameTraceChannel6), Block
+        box:SetCollisionEnabled(1) -- QueryOnly supports character sweeps without moving the lift.
+        assert(box:GetCollisionEnabled()==1 and box:GetCollisionResponseToChannel(2)==2
+            and box:GetCollisionResponseToChannel(19)==2,"lake lift cover collision is inactive")
+    end)
+    if ok then
+        restores[#restores+1]=removeCover
+        log("lake lift shaft covered")
+        local shown,visualReason=pcall(addLakeLiftDeck,actor,box,extent)
+        if shown then log("lake lift wooden deck placed")
+        else log("lake lift wooden deck unavailable: "..tostring(visualReason)) end
+    else
+        undo(removeCover)
+        log("lake lift shaft cover unavailable: "..tostring(reason))
+    end
+end
+
 local function streamOriginalBell(gameplay,pawn,controller,scene,now)
     -- The exact native helper used by SwitchStreamingSource. Keep its default
     -- all-grid/range/state/Shapes; no bell clone, DataLayer change or teleport.
-    if scene.id~="cliff" and scene.id~="lake" then return end
+    if scene.standaloneLake or (scene.id~="cliff" and scene.id~="lake") then return end
     assert((scene.id=="cliff" and scene.map=="PBZ_Duanhun_WP" and scene.bellSaveId=="Bell_DH_004")
         or (scene.id=="lake" and scene.map=="PBZ_Zhengdaodaying_WP" and scene.bellSaveId=="BrokenBell_LJC_02"),"原铃铛流式加载目标不匹配")
     if ready and streaming then
@@ -717,10 +803,11 @@ local function update(gameplay,pawn,controller,now,scene,keep,allowBell)
     if not ready and #pending>0 then return nil,"等待上一原场景状态恢复" end
     -- Exact authored narrative suppression must not wait for the target bell's
     -- separate spatial cell. Preserve all unrelated/native preload actors.
-    if now>=nextScan then
+    if not scene.standaloneLake and now>=nextScan then
         blockLakeEntries(scene,now);blockCliffPortal(scene);suppress(scene,keep);nextScan=now+(ready and 1 or .5)
     end
     streamOriginalBell(gameplay,pawn,controller,scene,now)
+    coverLakeLift(gameplay,pawn,scene)
     selectedBell=world(selectedBell) and selectedBell or findBell(gameplay,pawn,controller,scene,now)
     if not valid(selectedBell) then
         if ready then return true end -- A distant native bell may stream out during combat.

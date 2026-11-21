@@ -68,4 +68,9 @@ function SpawnClass.resolve(path)
     return class
 end
 
+function SpawnClass.observeReady(path)
+    local class = StaticFindObject(path)
+    if ready(class, path) then return class end
+end
+
 return SpawnClass

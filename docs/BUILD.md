@@ -99,15 +99,21 @@ python tools/data/generate_runtime_data.py --check
 python tools/data/test_generate_runtime_data.py
 ```
 
-前一条只写 `src/runtime/Scripts` 内三个指定生成文件；`--check` 只比较，不写文件。更多约束见 [数据生成器说明](../tools/data/README.md)。
+前一条只写 `src/runtime/Scripts` 内四个生成文件，包含测试场杂兵名单。`--check` 只比较。更多约束见 [数据生成器说明](../tools/data/README.md)。
 
 ## 1.1.0 稳定运行时选择
 
-完整组装使用 `tools/assemble_release.py --runtime-dir <稳定运行时目录>`。该目录必须含 `Scripts/` 中完整的 63 项 Lua 白名单，以及空白的 `enabled.txt`；原生 DLL 取自所选构建目录，不能沿用旧 DLL 代替本次双版本接口构建。
+完整组装使用 `tools/assemble_release.py --runtime-dir <稳定运行时目录>`。当前源码要求 `Scripts/` 中完整的 Lua 白名单和空白的 `enabled.txt`。原生 DLL 使用本次双版本接口构建在所选目录生成的文件。
+
+包含自订压力的运行时还需要 `DreamPalacePressure.lua`、`PressureControls.lua` 和对应的原生模块。用 `python tools/build.py native --component pressure` 编译模块，`--component all` 也会编译它。组装时会校验模块并写入文件清单。
+
+2.0.2 两套安装流程都带有目录联接校验模块。用 `python tools/build.py native --component path-identity` 编译 `PBZPathIdentity.dll`。
+
+练习和挑战支持湖畔独立图 R8、三面封印地、梅谷乐坊，以及地图项下方的「战斗音乐」。湖畔独立图和梅谷乐坊各需要一组本地地图文件，三面封印地直接使用游戏已有地图。[本地地图输入](LOCAL_INPUTS.md#local-lake-upper-map-input)
 
 `--runtime-dir` 默认是 `src/runtime`。开发工作树保留实验代码，1.1.0 发行及其源码快照选择经确认的三模式 `TitleHome.lua`，不启用《影之氪零》入口。`KryptonDemo.lua` 仍在文件白名单中，但稳定首页不引用它。内部镜头采样不属于该稳定快照；偶发镜头抖动未被列为已修复项。
 
-`--data-dir` 只用于核对三个生成表，**不会覆盖运行时模块**；其内容也必须与所选 `runtime-dir/Scripts` 中的生成表一致。不要把它当作稳定 UI 或修复脚本的覆盖目录。组装后，逐文件核对 `BuildProvenance.json` 的运行时指纹，尤其是稳定首页与本次构建的保存保护 DLL。
+`--data-dir` 用于核对四个生成表，其内容必须与所选 `runtime-dir/Scripts` 中的生成表一致。组装后，逐文件核对 `BuildProvenance.json` 的运行时指纹，尤其是稳定首页与本次构建的保存保护 DLL。
 
 Use `--runtime-dir` to select one complete reviewed runtime, including `Scripts/` and `enabled.txt`. `--data-dir` validates generated tables only and never replaces runtime modules. The stable 1.1.0 profile excludes experimental entry points and camera diagnostics while retaining the confirmed target-registration repair.
 
@@ -116,3 +122,13 @@ Use `--runtime-dir` to select one complete reviewed runtime, including `Scripts/
 仅编译原生组件及安装器无需游戏资源。完整 UI、预设生成和完整发行包组装需要上面的本地输入，因此这里不承诺干净克隆后能独立生成完整 MOD 发行包。游戏资源不因被代码引用而适用本项目的 MIT 授权。
 
 源码构建及合成测试通过，也不能替代用户对正常启动、Steam 账号匹配、进入/退出演武、普通保存恢复的实际验证。
+
+## 原版存点运行时源码
+
+作者工作区的 `work/pbz_test_scene/release_200_internal/final_200/build.py` 组装当前原版存点运行时。先用 `tools/build.py native --component pressure` 构建压力模块。运行 `final_200/build.py --verify-source` 会在临时目录验证脚本、场景、浊梦流程和 Steam 安装还原。图形安装器通过 `--graphical` 组装同一运行时。旧版 Steam 与部分 Epic 安装按实际接口走三图兼容流程。
+
+原版存点运行时在基础合成完成后读取 `src/runtime/checkpoint`，其中的清单固定了脚本基线。构建以 `config/ShengQuXinChi.json` 生成圣躯心池场景和第五个原版存点，重新编译与该存点清单配对的保存保护组件。两张菜单题字从 `local-inputs/CheckpointMenuTitles` 读取。图形安装器也会组装两个 PBZModLoader 桥接脚本，在已有前置环境时安装。
+
+2.0.2 源码快照的 [发行清单](../RELEASE_PROFILE.json)指向两套已组装运行时的 Lua 源文件及 SHA-256。优先引用已有源文件，构建后内容有差异的脚本收入 `src/runtime/release_202`。本地完整组装仍需要已经核验的安装基线、预设和素材。
+
+浊梦开门跳过由 `BloodyPalaceGateScene.lua` 和 `BloodyPalacePortal.lua` 随原版存点运行时组装。开门过场的右下角显示原生「跳过」按钮，按 Xbox A、鼠标左键或 PlayStation × 后即可走进传送门换层。

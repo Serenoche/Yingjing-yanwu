@@ -24,6 +24,7 @@ local NO_COLOR = { R = 0, G = 0, B = 0, A = 0 }
 
 local activeWorld, activePawn, ready, nextScan
 local restore, handled = {}, {}
+local trainingBell, trainingBellSnapshot
 
 local function valid(object)
     return object ~= nil and object:IsValid()
@@ -44,6 +45,7 @@ function ClosedArena.reset()
     for index = #restore, 1, -1 do pcall(restore[index]) end
     restore, handled = {}, {}
     activeWorld, activePawn, ready, nextScan = nil, nil, false, 0
+    trainingBell, trainingBellSnapshot = nil, nil
 end
 
 local function findExact(spec)
@@ -87,6 +89,67 @@ local function disableBell()
         print("[PBZTestArenaNative] Old-house bell interaction disabled: " .. bell:GetFName():ToString() .. "\n")
     end
     return sphere:GetCollisionEnabled() == 0
+end
+
+local function belongsToHouse(bell)
+    if not valid(bell) or bell:IsActorBeingDestroyed() then return false end
+    local world = require("SceneArena").runtimeWorld(bell)
+    return valid(world) and world:GetAddress() == activeWorld and inHouse(bell:K2_GetActorLocation())
+end
+
+local function enableTrainingBell()
+    local bell = trainingBell
+    if not belongsToHouse(bell) then
+        trainingBell, trainingBellSnapshot = nil, nil
+        for _, candidate in ipairs(FindAllOf(BELL[1]) or {}) do
+            if belongsToHouse(candidate) then
+                local id = candidate.BellID
+                if id and (type(id) == "string" and id or id:ToString()) == BELL_ID then
+                    bell = candidate
+                    break
+                end
+            end
+        end
+    end
+    if not belongsToHouse(bell) then return end
+    local sphere = bell.InteractionComp
+    if not valid(sphere) then return end
+    local snapshot = trainingBellSnapshot
+    local first = snapshot == nil
+    if not snapshot then
+        local tags = bell.FlowTagMap
+        snapshot = { collision = sphere:GetCollisionEnabled(), disableTeleport = bell.bDisableTeleport,
+            teleportOnLeave = bell.bTeleportOnBrokenBellLeave, tags = {} }
+        tags:ForEach(function(key, value)
+            local readKey, k = pcall(function() return key:get() end)
+            local readValue, v = pcall(function() return value:get() end)
+            snapshot.tags[#snapshot.tags + 1] = {
+                (readKey and k or key).TagName:ToString(), (readValue and v or value).TagName:ToString(),
+            }
+        end)
+        trainingBellSnapshot = snapshot
+        restore[#restore + 1] = function()
+            if not belongsToHouse(bell) then return end
+            bell.bDisableTeleport = snapshot.disableTeleport
+            bell.bTeleportOnBrokenBellLeave = snapshot.teleportOnLeave
+            local map = bell.FlowTagMap
+            map:Empty()
+            for _, pair in ipairs(snapshot.tags) do
+                map:Add({ TagName = FName(pair[1]) }, { TagName = FName(pair[2]) })
+            end
+            if valid(sphere) then sphere:SetCollisionEnabled(snapshot.collision) end
+        end
+    end
+    bell.bDisableTeleport = true
+    bell.bTeleportOnBrokenBellLeave = false
+    if #bell.FlowTagMap > 0 then bell.FlowTagMap:Empty() end
+    if sphere:GetCollisionEnabled() == 0 then sphere:SetCollisionEnabled(1) end
+    trainingBell = bell
+    if first then print("[PBZTestArenaNative] Old-house training bell enabled: " .. BELL_ID .. "\n") end
+end
+
+function ClosedArena.getTrainingBell()
+    if valid(trainingBell) and not trainingBell:IsActorBeingDestroyed() then return trainingBell end
 end
 
 local function hideInteractions(pawn)
@@ -224,7 +287,7 @@ local function anchorReady(pawn)
         and ANCHOR.Z - hit.ImpactPoint.Z >= 55 and ANCHOR.Z - hit.ImpactPoint.Z <= 185
 end
 
-function ClosedArena.update(pawn, controller, worldAddress, now, keep, allowBell)
+function ClosedArena.update(pawn, controller, worldAddress, now, keep, allowBell, forTraining)
     local position = pawn:K2_GetActorLocation()
     if not inHouse(position) then
         if activeWorld then ClosedArena.reset() end
@@ -242,6 +305,8 @@ function ClosedArena.update(pawn, controller, worldAddress, now, keep, allowBell
         if not allowBell then
             hideInteractions(pawn)
             disableBell()
+        elseif forTraining then
+            enableTrainingBell()
         end
         local dx, dy, dz = position.X - ANCHOR.X, position.Y - ANCHOR.Y, position.Z - ANCHOR.Z
         if dx * dx + dy * dy > 25^2 or math.abs(dz) > 80 then
@@ -257,6 +322,8 @@ function ClosedArena.update(pawn, controller, worldAddress, now, keep, allowBell
         if not allowBell then
             hideInteractions(pawn)
             disableBell()
+        elseif forTraining then
+            enableTrainingBell()
         end
         nextScan = now + 1
     end

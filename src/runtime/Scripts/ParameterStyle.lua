@@ -198,13 +198,18 @@ end
 function Style.flatRow(context, controller, tree, label)
     local row = Style.row(context, controller, tree, label)
     local refresh = row.refresh
+    local setInputMode = row.setInputMode
+    function row:setInputMode(gamepad, keyboard)
+        self.keyboard = keyboard == true
+        setInputMode(self, gamepad)
+    end
     function row:refresh(content, selected)
         refresh(self, content, selected)
         -- The approved artwork has no setting-row rectangle. Selection is a
         -- warm text accent; the authored arrow hover is still used for mouse.
         checked(self.root.AnimBoundEntryBorder, "原生设置行缺少背景笔刷")
             :SetBrushColor({ R = 1, G = 1, B = 1, A = 0 })
-        local active = self.gamepad and selected
+        local active = (self.gamepad or self.keyboard) and selected
         self.label:OverrideTextColor({ SpecifiedColor = { R = active and 1 or .88,
             G = active and .77 or .85, B = active and .43 or .77, A = 1 }, ColorUseRule = 0 })
         self.label:SetOutlineOverrideEnabled(false)

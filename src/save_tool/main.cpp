@@ -128,7 +128,9 @@ Json run(const Arguments& command){
         candidate_path=new_output(command.options.at(L"--output"),output_root);
         require(!equal_path(candidate_path,source.path) && !equal_path(candidate_path,game.path)
             && !equal_path(candidate_path,presets_file.path),"Output aliases an input");
-        candidate_bytes=seal_container(cipher,expected);
+        const bool unchanged=expected.size()==original.size()
+            && std::equal(expected.begin(),expected.end(),original.begin(),same_entry);
+        candidate_bytes=unchanged?source.bytes():seal_container(cipher,expected);
     }else{
         ReadOnlyFile candidate(command.options.at(L"--after"));candidate_path=candidate.path;
         require(!equal_path(candidate.path,source.path),"Verification compares two distinct files");candidate_bytes=candidate.bytes();

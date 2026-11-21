@@ -10,8 +10,8 @@ local SUBSYSTEM = "/Script/Engine.Default__SubsystemBlueprintLibrary"
 local ROUTER = "/Script/ProjectPBZ.PBZUIActionRouterBase"
 local COMMON_INPUT = "/Script/CommonInput.CommonInputSubsystem"
 local DIRECTIONS = {
-    { "Gamepad_DPad_Up", "Up" }, { "Gamepad_DPad_Down", "Down" },
-    { "Gamepad_DPad_Left", "Left" }, { "Gamepad_DPad_Right", "Right" },
+    { "Gamepad_DPad_Up", "Gamepad_LeftStick_Up", "Up" }, { "Gamepad_DPad_Down", "Gamepad_LeftStick_Down", "Down" },
+    { "Gamepad_DPad_Left", "Gamepad_LeftStick_Left", "Left" }, { "Gamepad_DPad_Right", "Gamepad_LeftStick_Right", "Right" },
 }
 local CONFIRM = { "Gamepad_FaceButton_Bottom", "Enter", "SpaceBar" }
 local feedbackFailures = {}
@@ -67,6 +67,11 @@ local function held(router, names)
     return false
 end
 
+local function rowEnabled(row)
+    if type(row.enabled) == "function" then return row.enabled() end
+    return row.enabled ~= false
+end
+
 function Instance:isConfirmHeld() return held(self.router, CONFIRM) end
 function Instance:syncInputMode()
     if valid(self.commonInput) then
@@ -91,17 +96,30 @@ function Instance:consumeConfirm()
     self.skipReleasedConfirm = not self:isConfirmHeld()
 end
 
+function Instance:activeGroup()
+    if self.groups and (not self.groupsGamepadOnly or self.gamepadMode) then
+        return self.groups[self.region]
+    end
+end
+
 function Instance:refresh()
+    local group = self:activeGroup()
+    if group and #group > 0 and self.groupsGamepadOnly then
+        local selected = false
+        for _, index in ipairs(group) do
+            if index == self.selected then selected = true; break end
+        end
+        if not selected then self.selected = group[1] end
+    end
     for index, row in ipairs(self.rows) do
         local widget = self.widgets[index]
         local value = row.value()
         assert(type(value) == "string" or type(value) == "number", "参数值必须为文本或数字")
-        widget:setInputMode(self.gamepadMode == true)
-        local enabled = row.enabled == nil or (type(row.enabled) == "function" and row.enabled() or row.enabled == true)
-        widget.decrease:SetIsEnabled(enabled)
-        widget.increase:SetIsEnabled(enabled)
-        widget:refresh(tostring(value), index == self.selected
-            and (not self.groups or #self.groups[self.region] > 0))
+        widget:setInputMode(self.gamepadMode == true, self.keyboardMode == true)
+        local enabled = rowEnabled(row)
+        if widget.decrease then widget.decrease:SetIsEnabled(enabled) end
+        if widget.increase then widget.increase:SetIsEnabled(enabled) end
+        widget:refresh(tostring(value), index == self.selected and (not group or #group > 0))
     end
     if self.onRefresh then self.onRefresh(self) end
 end
@@ -117,7 +135,14 @@ end
 
 function Instance:advanceConfirm()
     if not self:canConfirm() then return false end
+    if self.readInputs then self.readInputs(self) end
     if self.groups then self:syncInputMode(); self:consumeConfirm() end
+    local row = self.rows[self.selected]
+    if self.groups and self.gamepadMode and self.region < #self.groups and row and row.activate then
+        feedback("navigate", self.controller, self.modal)
+        self:change(self.selected, 1)
+        return false
+    end
     if self.groups and self.gamepadMode and self.region < #self.groups then
         self:setRegion(self.region + 1)
         return false
@@ -136,7 +161,8 @@ end
 
 function Instance:change(index, delta)
     self.selected = index
-    self.rows[index].change(delta)
+    local row = self.rows[index]
+    if rowEnabled(row) then row.change(delta) end
     self:refresh()
     self:focusConfirm()
 end
@@ -199,11 +225,13 @@ function Instance:update(gameplay)
             self.confirmReady, self.pending = false, {}
             return
         end
+        if self.readInputs then self.readInputs(self) end
         local now = gameplay:GetRealTimeSeconds(self.modal)
         assert(type(now) == "number" and now == now, "参数菜单时间不可用")
         if self.lastTime and now < self.lastTime then self.directionBlocked, self.activeDirection = true, nil end
         self.lastTime = now
         self:syncInputMode()
+        if self.keyboardSelection and self.gamepadMode then self.keyboardMode = false end
         if held(self.router, CONFIRM) then self.skipReleasedConfirm = nil
         elseif self.skipReleasedConfirm then self.skipReleasedConfirm = nil
         else self.confirmReady = true end
@@ -217,20 +245,28 @@ function Instance:update(gameplay)
         elseif count > 1 then
             self.directionBlocked, self.activeDirection, self.nextRepeat = true, nil, nil
         elseif not self.directionBlocked then
-            local step = self.activeDirection ~= direction
+            local starting = self.activeDirection ~= direction
+            local step = starting
             if step then self.activeDirection, self.nextRepeat = direction, now + 0.35
             elseif now >= self.nextRepeat then step, self.nextRepeat = true, now + 0.12 end
             if step then
                 local gamepadStep = directionKey:sub(1, 8) == "Gamepad_"
                 self.gamepadMode = gamepadStep
-                local group = self.groups and self.groups[self.region]
+                self.keyboardMode = self.keyboardSelection and not gamepadStep
+                local group = self:activeGroup()
                 if group then
                     if #group > 0 then
                         local localIndex = 1
                         for candidate, rowIndex in ipairs(group) do if rowIndex == self.selected then localIndex = candidate end end
                         if direction == 1 then self.selected = group[(localIndex - 2) % #group + 1]
                         elseif direction == 2 then self.selected = group[localIndex % #group + 1]
-                        else self:change(self.selected, direction == 3 and -1 or 1) end
+                        else
+                            local row = self.rows[self.selected]
+                            if starting or not row.activate then
+                                local stepSize = not starting and row.repeatStep or 1
+                                self:change(self.selected, direction == 3 and -stepSize or stepSize)
+                            end
+                        end
                     end
                 elseif direction == 1 then self.selected = (self.selected - 2) % #self.rows + 1
                 elseif direction == 2 then self.selected = self.selected % #self.rows + 1
@@ -243,6 +279,7 @@ function Instance:update(gameplay)
         self.pending = {}
         for _, action in ipairs(pending) do
             self.gamepadMode = false
+            self.keyboardMode = false
             self:change(action.index, action.delta)
             feedback("click", self.modal, action.button)
         end
@@ -267,7 +304,7 @@ end
 
 function Form.open(modal, description, controller, confirmButton, rows, options)
     options = options or {}
-    local maximum = options.host and 13 or 8
+    local maximum = options.host and 16 or 8
     assert(type(rows) == "table" and #rows >= 1 and #rows <= maximum, "参数菜单行数超出当前布局范围")
     for _, row in ipairs(rows) do
         assert(type(row) == "table" and type(row.label) == "string" and type(row.value) == "function"
@@ -278,8 +315,10 @@ function Form.open(modal, description, controller, confirmButton, rows, options)
         confirm = checked(confirmButton, "参数菜单确认按钮无效"), rows = rows, selected = 1,
         pending = {}, actions = {}, pulses = {}, arrowButtons = {}, arrowDelegates = {}, widgets = {},
         directionBlocked = true, confirmReady = false, external = options.host ~= nil,
-        groups = options.groups, region = options.region or 1, onRefresh = options.onRefresh,
-        focusForRegion = options.focusForRegion }, Instance)
+        keyboardSelection = options.keyboardSelection,
+        groups = options.groups, groupsGamepadOnly = options.groupsGamepadOnly,
+        region = options.region or 1, onRefresh = options.onRefresh,
+        focusForRegion = options.focusForRegion, readInputs = options.readInputs }, Instance)
     local ok, failure = pcall(function()
         assert(session.modal:IsActivated(), "参数弹窗尚未激活")
         assert(same(unwrap(session.modal:GetOwningPlayer()), session.controller), "参数弹窗属于其他控制器")
@@ -313,9 +352,10 @@ function Form.open(modal, description, controller, confirmButton, rows, options)
         session.body = make("VerticalBox", session.tree)
         session.root:SetContent(session.body)
         for index, row in ipairs(rows) do
-            local styled = (options.flat and Style.flatRow or Style.row)(session.modal, session.controller, session.tree, row.label)
-            arrow(session, index, -1, styled.decrease)
-            arrow(session, index, 1, styled.increase)
+            local styled = options.widget and options.widget(index)
+                or (options.flat and Style.flatRow or Style.row)(session.modal, session.controller, session.tree, row.label)
+            if styled.decrease then arrow(session, index, -1, styled.decrease) end
+            if styled.increase then arrow(session, index, 1, styled.increase) end
             if options.mountRow then options.mountRow(index, styled.root)
             else session.body:AddChildToVerticalBox(size(session.tree, styled.root, nil, 76.5)) end
             session.widgets[index] = styled

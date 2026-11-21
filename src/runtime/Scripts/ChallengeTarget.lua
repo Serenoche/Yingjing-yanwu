@@ -3,6 +3,9 @@
 local Catalog = require("EncounterCatalog")
 local Profile = require("PlayerProfile")
 local Scenes = require("ArenaScenes")
+local Music = require("BattleMusic")
+local Difficulty = require("GameplayDifficulty")
+local Pressure = require("DreamPalacePressure")
 local Target, Model = {}, {}
 Model.__index = Model
 local DESCRIPTORS = "/Script/CommonGame.Default__CommonGameDialogDescriptor"
@@ -43,15 +46,20 @@ function Target.form(state, baseline)
     assert(Profile.valid(state.playerCycle) and integer(state.enemyCycle, 6)
         and integer(skill, Profile.skillCap(state.playerCycle)), "当前挑战参数无效")
     local entry = assert(selectedEntry(state), "当前没有可用挑战")
+    local mode = state.mode == "practice" and "practice" or "challenge"
+    local sceneId = Scenes.normalize(state.sceneId)
+    if not Scenes.available(sceneId, mode) then sceneId = Scenes.available("lake", mode) and "lake" or "night" end
     local settings = { bossId = entry.id, encounterId = entry.id, category = entry.category,
         playerCycle = state.playerCycle, enemyCycle = state.enemyCycle, skillLevel = skill,
-        difficultyMode = integer(state.difficultyMode, 3) and state.difficultyMode >= 1 and state.difficultyMode or 3,
-        mode = state.mode == "practice" and "practice" or "challenge", sceneId = Scenes.forEncounter(entry.id, Scenes.normalize(state.sceneId)).id }
+        difficultyMode = Difficulty.valid(state.difficultyMode) and state.difficultyMode or Difficulty.customBase,
+        mode = mode, sceneId = Scenes.forEncounter(entry.id, sceneId, mode).id,
+        musicId = Music.normalize(state.musicId) }
+    local scenes = Scenes.list(true, mode)
     local remembered = { [entry.category] = entry.id }
     local function select(chosen)
         assert(chosen and #chosen.stages > 0, "挑战尚未开放")
         settings.bossId, settings.encounterId, settings.category = chosen.id, chosen.id, chosen.category
-        settings.sceneId = Scenes.forEncounter(chosen.id, settings.sceneId).id
+        settings.sceneId = Scenes.forEncounter(chosen.id, settings.sceneId, mode).id
         remembered[chosen.category] = chosen.id
     end
     local model = setmetatable({ settings = settings }, Model)
@@ -106,7 +114,7 @@ function Target.form(state, baseline)
                 if settings.playerCycle ~= -1 then settings.skillLevel = clamp(settings.skillLevel + delta, Profile.skillCap(settings.playerCycle)) end
             end },
     }
-    local difficulties = { "入阵者", "破局者", "逆天者" }
+    local difficulties = Difficulty.choices
     model.screenRows = {
         { label = "轮回", value = model.rows[3].value, change = model.rows[3].change },
         model.rows[5],
@@ -114,16 +122,23 @@ function Target.form(state, baseline)
         { label = "目标", value = model.rows[2].value, change = model.rows[2].change },
         { label = "轮回", value = function() return Profile.rank(settings.enemyCycle, "enemy") end,
             change = model.rows[4].change },
-        { label = "难度", value = function() return difficulties[settings.difficultyMode] end,
-            change = function(delta) settings.difficultyMode = math.max(1, math.min(3, settings.difficultyMode + delta)) end },
-        { label = "场景", value = function() return Scenes.get(settings.sceneId).name end,
-            enabled = function() return #Scenes.list() > 1 end,
+        { label = "难度", value = function() return difficulties[settings.difficultyMode].name end,
             change = function(delta)
-                local choices, selected = Scenes.list(), 1
-                for index, scene in ipairs(choices) do if scene.id == settings.sceneId then selected = index end end
-                settings.sceneId = choices[(selected - 1 + delta) % #choices + 1].id
-            end } }
-    model.screenRows[8] = {
+                settings.difficultyMode = math.max(1, math.min(#difficulties, settings.difficultyMode + delta))
+            end },
+        { label = "场景", value = function() return Scenes.get(settings.sceneId).name end,
+            enabled = #scenes > 1,
+            change = function(delta)
+                local selected = 1
+                for index, scene in ipairs(scenes) do if scene.id == settings.sceneId then selected = index end end
+                settings.sceneId = scenes[(selected - 1 + delta) % #scenes + 1].id
+            end },
+        { label = "战斗音乐", value = function() return Music.label(settings.musicId) end,
+            change = function(delta)
+                settings.musicId = Music.step(settings.musicId, delta)
+            end },
+    }
+    model.screenRows[9] = {
         label = "数量", value = function() return model:isCustom() and tostring(model:customCount()) .. " / 5" or "-" end,
         enabled = function() return model:isCustom() end,
         change = function(delta)
@@ -135,7 +150,7 @@ function Target.form(state, baseline)
     }
     for slot = 1, Custom.maximum do
         local index = slot
-        model.screenRows[8 + index] = {
+        model.screenRows[9 + index] = {
             label = "位置 " .. index,
             value = function()
                 local draft = customDraft()
@@ -152,13 +167,17 @@ function Target.form(state, baseline)
             end,
         }
     end
+    local pressureAvailable = Pressure.available()
+    if pressureAvailable then require("PressureControls").add(model, state.customPressure) end
+    print(("[PBZPressure] menu=%s options=%d\n"):format(mode, #difficulties + (pressureAvailable and 1 or 0)))
     return model
 end
 function Model:getSettings()
     local settings = self.settings
     return { bossId = settings.bossId, encounterId = settings.encounterId, category = settings.category,
         playerCycle = settings.playerCycle, enemyCycle = settings.enemyCycle, skillLevel = settings.skillLevel,
-        difficultyMode = settings.difficultyMode, mode = settings.mode, sceneId = settings.sceneId }
+        difficultyMode = settings.difficultyMode, customPressure = Difficulty.copyPressure(settings.customPressure),
+        mode = settings.mode, sceneId = settings.sceneId, musicId = settings.musicId }
 end
 function Model:mount(modal, description, controller, confirm, options)
     self:close()

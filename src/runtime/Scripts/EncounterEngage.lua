@@ -43,14 +43,20 @@ local function context(actor, pawn)
         "encounter combat actors belong to different worlds")
     local dead = { TagName = FName("CharacterState.Dead") }
     local playerAsc, enemyAsc = pawn.AbilitySystemComponent, actor.AbilitySystemComponent
-    assert(valid(playerAsc) and valid(enemyAsc), "encounter combat ability components are unavailable")
+    assert(valid(playerAsc), "encounter player ability component is unavailable")
     assert(playerAsc:GetGameplayTagCount(dead) == 0, "dead player cannot continue encounter combat")
     local playerAttributes, enemyAttributes = pawn.AttributeSetBase, actor.AttributeSetBase
     assert(valid(playerAttributes) and type(playerAttributes.Health.CurrentValue) == "number"
         and playerAttributes.Health.CurrentValue > 0, "encounter player health is unavailable")
-    assert(valid(enemyAttributes) and type(enemyAttributes.Health.CurrentValue) == "number", "encounter enemy health is unavailable")
-    if enemyAsc:GetGameplayTagCount(dead) > 0 or enemyAttributes.Health.CurrentValue <= 0 then
+    if valid(enemyAsc) and enemyAsc:GetGameplayTagCount(dead) > 0 then
         return nil, nil, nil, "already-dead"
+    end
+    local enemyHp = valid(enemyAttributes) and enemyAttributes.Health.CurrentValue or nil
+    if type(enemyHp) == "number" and enemyHp <= 0 then return nil, nil, nil, "already-dead" end
+    -- Death cleanup and initialization can remove components while the actor
+    -- is still valid. Keep the encounter alive while its observer resolves it.
+    if not valid(enemyAsc) or type(enemyHp) ~= "number" then
+        return nil, nil, nil, "等待首领能力组件或生命值就绪"
     end
     local controller = actor:GetController()
     if not valid(controller) then return nil, nil, nil, "等待首领控制器初始化" end
@@ -122,6 +128,79 @@ function Engage.start(actor, pawn, request, now)
     local after = read(actor, pawn, ai, enemyHatred, playerHatred)
     if confirmed(after) then return true, nil, after end
     return false, "原生首领仇恨或战斗状态尚未确认", after
+end
+
+-- Per-enemy instance settings for the closed Dream Palace arena.
+local AWARENESS_TAG = "AI.NeverDecreaseAwareness"
+local TAG_LIBRARY = "/Script/ProjectPBZ.Default__PBZAbilityBlueprintLibrary"
+local SENSE_FIELDS = {
+    "SightRadius", "LoseSightRadius", "HorizontalHalfAngle", "VerticalHalfAngle",
+    "PointOfViewBackwardOffset", "NearClippingRadius", "HearingRange",
+    "AwarenessDecreaseSpeed", "AwarenessCurve",
+}
+
+local function coverArena(ai, radius, request)
+    local current = ai:GetCurrentSenseConfig()
+    assert(type(current.SightRadius) == "number" and type(current.LoseSightRadius) == "number",
+        "原生感知范围未就绪")
+    request.originalRadius = request.originalRadius or current.LoseSightRadius
+    if current.SightRadius >= radius and current.LoseSightRadius >= radius then
+        return current.SightRadius, current.LoseSightRadius
+    end
+    local setting = {}
+    for _, field in ipairs(SENSE_FIELDS) do setting[field] = current[field] end
+    setting.SightRadius = math.max(setting.SightRadius, radius)
+    setting.LoseSightRadius = math.max(setting.LoseSightRadius, setting.SightRadius)
+    ai:ConfigureSense(setting)
+    local applied = ai:GetCurrentSenseConfig()
+    assert(applied.SightRadius >= radius and applied.LoseSightRadius >= radius, "原生感知范围读回不匹配")
+    return applied.SightRadius, applied.LoseSightRadius
+end
+
+local function observeLoss(actor, pawn, request, details)
+    if not request.hadTarget or request.reportedLoss then return end
+    details.distance = actor:GetDistanceTo(pawn)
+    request.reportedLoss = true
+    return details
+end
+
+function Engage.keepArena(actor, pawn, radius, request, now)
+    local ai, enemyHatred, playerHatred, unavailable = context(actor, pawn)
+    if unavailable then return end
+    if not ai.bAIStarted then
+        if not request.hadTarget or request.reportedLoss then return end
+        return nil, nil, nil, observeLoss(actor, pawn, request, read(actor, pawn, ai, enemyHatred, playerHatred))
+    end
+    local asc = actor.AbilitySystemComponent
+    local awarenessTag = { TagName = FName(AWARENESS_TAG) }
+    if asc:GetGameplayTagCount(awarenessTag) == 0 then
+        assert(required(TAG_LIBRARY):AddLooseGameplayTag(actor, awarenessTag, false), "无法保持浊梦敌人的战斗警觉")
+    end
+    local sight, loseSight = coverArena(ai, radius, request)
+    local details = read(actor, pawn, ai, enemyHatred, playerHatred)
+    if confirmed(details) then
+        request.hadTarget, request.nextRecovery, request.reportedLoss = true, nil, nil
+        return sight, loseSight
+    end
+
+    local loss = observeLoss(actor, pawn, request, details)
+    -- Recover a previously engaged enemy after a long-distance target loss.
+    -- Intentional AI stops, scripted target changes and native hatred guards still apply.
+    if not request.hadTarget or details.hasTarget or now < (request.nextRecovery or 0) then
+        return sight, loseSight, nil, loss
+    end
+    local distance = loss and loss.distance or actor:GetDistanceTo(pawn)
+    if distance <= request.originalRadius or distance > radius then return sight, loseSight, nil, loss end
+    if asc:GetGameplayTagCount({ TagName = FName("AI.DisableCombatAI") }) > 0
+        or asc:GetGameplayTagCount({ TagName = FName("AI.DisableTargetSelector") }) > 0
+        or not enemyHatred:CheckCanHatredTarget(pawn) then return sight, loseSight, nil, loss end
+    request.nextRecovery = now + 2
+    request.recovery = request.recovery or {}
+    if Engage.start(actor, pawn, request.recovery, now) then
+        request.reportedLoss = nil
+        return sight, loseSight, distance, loss
+    end
+    return sight, loseSight, nil, loss
 end
 
 -- Observation only. Every optional diagnostic getter is isolated from combat.

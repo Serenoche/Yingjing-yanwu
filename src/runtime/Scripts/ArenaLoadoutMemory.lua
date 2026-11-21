@@ -1,11 +1,14 @@
--- Owned, data-only equipment selection. Never persists levels, resources,
--- attributes or skills. Windows commits are recoverable renames, not an
+-- Account-owned equipment and skill choices for private arena sessions.
+-- Windows commits are recoverable renames, not an
 -- atomic replace: a verified primary or backup survives each transition.
 local Native=require("ArenaLoadout")
+local Restore=require("ArenaLoadoutRestore")
 local Memory,Service={},{}
 Service.__index=Service
 local OWNER="7d5ad307-d21c-47eb-9584-493443190984"
 local HEADER="PBZ_ARENA_LOADOUT\t1\t"..OWNER
+local PALACE_HEADER="PBZ_ARENA_LOADOUT\t2\t"..OWNER
+local SKILL_HEADER="PBZ_ARENA_SKILLS\t1\t"..OWNER
 local GROUPS={{"mainWeapons",2},{"shadowWeapons",2},{"accessories",6},{"medicines",2}}
 local sequence=0
 local function valid(p)return p~=nil and type(p.IsValid)=="function" and p:IsValid()end
@@ -17,8 +20,17 @@ local function normalize(path)
     for part in path:gmatch("[^/]+")do
         assert(part~="."and part~=".."and not part:match("[. ]$"),"配装记忆路径含相对或别名目录")
     end
-    assert(path:lower():match("/arenapreferences/pbzloadout%.tsv$"),"配装记忆只能位于指定ArenaPreferences/PBZLoadout.tsv")
-    return path
+    local file = path:lower():match("/arenapreferences/([^/]+)$")
+    local palace = file == "pbzbloodypalaceloadout.tsv" or file == "pbzbloodypalace101internalloadout.tsv"
+        or file == "pbzbloodypalacemechanicsinternalloadout.tsv" or file == "pbzbloodypalaceendinginternalloadout.tsv"
+    local tier = file and file:match("^pbzdreampalaceloadout%-([a-z]+)%.tsv$")
+    -- The Palace caller has already loaded its tier definitions. Ordinary
+    -- arena and compatibility-only builds do not have to load that runtime.
+    local profile = tier and package.loaded.DreamPalaceProfile
+    palace = palace or file == "pbzdreampalaceloadout.tsv"
+        or type(profile) == "table" and type(profile.tier) == "function" and profile.tier(tier) ~= nil
+    assert(file == "pbzloadout.tsv" or palace, "配装记忆必须使用演武的 ArenaPreferences 文件")
+    return path, palace
 end
 local function read(path)
     local file=io.open(path,"rb");if not file then return nil end
@@ -55,21 +67,58 @@ local function checksum(bytes)
     return ("%04X%04X"):format(b,a)
 end
 local function hex(value)return(value:gsub(".",function(c)return("%02X"):format(c:byte())end))end
-local function encode(value)
-    value=snapshot(value);local rows={HEADER}
+local function abilityRows(abilities)
+    local rows = {}
+    for key, level in pairs(abilities) do
+        assert(type(key) == "string" and #key <= 64 and key:match("^[A-Za-z0-9_]+$"), "能力配置节点无效")
+        assert(type(level) == "number" and level % 1 == 0 and level >= 0 and level <= 30, "能力配置等级无效")
+        rows[#rows + 1] = key .. "\t" .. level
+    end
+    assert(#rows > 0 and #rows <= 64, "能力配置数量无效")
+    table.sort(rows)
+    return rows
+end
+local function encode(value, abilities)
+    value=snapshot(value);local rows={abilities and PALACE_HEADER or HEADER}
     for _,group in ipairs(GROUPS)do for index=1,group[2]do
         local value=value[group[1]][index]
         rows[#rows+1]=group[1].."\t"..index.."\t"..(value==false and "-" or hex(value))
     end end
+    if abilities then
+        for _, row in ipairs(abilityRows(abilities)) do rows[#rows + 1] = row end
+    end
     local body=table.concat(rows,"\n").."\n"
     return body.."CHECKSUM\t"..checksum(body).."\n"
 end
-local function decode(bytes)
+local function verifiedRows(bytes)
     assert(type(bytes)=="string"and #bytes<=16384 and bytes:sub(-1)=="\n","配装记忆不完整")
     local rows={};for row in bytes:gmatch("([^\n]*)\n")do rows[#rows+1]=row end
-    assert(#rows==14 and rows[1]==HEADER,"配装记忆所有者、版本或记录数量不匹配")
-    local body=table.concat(rows,"\n",1,13).."\n"
-    assert(rows[14]=="CHECKSUM\t"..checksum(body),"配装记忆完整性校验失败")
+    assert(#rows >= 2 and #rows <= 78, "演武配置的记录数量无效")
+    local body=table.concat(rows,"\n",1,#rows-1).."\n"
+    assert(rows[#rows]=="CHECKSUM\t"..checksum(body),"演武配置完整性校验失败")
+    return rows
+end
+
+local function readAbilities(rows, start)
+    local abilities = {}
+    for index = start, #rows - 1 do
+        local key, level = rows[index]:match("^([A-Za-z0-9_]+)\t(%d%d?)$")
+        assert(key and #key <= 64 and abilities[key] == nil and tonumber(level) <= 30, "能力配置记录无效")
+        abilities[key] = tonumber(level)
+    end
+    return abilities
+end
+
+local function encodeSkills(abilities)
+    local body = SKILL_HEADER .. "\n" .. table.concat(abilityRows(abilities), "\n") .. "\n"
+    return body .. "CHECKSUM\t" .. checksum(body) .. "\n"
+end
+
+local function decode(bytes, palace)
+    local rows = verifiedRows(bytes)
+    local withSkills = palace and rows[1] == PALACE_HEADER
+    assert((#rows==14 and rows[1]==HEADER) or (withSkills and #rows>14),
+        "配装记忆所有者、版本或记录数量不匹配")
     local result,cursor={version=1},2
     for _,group in ipairs(GROUPS)do
         result[group[1]]={}
@@ -83,7 +132,8 @@ local function decode(bytes)
             end
         end
     end
-    return snapshot(result)
+    local abilities = withSkills and readAbilities(rows, cursor) or nil
+    return snapshot(result), abilities
 end
 local function unique(path,kind)
     for _=1,64 do
@@ -92,19 +142,19 @@ local function unique(path,kind)
     end
     error("无法创建独立配装提交文件")
 end
-local function verified(bytes)if not bytes then return false end;return pcall(decode,bytes)end
+local function verified(bytes,parse)if not bytes then return false end;return pcall(parse,bytes)end
 local function commit(self,bytes)
     owned(self.path)
     assert(not self.readOnly,"保留未知primary内容，本次配装记忆只读")
     local before=read(self.path)
     assert(before==self.diskBytes,"配装记忆已由其他会话修改，本次不覆盖")
     local backup=read(self.path..".bak")
-    assert(not backup or verified(backup),"配装备份不属于本MOD或已损坏，不覆盖")
+    assert(not backup or verified(backup,self.parse),"配装备份不属于本MOD或已损坏，不覆盖")
     local temporary=unique(self.path,"tmp")
     local file=assert(io.open(temporary,"wb"),"无法写入配装临时文件")
     local wrote,why=file:write(bytes);local flushed=file:flush();local closed=file:close()
     assert(wrote and flushed and closed,why or "无法完成配装临时写入")
-    assert(read(temporary)==bytes and verified(bytes),"配装提交回读失败")
+    assert(read(temporary)==bytes and verified(bytes,self.parse),"配装提交回读失败")
     local retired
     if before then
         if backup then
@@ -122,8 +172,8 @@ local function commit(self,bytes)
         elseif not backup then os.rename(temporary,self.path..".bak")end
         error("配装提交未完成；保留已验证primary或backup")
     end
-    assert(read(self.path)==bytes and verified(read(self.path)),"新配装primary校验失败；backup仍保留")
-    if retired and verified(read(retired))then os.remove(retired)end
+    assert(read(self.path)==bytes and verified(read(self.path),self.parse),"新配装primary校验失败；backup仍保留")
+    if retired and verified(read(retired),self.parse)then os.remove(retired)end
     self.diskBytes=bytes;self.dirty=false
 end
 local function active(self,pawn)
@@ -136,95 +186,153 @@ local function say(self,reason)
         if self.log then self.log("配装记忆："..tostring(reason))end
     end
 end
-function Memory.new(path,isPrivate,log)
+local function openStore(path, parse, isPrivate, log)
+    assert(type(isPrivate)=="function","演武配置缺少私有会话守卫")
+    owned(path)
+    local primary,backup=read(path),read(path..".bak")
+    local choice,abilities,readOnly,warning
+    if primary then
+        local parsed,value,secondary=pcall(parse,primary)
+        if parsed then choice,abilities=value,secondary
+        elseif backup and verified(backup,parse)then
+            choice,abilities=parse(backup);readOnly=true;warning="primary内容未知或损坏，使用已验证backup且不覆盖未知文件"
+        else error("primary内容未知或损坏；未找到完整自有backup")end
+    elseif backup then choice,abilities=parse(backup) end
+    return {path=path,isPrivate=isPrivate,log=log,parse=parse,diskBytes=primary,
+        readOnly=readOnly,warning=warning},choice,abilities
+end
+
+function Memory.new(path,isPrivate,log,projected)
     local ok,result=pcall(function()
-        assert(type(isPrivate)=="function","配装记忆缺少私有会话守卫")
-        path=normalize(path);owned(path)
-        local primary,backup=read(path),read(path..".bak")
-        local choice,dirty,readOnly,warning
-        if primary then
-            local parsed,value=pcall(decode,primary)
-            if parsed then choice=value
-            elseif backup and verified(backup)then
-                choice=decode(backup);readOnly=true;warning="primary内容未知或损坏，使用已验证backup且不覆盖未知文件"
-            else error("primary内容未知或损坏；未找到完整自有backup")end
-        elseif backup then choice=decode(backup);dirty=true end
-        return setmetatable({path=path,isPrivate=isPrivate,log=log,selection=choice,diskBytes=primary,
-            dirty=dirty,readOnly=readOnly,warning=warning,state="pending",nextAttempt=0,nextCapture=0},Service)
+        local palace
+        path,palace=normalize(path)
+        local store,choice,abilities=openStore(path,function(bytes)return decode(bytes,palace)end,isPrivate,log)
+        store.selection,store.abilities,store.palace=choice,abilities,palace
+        store.projected=projected
+        store.state="pending"
+        return setmetatable(store,Service)
     end)
     if not ok then return nil,tostring(result)end
     return result
 end
+
+function Memory.checkpointSelection(path)
+    if not path then return nil end
+    local store, reason = Memory.new(path, function() return false end)
+    if not store then return nil, reason end
+    return store.selection
+end
+
+local Skills = {}
+Skills.__index = Skills
+
+function Memory.skills(loadoutPath,isPrivate,log)
+    local path,palace = normalize(loadoutPath)
+    assert(not palace, "账号技能使用普通演武目录")
+    path = path:sub(1, -#"PBZLoadout.tsv" - 1) .. "PBZSkills.tsv"
+    local ability = require("AbilityChallenge")
+    local store,choice = openStore(path, function(bytes)
+        local rows = verifiedRows(bytes)
+        assert(rows[1] == SKILL_HEADER, "账号技能文件所有者或版本不匹配")
+        local snapshot = readAbilities(rows, 2)
+        ability.validateShared(snapshot)
+        return snapshot
+    end, isPrivate, log)
+    store.abilities = choice
+    if store.warning and log then log("账号技能：" .. store.warning) end
+    return setmetatable(store, Skills)
+end
+
+function Skills:apply(pawn, ability, level)
+    if not self.abilities or not active(self,pawn) then return end
+    local effective, clamped = ability.projectShared(pawn, self.abilities, level)
+    ability.restore(pawn, effective)
+    if self.log then
+        self.log(("ACCOUNT_SKILLS restored clamped=%d terminals=%d/%d/%d")
+            :format(clamped, effective.HeiShi8, effective.ShaChiHuPo8, effective.MemoryFlower8))
+    end
+    return effective
+end
+
+function Skills:remember(pawn, before, after)
+    if not before or not active(self,pawn) then return false end
+    local full,changed = {},0
+    for id,level in pairs(after) do
+        -- Persist edits made in the skill screen, never the projected cap itself.
+        local edited = before[id] ~= level
+        full[id] = edited and level or (self.abilities and self.abilities[id]) or level
+        if edited then changed = changed + 1 end
+    end
+    if changed == 0 then return true end
+    local ok,failure = pcall(function() commit(self,encodeSkills(full)) end)
+    if not ok then
+        if self.log then self.log("账号技能保存失败：" .. tostring(failure)) end
+        return false
+    end
+    self.abilities = full
+    if self.log then self.log(("ACCOUNT_SKILLS saved edited=%d"):format(changed)) end
+    return true
+end
+
 function Service:flush()
     if not self.dirty or not self.selection then return true end
-    local ok,why=pcall(commit,self,encode(self.selection))
+    local ok,why=pcall(function() commit(self,encode(self.selection,self.abilities)) end)
     if not ok then say(self,why);return false,why end
     return true
 end
-function Service:beginLoad(pawn)
-    -- Only an explicit, still-private pre-load checkpoint may read equipment.
-    -- Raw LoadGame/MapPre teardown passes nil and flushes cached data only.
-    if self.state=="ready"and active(self,pawn)and pawn:GetAddress()==self.pawnId then
-        local ok,value=pcall(Native.capture,pawn)
-        if ok and value then
-            local good,copy=pcall(snapshot,value)
-            if good and encode(copy)~=encode(self.selection)then self.selection=copy;self.dirty=true end
-        end
-    end
-    self.state="suspended";self:flush()
+function Service:setAbility(pawn, abilities)
+    if not self.palace or self.state ~= "ready" or not active(self,pawn) or self.pawnId ~= pawn:GetAddress() then return false end
+    local rows = abilityRows(abilities)
+    if self.abilities and table.concat(rows,"\n") == table.concat(abilityRows(self.abilities),"\n") then return true end
+    local copy = {}
+    for key, level in pairs(abilities) do copy[key] = level end
+    self.abilities, self.dirty = copy, true
+    return true
 end
-function Service:update(pawn,now)
-    if not active(self,pawn)then return false,"非私有演武会话，未读取或应用配装"end
-    assert(type(now)=="number"and now==now and math.abs(now)<math.huge,"配装记忆时钟无效")
-    local address=pawn:GetAddress()
-    if self.pawnId and self.pawnId~=address then
-        self.state,self.since,self.candidate,self.nextAttempt="pending",nil,nil,0
+-- A bell opened during restore can wait for readiness without reading live slots.
+function Service:remember(pawn, equipment)
+    if self.state == "pending" then return nil end
+    if self.state ~= "ready" or not active(self, pawn) or pawn:GetAddress() ~= self.pawnId then return false end
+    local ok, reason = pcall(function()
+        local choice = snapshot(equipment or assert(Native.capture(pawn)))
+        local bytes = encode(choice, self.abilities)
+        if bytes ~= self.diskBytes then commit(self, bytes) end
+        self.selection, self.dirty = choice, false
+    end)
+    if not ok then say(self, "铃铛保存失败：" .. tostring(reason)) end
+    return ok
+end
+
+function Service:update(pawn)
+    if not active(self, pawn) then return false, "非私有演武会话，未读取或应用配装" end
+    local address = pawn:GetAddress()
+    if self.pawnId and self.pawnId ~= address then
+        self.state, self.restore = "pending", nil
     end
-    self.pawnId=address
-    if self.state=="suspended"or self.state=="disabled"then return true end
-    self.since=self.since or now
-    if self.state=="pending"then
-        if now-self.since>=12 then
-            self.state="disabled";say(self,"恢复等待超时；保留原记忆，本次不采集，演武继续")
-            return true
-        end
-        if now<self.nextAttempt then return false,"等待原生配装初始化"end
-        self.nextAttempt=now+.10
-        if self.selection then
-            local ok,result,reason=pcall(Native.apply,pawn,snapshot(self.selection))
-            if not ok or result~=true then
-                say(self,"等待恢复："..tostring(ok and reason or result));return false,ok and reason or result
-            end
-            self.state,self.nextCapture="ready",now+.5
-            say(self,self.warning or "已恢复槽位选择；等级和铸魂沿用本次预设")
-            if self.dirty then self:flush()end
-            return true
-        end
-        local ok,value,reason=pcall(Native.capture,pawn)
-        local good,copy=false,nil
-        if ok and value then good,copy=pcall(snapshot,value)end
-        if not good then self.candidate=nil;return false,"等待完整原生配装："..tostring(reason or value)end
-        local encoded=encode(copy)
-        if not self.candidate or self.candidate.bytes~=encoded then self.candidate={bytes=encoded,since=now,count=0}end
-        self.candidate.count=self.candidate.count+1
-        if self.candidate.count<3 or now-self.candidate.since<.5 then return false,"等待初始配装连续稳定"end
-        self.selection,self.dirty,self.state,self.nextCapture=copy,true,"ready",now+.5
-        self:flush();say(self,"已建立本MOD专用槽位记忆")
+    self.pawnId = address
+    if self.state ~= "pending" then return true end
+    if not self.selection then
+        self.state = "ready"
         return true
     end
-    if now<self.nextCapture then return true end;self.nextCapture=now+.5
-    local ok,value=pcall(Native.capture,pawn)
-    if ok and value then
-        local good,copy=pcall(snapshot,value)
-        if good and encode(copy)~=encode(self.selection)then self.selection,self.dirty=copy,true end
+
+    self.restore = self.restore or Restore.new(snapshot(self.selection), self.projected)
+    local ready, reason = self.restore:update(pawn)
+    if ready == nil then
+        say(self, "等待恢复：" .. tostring(reason))
+        return false, reason
     end
-    if self.dirty and now>=(self.nextWrite or 0)then
-        local saved=self:flush();self.nextWrite=now+(saved and .5 or 5)
+    self.state, self.restore = "ready", nil
+    if ready then
+        say(self, self.warning or (reason == "native" and "已随原生存点恢复槽位选择" or "已恢复槽位选择"))
+    else
+        say(self, "恢复等待超时，保留原记忆：" .. tostring(reason))
     end
     return true
 end
+
 function Service:close()
     if self.closed then return end
-    self.closed=true;self.state="closed";self:flush()
+    self.closed, self.state, self.restore = true, "closed", nil
 end
 return Memory

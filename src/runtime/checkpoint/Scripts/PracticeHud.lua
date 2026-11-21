@@ -1,0 +1,107 @@
+-- Passive native HUD for the practice controls.
+local Hud, current = { toggleKey = "F4" }, nil
+local gameLayer
+local LIB = "/Script/ProjectPBZ.Default__PBZBlueprintFunctionLibrary"
+local WRAPPERS = { SafeZone = true, SizeBox = true, ScaleBox = true, Border = true }
+local function valid(o) return o ~= nil and type(o.IsValid) == "function" and o:IsValid() end
+local function unwrap(o)
+    if o and type(o.IsValid) ~= "function" then
+        local get = o.get or o.Get
+        if type(get) == "function" then return get(o) end
+    end
+    return o
+end
+local function check(o, message) o = unwrap(o); assert(valid(o), message); return o end
+local function required(path) return check(StaticFindObject(path), "missing practice HUD interface: " .. path) end
+local function same(a,b) return valid(a) and valid(b) and a:GetAddress()==b:GetAddress() end
+local function make(kind, outer)
+    local o=check(StaticConstructObject(required("/Script/UMG."..kind),outer),"cannot create practice HUD "..kind)
+    o:SetVisibility(3); return o
+end
+local function rootOf(layout)
+    local root=check(check(layout.WidgetTree,"practice HUD has no tree").RootWidget,"practice HUD has no root")
+    local seen={}
+    for _=1,8 do
+        local kind=root:GetClass():GetFName():ToString()
+        assert(not seen[root:GetAddress()],"practice HUD root cycle"); seen[root:GetAddress()]=true
+        if kind=="Overlay" or kind=="CanvasPanel" then return root,kind end
+        assert(WRAPPERS[kind],"unsupported practice HUD root: "..kind)
+        root=check(root:GetContent(),"practice HUD root content missing")
+    end
+    error("practice HUD root exceeds depth")
+end
+-- A native layout can remove an owned child without destroying its UObject.
+-- Rebuild detached or partly constructed trees, rather than trusting IsValid.
+local function intact(session,layout,root,controller,world)
+    if not same(session.layout,layout) or not same(session.root,root)
+        or not same(session.controller,controller) or not same(session.world,world)
+        or not valid(session.panel) or not same(unwrap(session.panel:GetParent()),root)
+        or not valid(session.border) or not same(unwrap(session.border:GetParent()),session.panel)
+        or not valid(session.body) or not same(unwrap(session.body:GetParent()),session.border)
+        or type(session.labels)~="table" or #session.labels~=7 then return false end
+    for index=1,7 do
+        local label=session.labels[index]
+        if not valid(label) or not same(unwrap(label:GetParent()),session.body) then return false end
+    end
+    return true
+end
+function Hud.close()
+    if current and valid(current.panel) then pcall(current.panel.RemoveFromParent,current.panel) end
+    current=nil
+end
+function Hud.update(controller,state,target)
+    controller=check(controller,"practice HUD controller missing")
+    local world=check(controller:GetWorld(),"practice HUD world missing")
+    local layout=check(required(LIB):GetUILayOut(controller),"practice HUD layout missing")
+    assert(same(unwrap(layout:GetOwningPlayer()),controller) and same(unwrap(layout:GetWorld()),world),"practice HUD owner mismatch")
+    gameLayer=gameLayer or {TagName=FName("UI.Layer.Game")}
+    if layout:HasModal() or layout:HasWidgetAboveLayer(gameLayer,true) then
+        if current and (not same(current.controller,controller) or not same(current.world,world)
+            or not same(current.layout,layout)) then Hud.close() end
+        if current and not current.covered and valid(current.panel) then
+            current.panel:SetVisibility(1)
+            current.covered=true
+        end
+        return true
+    end
+    local root,kind=rootOf(layout)
+    if current and not intact(current,layout,root,controller,world) then Hud.close() end
+    if not current then
+        local panel=make("SizeBox",root); panel:SetWidthOverride(286)
+        current={panel=panel,controller=controller,world=world,layout=layout,root=root,labels={}}
+        local border=make("Border",panel);current.border=border
+        border:SetBrushColor({R=.025,G=.03,B=.035,A=.82})
+        border:SetPadding({Left=12,Top=10,Right=12,Bottom=10});panel:SetContent(border)
+        local body=make("VerticalBox",border);current.body=body;border:SetContent(body)
+        for index=1,7 do
+            local text=make("TextBlock",body)
+            local font=text.Font; font.Size=index==1 and 18 or 14; text:SetFont(font)
+            text:SetColorAndOpacity({SpecifiedColor={R=.95,G=.85,B=.57,A=1},ColorUseRule=0})
+            text:SetAutoWrapText(true);text.WrapTextAt=262
+            body:AddChildToVerticalBox(text):SetPadding({Left=0,Top=2,Right=0,Bottom=3})
+            current.labels[index]=text
+        end
+        local slot
+        if kind=="CanvasPanel" then
+            slot=root:AddChildToCanvas(panel)
+            slot:SetAnchors({Minimum={X=1,Y=0},Maximum={X=1,Y=0}})
+            slot:SetAlignment({X=1,Y=0});slot:SetPosition({X=-20,Y=88});slot:SetAutoSize(true)
+        else
+            slot=root:AddChildToOverlay(panel);slot:SetHorizontalAlignment(3);slot:SetVerticalAlignment(1)
+            slot:SetPadding({Left=0,Top=88,Right=20,Bottom=20})
+        end
+    end
+    local function value(name) return state[name] and "开启" or "关闭" end
+    local protection=({off="关闭",no_damage="无伤模式",invulnerable="无敌模式"})[state.damageMode or (state.invulnerable and "invulnerable" or "off")] or "关闭"
+    local lines={"练习模式　"..Hud.toggleKey.." 隐藏", "F5  敌人 AI　"..value("ai"),"F6  回血／锁血　"..value("enemyRegen"),
+        "F7  无伤模式　"..protection,"F8  无限大招　"..value("infiniteUltimate"),
+        "F9  无限暗源　"..value("infiniteSpiritShadow")}
+    for index,text in ipairs(lines) do current.labels[index]:SetText(FText(text)) end
+    local note=state.lastError or (state.damageMode=="no_damage" and "无伤模式：开启时补满，保留普通受击／击退" or "")
+    current.labels[7]:SetText(FText(note))
+    current.labels[7]:SetVisibility(note~="" and 3 or 1)
+    current.panel:SetVisibility(3)
+    current.covered=false
+    return true
+end
+return Hud

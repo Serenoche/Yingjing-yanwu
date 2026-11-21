@@ -35,6 +35,12 @@ end
 
 local function failureMessage(failure, barrier)
     failure = tostring(failure)
+    if failure:find("wait for the title save index", 1, true) or failure:find("test save manager is unavailable", 1, true) then
+        return "游戏正在读取存档，请稍等几秒再进入影境演武。"
+    end
+    if failure:find("title probe Continue", 1, true) then
+        return "当前没有可继续的普通存档。请先进入本篇保存一次，再回到主界面进入影境演武。"
+    end
     if failure:find("native-runtime-incompatible", 1, true) then
         return "已尝试兼容，但当前游戏的存档接口仍有差异，尚未进入演武。请把本次错误反馈给作者继续调整。"
     end
@@ -150,12 +156,14 @@ function TitleSession.new(profile, log, options)
         local account=expectedProvider:match("/projectpbz/saved/savegames/steam/(%d+)/pbzsavegame%.sav$")
         assert(account and #account==17,"installed MOD save provider configuration is invalid")
     end
+    local preferences
     if options.integrated then
-        local preferences = options.loadoutMemoryPath and options.loadoutMemoryPath:match("^(.*[/\\])")
+        local loadout = options.loadoutMemoryPath
+        preferences = (loadout and loadout:match("^(.*[/\\])")) or (profile .. "/")
         require("EncounterCatalog") -- Install the current ready-member allowlist before reading saved IDs.
-        require("CustomChallenges").configure((preferences or (profile .. "/")) .. "PBZCustomChallenges.tsv")
+        require("CustomChallenges").configure(preferences .. "PBZCustomChallenges.tsv")
     end
-    return setmetatable({ phase = "title", expected = expected, log = log, options = options,
+    return setmetatable({ phase = "title", expected = expected, log = log, options = options, preferences = preferences,
         expectedProvider=expectedProvider,
         audit = (not options.integrated or options.disposable) and auditSettings(profile) or nil }, TitleSession)
 end
@@ -179,7 +187,9 @@ function TitleSession:providerMatches(context, manager)
         return providerPath((hex:gsub("..",function(pair)return string.char(tonumber(pair,16))end)))
     end)
     if not ok then return nil,"native save provider identity is unavailable: "..tostring(actual)end
-    if actual~=self.expectedProvider then return false,"installed MOD save provider differs from current game account"end
+    if actual ~= self.expectedProvider and not require("InstalledPathIdentity").sameSave(self.expectedProvider, actual) then
+        return false, "installed MOD save provider differs from current game account"
+    end
     return true
 end
 
@@ -224,7 +234,7 @@ end
 function TitleSession:changeArenaScene(sceneId, gameplay, context)
     assert((self.phase == "arena" or self.phase == "loading") and self.barrier and self.barrier.armed == true,
         "scene changes require an active protected arena transaction")
-    local scene = Scenes.get(Scenes.normalize(sceneId))
+    local scene = Scenes.get(sceneId, self.lastSettings and self.lastSettings.mode)
     if (self.scene and self.scene.id or "night") == scene.id then return true end
     self.scene = scene
     if self.lastSettings then self.lastSettings.sceneId, self.lastSettings.scene = scene.id, scene end
@@ -374,11 +384,21 @@ function TitleSession:enter(gameplay, menu, settings)
             and settings.skillLevel >= 0 and settings.skillLevel <= PlayerProfile.skillCap(settings.playerCycle), "invalid MOD skill level")
         settings.playerProfile = PlayerProfile.id(settings.playerCycle)
         settings.sceneId = Scenes.normalize(settings.sceneId)
-        local difficulty = settings.difficultyMode or 3
-        assert(type(difficulty) == "number" and difficulty % 1 == 0 and difficulty >= 1 and difficulty <= 3,
-            "invalid MOD difficulty")
+        assert(Scenes.available(settings.sceneId, settings.mode), Scenes.get(settings.sceneId, settings.mode).name .. "场景包未安装")
+        local Difficulty = require("GameplayDifficulty")
+        if (settings.mode == "practice" or settings.mode == "challenge") and settings.customPressure ~= nil then
+            assert(require("DreamPalacePressure").available(), "当前游戏或 UE4SS 版本不支持自订压力")
+            settings.customPressure = Difficulty.copyPressure(settings.customPressure)
+        else
+            settings.customPressure = nil
+        end
+        local difficulty = settings.customPressure and Difficulty.customBase or settings.difficultyMode or 3
+        assert(Difficulty.valid(difficulty), "invalid MOD difficulty")
         settings.difficultyMode = difficulty
-        if settings.mode ~= "training" then
+        if settings.mode == "training" then
+            assert(settings.trainingMobId == nil or require("TrainingTarget").resolve(settings.trainingMobId),
+                "测试对象不在浊梦杂兵名单中")
+        else
             local catalog = require("EncounterCatalog")
             local selectedId = settings.encounterId or settings.bossId
             local encounter, reason = catalog.resolve(selectedId)
@@ -389,8 +409,13 @@ function TitleSession:enter(gameplay, menu, settings)
             assert(encounter and #encounter.stages > 0, reason or "invalid MOD challenge")
             assert(not settings.category or settings.category == encounter.category, "invalid MOD challenge category")
             settings.bossId, settings.encounterId, settings.category = encounter.id, encounter.id, encounter.category
+            if self.lastSettings then
+                -- Keep the last test-field choice when visiting a different menu.
+                settings.trainingMobId = self.lastSettings.trainingMobId
+            end
         end
-        settings.scene = Scenes.forEncounter(settings.mode ~= "training" and settings.encounterId or nil, settings.sceneId)
+        settings.scene = Scenes.forEncounter(settings.mode ~= "training" and settings.encounterId or nil,
+            settings.sceneId, settings.mode)
         settings.sceneId = settings.scene.id
         slot = PlayerProfile.slot(settings.playerCycle, self.options.cyclePrefix, settings.sceneId)
         self.scene = settings.scene
@@ -428,10 +453,11 @@ function TitleSession:enter(gameplay, menu, settings)
         local result = { ResultType = 255, LevelName = "", GameModeOptions = "" }
         instance:LoadGame(slot, result)
         local map = text(result.LevelName)
-        local expectedMap = self.scene and self.scene.map or ARENA_LEVEL
+        local preset = Scenes.preset(self.scene)
+        local expectedMap = preset and preset.map or ARENA_LEVEL
         assert(result.ResultType == 0 and (map == expectedMap or map:sub(-#expectedMap - 1) == "/" .. expectedMap),
             "private title probe save could not be loaded")
-        assert(not self.scene or text(result.GameModeOptions) == self.scene.gameModeOptions,
+        assert(not preset or text(result.GameModeOptions) == preset.gameModeOptions,
             "selected arena save has an unexpected game mode")
         self.log("Title probe loading private slot " .. slot .. "; initial Continue=" .. before)
         self.loadingMapEpoch, self.loadingWorldAddress = nil, nil
@@ -440,8 +466,11 @@ function TitleSession:enter(gameplay, menu, settings)
         instance:SetLoadingScreen("PBZ_WP")
         required("/Script/UMG.Default__WidgetBlueprintLibrary"):SetFocusToGameViewport()
         TitleProbe.close()
-        local gameModeOptions = self.scene and self.scene.gameModeOptions or text(result.GameModeOptions)
-        gameplay:OpenLevel(menu, FName(map), true, gameModeOptions)
+        if self.scene and self.scene.runtimeModule then
+            require(self.scene.runtimeModule).travelFromTitle(gameplay, menu, self.scene)
+        else
+            gameplay:OpenLevel(menu, FName(map), true, text(result.GameModeOptions))
+        end
     end)
     if not ok then
         if self.barrier and self.barrier.uncertain then
@@ -463,6 +492,12 @@ function TitleSession:enter(gameplay, menu, settings)
             end
         end
         error(failure, 0)
+    end
+end
+
+function TitleSession:rememberTrainingTarget(mobId)
+    if self:allowArena() and self.lastSettings and self.lastSettings.mode == "training" then
+        self.lastSettings.trainingMobId = mobId
     end
 end
 
@@ -565,7 +600,7 @@ function TitleSession:tick(gameplay, controller)
             self:auditSnapshot("settled", controller)
             self.audit.pending = nil
         end
-        if not self:initialize(controller) then return end
+        if (not self.options.integrated or self.options.disposable) and not self:initialize(controller) then return end
         if self.options.integrated then
             local home = require("TitleHome")
             local updated, failure = pcall(home.update, gameplay)
@@ -582,7 +617,7 @@ function TitleSession:tick(gameplay, controller)
                             self.log("Integrated title load refused: " .. tostring(message))
                             self:showFailure(menu, message)
                         end
-                    end)
+                    end, self.preferences)
                 if not opened then self:showFailure(menu, failure) end
                 return false
             end

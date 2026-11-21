@@ -1,0 +1,1010 @@
+{
+  "schemaVersion": 1,
+  "flows": {
+    "checkpoint": {
+      "AbilityChallenge.lua": {
+        "source": "src/runtime/release_202/checkpoint/AbilityChallenge.lua",
+        "sha256": "7b1a78ca525f9fb6a90dba32f2d261d951964ce391d88ff1e197452ab0f5fcf5",
+        "packagedSha256": "ad6f433bffbb71b6c4fa4095f024c15cbae1d763c8bc62d53b05eedc7978c87c"
+      },
+      "ArenaEconomy.lua": {
+        "source": "src/runtime/checkpoint/Scripts/ArenaEconomy.lua",
+        "sha256": "bed3307ad86b6270f8747a368861184796eddf204755fc0048bb130ecb1da825"
+      },
+      "ArenaLoadout.lua": {
+        "source": "src/runtime/checkpoint/Scripts/ArenaLoadout.lua",
+        "sha256": "5f695ebe7141a49a16eb9e04acdf98b2754757a4fbcc3138745193b996048479"
+      },
+      "ArenaLoadoutMemory.lua": {
+        "source": "src/runtime/Scripts/ArenaLoadoutMemory.lua",
+        "sha256": "65d394762bd25d0b85dcd6ce8502c944cd0fe19208b1f8440c16dd471dadcb24",
+        "packagedSha256": "57199b1736bf0ce36040331589ce6921faf8a1cf47dfab481e3416f947b022f4"
+      },
+      "ArenaLoadoutRestore.lua": {
+        "source": "src/runtime/Scripts/ArenaLoadoutRestore.lua",
+        "sha256": "f495d88fbcba6d66e0788a89c5674dc26e5fe64079a8d1b3c81a476a67c7c4e7"
+      },
+      "ArenaMapPolicy.lua": {
+        "source": "src/runtime/checkpoint/Scripts/ArenaMapPolicy.lua",
+        "sha256": "84b66f6990bfbeeff79919e5207eff330cce080b5a9855475302b63ff4f3be47"
+      },
+      "ArenaScenes.lua": {
+        "source": "src/runtime/checkpoint/Scripts/ArenaScenes.lua",
+        "sha256": "aa9df371da7e50c0c158a3b00a37ae18f6f9342dcdd9fe480f7d03543ab468dc",
+        "packagedSha256": "dd25287bfef52a393ea6c0c3ce89e6bfdb376b3f1b1143bfb9b1aa2bd16cb834"
+      },
+      "ArenaSummonAccess.lua": {
+        "source": "src/runtime/checkpoint/Scripts/ArenaSummonAccess.lua",
+        "sha256": "80c72adfd8f73ab0fd8d5a3e7dd3321e15a9e54eb36a60109b134737bf3bbf63"
+      },
+      "ArtAssets.lua": {
+        "source": "src/runtime/Scripts/ArtAssets.lua",
+        "sha256": "cb812471254347b03894e66893b21e0d88480002ca87feab35c7d47c67d0adae"
+      },
+      "AsyncClassLoad.lua": {
+        "source": "src/runtime/checkpoint/Scripts/AsyncClassLoad.lua",
+        "sha256": "36a20feac1e20f2a0ebb27079af45240b7557b6a7c5b4b692c905cd5ea359e0e"
+      },
+      "BattleMusic.lua": {
+        "source": "src/runtime/Scripts/BattleMusic.lua",
+        "sha256": "9fb6bcf97395396431b22473174b848bd28e55e7831f79b4b93668e4bc122335"
+      },
+      "BattleMusicData.lua": {
+        "source": "src/runtime/Scripts/BattleMusicData.lua",
+        "sha256": "f1ab13498d11bf69d64077b5592c2ecce251ac2143af750b0786a37d0931abb4"
+      },
+      "BloodyPalace.lua": {
+        "source": "src/runtime/checkpoint/Scripts/BloodyPalace.lua",
+        "sha256": "bb4cf598a9b0918c22893ee76c8b25de0c3cd22506ee562d83b37ff7d3e6ef60"
+      },
+      "BloodyPalaceEnding.lua": {
+        "source": "src/runtime/checkpoint/Scripts/BloodyPalaceEnding.lua",
+        "sha256": "85675d29ea5032abd870cb1c68602471f18b4e6ae85c609727a2432dfb92605c"
+      },
+      "BloodyPalaceEndingBackdrop.lua": {
+        "source": "src/runtime/release_202/checkpoint/BloodyPalaceEndingBackdrop.lua",
+        "sha256": "25f23bcc52bd25ab8ff7281a3a389fbb17dc0f8fae83da31800042210e509bdc"
+      },
+      "BloodyPalaceEndingDaze.lua": {
+        "source": "src/runtime/release_202/checkpoint/BloodyPalaceEndingDaze.lua",
+        "sha256": "5a70c9ddec46ee6bc6b7c3b92bcb3131d46f6c72bf08e01d190b196fa9d357de"
+      },
+      "BloodyPalaceEndingExecutionView.lua": {
+        "source": "src/runtime/release_202/checkpoint/BloodyPalaceEndingExecutionView.lua",
+        "sha256": "c67d883b22ed5baf91f70d5c7e7b286516b8b69e14c2a539298abc5a12217dc2"
+      },
+      "BloodyPalaceEndingFace.lua": {
+        "source": "src/runtime/release_202/checkpoint/BloodyPalaceEndingFace.lua",
+        "sha256": "796fdcbd01f55a92fcc3ab4001ef361ee10d833d733291092bcd77a090206661",
+        "packagedSha256": "fe988d9253aa86d4f2099bf39dbc5aac6860fbfc6ae8e97014fba4a2f09d7f7c"
+      },
+      "BloodyPalaceEndingProps.lua": {
+        "source": "src/runtime/release_202/checkpoint/BloodyPalaceEndingProps.lua",
+        "sha256": "0b139e5765e47c66fea4bccedb2e4bf1710318c41dc2fe8832dd349c4ffaaaa2"
+      },
+      "BloodyPalaceEndingStill.lua": {
+        "source": "src/runtime/release_202/checkpoint/BloodyPalaceEndingStill.lua",
+        "sha256": "94d57017bbd46f5a3a1b155999c202544aecbc78ea2d2c8cc53a5557af936b84"
+      },
+      "BloodyPalaceEndingTitle.lua": {
+        "source": "src/runtime/release_202/checkpoint/BloodyPalaceEndingTitle.lua",
+        "sha256": "35b3f6817e5876ed45e1aa4e452d4cfddb23793db49bdb3442198efab2cb3eea"
+      },
+      "BloodyPalaceEndingZiMing.lua": {
+        "source": "src/runtime/release_202/checkpoint/BloodyPalaceEndingZiMing.lua",
+        "sha256": "3b13f92984504d162d32b7e8c9ce348a83527456e93633823662500ed674af0a"
+      },
+      "BloodyPalaceGateScene.lua": {
+        "source": "src/runtime/checkpoint/Scripts/BloodyPalaceGateScene.lua",
+        "sha256": "e378929c3079e48ebdc73ad349a912f8a1c61c4388274c172ae42daa58a80d17"
+      },
+      "BloodyPalaceMechanics.lua": {
+        "source": "src/runtime/checkpoint/Scripts/BloodyPalaceMechanics.lua",
+        "sha256": "6a12bf09ee81cd67364584872fda57087312432fbcf0c93c5b51962f78ae1b2c"
+      },
+      "BloodyPalaceMenu.lua": {
+        "source": "src/runtime/checkpoint/Scripts/BloodyPalaceMenu.lua",
+        "sha256": "28aee4011fbe45ebe2960ab909e96f68bf782755f6474a5a8e121bc6f2cff112"
+      },
+      "BloodyPalaceMusic.lua": {
+        "source": "src/runtime/checkpoint/Scripts/BloodyPalaceMusic.lua",
+        "sha256": "2e6c00a67af8caa94ef29d7402a3db377928cdb7bd7bd06d528ef1acd7ebd0da"
+      },
+      "BloodyPalaceOpeningShot.lua": {
+        "source": "src/runtime/release_202/checkpoint/BloodyPalaceOpeningShot.lua",
+        "sha256": "31928f660073c80403544aee72e72285b1f477a9420d5ae20a526b4dd8448dc2"
+      },
+      "BloodyPalacePerformance.lua": {
+        "source": "src/runtime/release_202/checkpoint/BloodyPalacePerformance.lua",
+        "sha256": "2cfef8ea4d7d6609c8ab95420b5b22daf8eedc0b8cee443a8cd1539e6ccd873b"
+      },
+      "BloodyPalacePortal.lua": {
+        "source": "src/runtime/checkpoint/Scripts/BloodyPalacePortal.lua",
+        "sha256": "75e9a3de83601f40abf20cf4140c73a362a982aaeefbd0d2618b94e639435638"
+      },
+      "BloodyPalaceProgress.lua": {
+        "source": "src/runtime/checkpoint/Scripts/BloodyPalaceProgress.lua",
+        "sha256": "3e0d9409843e55fe1bd949ecda6f48f53438a6df4d6e6bd099dac71c964c44de"
+      },
+      "BloodyPalaceRoster.lua": {
+        "source": "src/runtime/release_202/checkpoint/BloodyPalaceRoster.lua",
+        "sha256": "5561dd8e905c6048d957fbd3439f394ba3f493a3884017e10d025169104965b5"
+      },
+      "BossCatalog.lua": {
+        "source": "src/runtime/Scripts/BossCatalog.lua",
+        "sha256": "57b2293f7bb60ac7609a99ea302d8f4422d81d74c974eda4264e65a122691654"
+      },
+      "BossEntryPreload.lua": {
+        "source": "src/runtime/checkpoint/Scripts/BossEntryPreload.lua",
+        "sha256": "62d4af9dfc478ac8edd95c706bf83e17fa6e1d6de64ab3cf4fce9b846a098c3d"
+      },
+      "BossLoadCover.lua": {
+        "source": "src/runtime/checkpoint/Scripts/BossLoadCover.lua",
+        "sha256": "7ddd7ca3abcbc540443f055aff61b0cdd95585b37accef3985fc3870cf51e38c"
+      },
+      "Challenge.lua": {
+        "source": "src/runtime/checkpoint/Scripts/Challenge.lua",
+        "sha256": "5e6b07e013fc16a458167027a611e6c1fc124c2ec80f6f87b269f91fcd6645e2"
+      },
+      "ChallengeLoadout.lua": {
+        "source": "src/runtime/Scripts/ChallengeLoadout.lua",
+        "sha256": "94f354b22782e0210563f23ec512b2347c6a7ed1e1cc19b7c44446f038904f89"
+      },
+      "ChallengeMedicine.lua": {
+        "source": "src/runtime/release_202/checkpoint/ChallengeMedicine.lua",
+        "sha256": "458e0f01e23b1020928f28c7bc5b13b87ea94afd6acafc88a5b2e388869debbf"
+      },
+      "ChallengeMenu.lua": {
+        "source": "src/runtime/checkpoint/Scripts/ChallengeMenu.lua",
+        "sha256": "cc0a25ccfe88ce3bbe6f232e4c797225acaf7cdcb57c3e514585e3a91756d438"
+      },
+      "ChallengeSignals.lua": {
+        "source": "src/runtime/Scripts/ChallengeSignals.lua",
+        "sha256": "9fd76a8a811cbfd03bf9ae71c0850722440e7cc19bce6063296c37243646d9d9"
+      },
+      "ChallengeTarget.lua": {
+        "source": "src/runtime/Scripts/ChallengeTarget.lua",
+        "sha256": "96ab39620e3da5ddab30bb79235ba89b23d8918d26cc8171dc192dc81e8703e6",
+        "packagedSha256": "008eea2c184977273df057005e92d73da28f2ac4f1a39ad964b2737f71188bed"
+      },
+      "ChallengeVictory.lua": {
+        "source": "src/runtime/Scripts/ChallengeVictory.lua",
+        "sha256": "c644c3d88151e4a412d9056912aefc44577237daa5d97f6315203ed90a501dee"
+      },
+      "ChiLianArena.lua": {
+        "source": "src/runtime/checkpoint/Scripts/ChiLianArena.lua",
+        "sha256": "f1e54a7f7c119cd1a57d387ec25fdeaebca32cb635a13761296ca083eab30279"
+      },
+      "ClosedArena.lua": {
+        "source": "src/runtime/release_202/checkpoint/ClosedArena.lua",
+        "sha256": "586bb54be91981000188c5c8074d6ecf9aa1b0627fe55eab1bdc58b638521a24"
+      },
+      "CombatSpawn.lua": {
+        "source": "src/runtime/Scripts/CombatSpawn.lua",
+        "sha256": "63c5e6214534226ea71238a93bd04e13ff392da3359d1d452033425a404bac58"
+      },
+      "CustomChallenges.lua": {
+        "source": "src/runtime/Scripts/CustomChallenges.lua",
+        "sha256": "b582c4781a36406590be09cdfafcab1147f6a2aa81cc5a875b355b3cf19f68ed"
+      },
+      "DayArena.lua": {
+        "source": "src/runtime/Scripts/DayArena.lua",
+        "sha256": "7b9aac611cd786a6ec0c5a0e005caf4a74fff20ff484f99b3a72f2d369f52cb3"
+      },
+      "DisplayPreferences.lua": {
+        "source": "src/runtime/checkpoint/Scripts/DisplayPreferences.lua",
+        "sha256": "5a9e70c915451cac7c8d7b2d74f15f9714f2e07017fb38322aadf39463e4a7ca"
+      },
+      "DreamPalaceAchievements.lua": {
+        "source": "src/dream_palace/DreamPalaceAchievements.lua",
+        "sha256": "fca1d053728ca4d92fca90a83b7d69771c0419750a4e2d815d603452bf014368"
+      },
+      "DreamPalaceAchievementToast.lua": {
+        "source": "src/runtime/release_202/checkpoint/DreamPalaceAchievementToast.lua",
+        "sha256": "6d92ced89652198a13c22033b6124b644af621c8796eca126ce667dbcbad423c"
+      },
+      "DreamPalaceBalance.lua": {
+        "source": "src/dream_palace/DreamPalaceBalance.lua",
+        "sha256": "9b4a05ac84ec27fb0ae6bcc83bf0077018b96f9deaf60d856d8fa17d2808cfe1"
+      },
+      "DreamPalaceCombatAwards.lua": {
+        "source": "src/runtime/release_202/checkpoint/DreamPalaceCombatAwards.lua",
+        "sha256": "eb42b00a3260a4812eaa585c6adb7bb39a1d64677fa93bc2e58f196b03be06ab"
+      },
+      "DreamPalaceCombatHud.lua": {
+        "source": "src/runtime/checkpoint/Scripts/DreamPalaceCombatHud.lua",
+        "sha256": "edf54ef7b78696f191c6cd2273d3b4d44b1970026b528ecb2a9210b5d8d440a5"
+      },
+      "DreamPalaceDefense.lua": {
+        "source": "src/runtime/release_202/checkpoint/DreamPalaceDefense.lua",
+        "sha256": "87a1a92d7f37cbd43ba15b4604aeccfdc611ecafc5d84d4178e03cad8eb930fa"
+      },
+      "DreamPalaceFailureScreen.lua": {
+        "source": "src/runtime/release_202/checkpoint/DreamPalaceFailureScreen.lua",
+        "sha256": "6c8cd0562da935cff5dc7db82cba5811425b779002f65623dd234bba036d12c3"
+      },
+      "DreamPalaceFengXuePursuit.lua": {
+        "source": "src/runtime/checkpoint/Scripts/DreamPalaceFengXuePursuit.lua",
+        "sha256": "1a160c9a0c7bf8291e3d290da405928074bfcf05a3cddb029ae537e35e6b6447"
+      },
+      "DreamPalaceFormation.lua": {
+        "source": "src/runtime/checkpoint/Scripts/DreamPalaceFormation.lua",
+        "sha256": "eea52e4bca19d37242ece6333fcc255e6cce0f3e43ec9bd0c1c50dabd5e4ce5a"
+      },
+      "DreamPalaceMobPressure.lua": {
+        "source": "src/runtime/checkpoint/Scripts/DreamPalaceMobPressure.lua",
+        "sha256": "99bae3e6e2ce7315f8ab396d8755db2eb089b4f0b7a02f3b16c97d295135b537"
+      },
+      "DreamPalaceMobPressureRules.lua": {
+        "source": "src/runtime/checkpoint/Scripts/DreamPalaceMobPressureRules.lua",
+        "sha256": "057f030a296dbb2ed5ca20eddfd2a257e01b0ba3959c30ce618df3bfd74d27d2"
+      },
+      "DreamPalacePlayerControl.lua": {
+        "source": "src/runtime/checkpoint/Scripts/DreamPalacePlayerControl.lua",
+        "sha256": "e997c8c132315af7f591c4815d90402aca55bac77e2ac6407c8028ee4e85b8f0"
+      },
+      "DreamPalacePreload.lua": {
+        "source": "src/runtime/checkpoint/Scripts/DreamPalacePreload.lua",
+        "sha256": "ef8e95fe6762f71dc30b592d130210e57592b5e8028e870815edce338fa17104"
+      },
+      "DreamPalacePressure.lua": {
+        "source": "src/runtime/Scripts/DreamPalacePressure.lua",
+        "sha256": "5b026a47fba22a4b6c17184e513b5839c5e802ca98856d829c23b09e499b8f34"
+      },
+      "DreamPalacePressurePolicy.lua": {
+        "source": "src/dream_palace/DreamPalacePressurePolicy.lua",
+        "sha256": "b5e21cdc9342de47818ac374fdbb2d0757cb4aa00b33cc278946c4c5d94fb841"
+      },
+      "DreamPalaceProfile.lua": {
+        "source": "src/runtime/release_202/checkpoint/DreamPalaceProfile.lua",
+        "sha256": "700ce248ddb6a3ef1d1f96120d86cac50e2c850dc91d6d9c3e955091aa70d978"
+      },
+      "DreamPalaceResultView.lua": {
+        "source": "src/runtime/release_202/checkpoint/DreamPalaceResultView.lua",
+        "sha256": "9b235ab6e83c4b4652e56e598bb445bcab6938851ac9a4f29aa9bdead72189e7"
+      },
+      "DreamPalaceSettlement.lua": {
+        "source": "src/runtime/release_202/checkpoint/DreamPalaceSettlement.lua",
+        "sha256": "b7b26008415715b52a816bf7cdb4e0ea415b4fb46079cbdf9f6309bc14e3c757"
+      },
+      "DreamPalaceTimer.lua": {
+        "source": "src/runtime/checkpoint/Scripts/DreamPalaceTimer.lua",
+        "sha256": "bbfe73eedb90325432995ae660fb4e6f05ec3e0ae5277ec602677b10d0ed9283"
+      },
+      "DreamPalaceUI.lua": {
+        "source": "src/runtime/release_202/checkpoint/DreamPalaceUI.lua",
+        "sha256": "85da8dac50fe073ba0ba060c4066129d5f188f4a2e4b52e5bdd1cd2163654340"
+      },
+      "DreamPalaceWarmup.lua": {
+        "source": "src/runtime/release_202/checkpoint/DreamPalaceWarmup.lua",
+        "sha256": "930c65fc6d93a995afba3abed6e123dabe60b9fa48840f8a90a2589a8fb6c424"
+      },
+      "DreamPalaceWarmupPortraits.lua": {
+        "source": "src/runtime/release_202/checkpoint/DreamPalaceWarmupPortraits.lua",
+        "sha256": "bf95428819f24b13e2d2911bd19d6358800b2344469c0209779926f06fdb48d2",
+        "packagedSha256": "adf7991201bb5698f58146b6b0f1c1723011bdb98f47681f8e5ad9ab430c57f1"
+      },
+      "EncounterCatalog.lua": {
+        "source": "src/runtime/Scripts/EncounterCatalog.lua",
+        "sha256": "6137abb85300276ed6ef6724b28abaab4ee205cc3bcc28926bccc1d59c8450e9"
+      },
+      "EncounterEngage.lua": {
+        "source": "src/runtime/Scripts/EncounterEngage.lua",
+        "sha256": "deb1a4e1ece88323e6e7a64318d7551e328dc7fdd3b1729a2c9536c4111c35e2"
+      },
+      "EncounterPlayerState.lua": {
+        "source": "src/runtime/release_202/checkpoint/EncounterPlayerState.lua",
+        "sha256": "4e5b6d1c40b4b13fb5fee076c25a049049dc41bd1bf64ed26979ed7f58e0f8c0"
+      },
+      "EnemyHealthGuard.lua": {
+        "source": "src/runtime/Scripts/EnemyHealthGuard.lua",
+        "sha256": "6a370565201bf62110ae64d1783d177277f329c3479d0271cdbf79f6e07f1293"
+      },
+      "FirstEntryPrompts.lua": {
+        "source": "src/runtime/Scripts/FirstEntryPrompts.lua",
+        "sha256": "0a242a37b6a569305086e6e935743bf74b6d8a674f41ca0bda9db78e26d52f4a"
+      },
+      "FrostEvent.lua": {
+        "source": "src/runtime/checkpoint/Scripts/FrostEvent.lua",
+        "sha256": "2ba06d38de97d07415b1909cbd2a8e14da07ff6d744f5362199aca2ca606fe9e"
+      },
+      "GameplayDifficulty.lua": {
+        "source": "src/runtime/release_202/checkpoint/GameplayDifficulty.lua",
+        "sha256": "90faea95957c7a2635b30e65eac2c292cc1ff7490c658905212ce73887e4a398"
+      },
+      "GauntletPreload.lua": {
+        "source": "src/runtime/checkpoint/Scripts/GauntletPreload.lua",
+        "sha256": "d51ac3a403f20738efc9e566599e33595fde8529bdbc01bd3f43ba324fc24fe5"
+      },
+      "GeneratedArenaScenes.lua": {
+        "source": "src/runtime/Scripts/GeneratedArenaScenes.lua",
+        "sha256": "ee5caf8503936bbbe28f0b97b80206e683f2155f26d747a4db546924557f8601"
+      },
+      "GeneratedEncounterCatalog.lua": {
+        "source": "src/runtime/Scripts/GeneratedEncounterCatalog.lua",
+        "sha256": "235ad0153a4cd587e70c64c6c231f8a22c7eddb819120f269182da11cc1e1d63"
+      },
+      "Health.lua": {
+        "source": "src/runtime/Scripts/Health.lua",
+        "sha256": "f6776f7b4c559876e114ed3f625885ace901bb2be1e0206f1f1ebac5215bbe20"
+      },
+      "HistoryReport.lua": {
+        "source": "src/runtime/Scripts/HistoryReport.lua",
+        "sha256": "bea442e6d3c22e1088b6b41ee21b575b5de8662e8035d0483d3b460a70a7dfc7"
+      },
+      "InputActionHint.lua": {
+        "source": "src/runtime/Scripts/InputActionHint.lua",
+        "sha256": "7e58492dd306abd2ac8b4187eb7f9b5654642c992cec3d86a5d482534e45e68f"
+      },
+      "InstalledPathIdentity.lua": {
+        "source": "src/runtime/Scripts/InstalledPathIdentity.lua",
+        "sha256": "b2dc3d966ba8ee82d8d615e07b591cf04faf1f9940a43bca439e1ebcce95fdcb"
+      },
+      "Integration.lua": {
+        "source": "src/runtime/checkpoint/Scripts/Integration.lua",
+        "sha256": "87f52969d54f30440b2c714b7caab35db9072384ac5b375082e095c1268f146d"
+      },
+      "JingYeMount.lua": {
+        "source": "src/runtime/checkpoint/Scripts/JingYeMount.lua",
+        "sha256": "23c7645a6c4b601a0e6093e7518ce93c0cabd175d2f78ca64bf0b598639ee5a7"
+      },
+      "LakeUpperArena.lua": {
+        "source": "src/runtime/release_202/checkpoint/LakeUpperArena.lua",
+        "sha256": "fed2bc3df09d1833e327d85b35497dbae657eb3ab4500d241cf5f7e656dca849",
+        "packagedSha256": "4ea90c0b5c719695275c7073d48288cef6afcc3629b90741eb502646b6761a9a"
+      },
+      "LakeUpperLayout.lua": {
+        "source": "src/runtime/Scripts/LakeUpperLayout.lua",
+        "sha256": "3442bfda1b237fd8e28f36d146c538a28d46c30ddedb9ec9489582649bb3296a"
+      },
+      "LengTuArena.lua": {
+        "source": "src/runtime/Scripts/LengTuArena.lua",
+        "sha256": "a57a50805ae8d673cfa904a2072c219a658f784230ba14a9f21e5a95175f1d99"
+      },
+      "LengTuSummons.lua": {
+        "source": "src/runtime/Scripts/LengTuSummons.lua",
+        "sha256": "52e08bea3ce0035bc196c27041834037b52621953aff20e36f4d9f9e0986ce36"
+      },
+      "LionArena.lua": {
+        "source": "src/runtime/checkpoint/Scripts/LionArena.lua",
+        "sha256": "23f442d80f2baa899ca27b2ebc60a3f448d345206b60b6ff5e68ad148fa4c492"
+      },
+      "main.lua": {
+        "source": "src/runtime/checkpoint/Scripts/main.lua",
+        "sha256": "71cb28b1b0a38e69607e21dea91448d32bb2c1570800c1f116a2f83da1044e38"
+      },
+      "MeiGuHuArena.lua": {
+        "source": "src/runtime/release_202/checkpoint/MeiGuHuArena.lua",
+        "sha256": "2a0b49fe05e3f16dc236921de455d7d1ee571aa02eb2a9215316ceb23b561ca9",
+        "packagedSha256": "80705b3561f78c91c097d16ecfed382ebe586ddf40bcddffeb02e36a382d18cc"
+      },
+      "MeiGuHuEventTiming.lua": {
+        "source": "src/runtime/release_202/checkpoint/MeiGuHuEventTiming.lua",
+        "sha256": "376b28c43b0057c6e6162cbf0214e027dededc119f88329f266b8d8e7e523184",
+        "packagedSha256": "5cd6683102cc198bc7c03cce8df08cc670bc9a20eea8c14726cc75656f8775a9"
+      },
+      "MeiGuHuOriginalEvents.lua": {
+        "source": "src/runtime/checkpoint/Scripts/MeiGuHuOriginalEvents.lua",
+        "sha256": "8e117c07a2af2c57565e961af8b9a5134f8bb5a87b68b7ec0cad821ef1ccf0fd",
+        "packagedSha256": "113a00c92b4039e2c3beab1a9cd1e13f0cbd68bec01c094860abca909232557e"
+      },
+      "MeiGuHuPointMask.lua": {
+        "source": "src/runtime/release_202/checkpoint/MeiGuHuPointMask.lua",
+        "sha256": "029d0f32828c301bb771f1634a2a2249e3bb973253172d9c51d1d6d53eda4aa4",
+        "packagedSha256": "ca66eb8e5ace88ad2fb6b0eb0e09f7ee450a19eb46c410a4e7230399d10a6bf5"
+      },
+      "MeiGuHuStandaloneLayout.lua": {
+        "source": "src/runtime/Scripts/MeiGuHuStandaloneLayout.lua",
+        "sha256": "3c61d4539efee2291660cb2070910b901ddd96b401262177ece142543e49ffd6"
+      },
+      "ModFeatureInventory.lua": {
+        "source": "src/runtime/checkpoint/Scripts/ModFeatureInventory.lua",
+        "sha256": "197a2b91fa1d5a05bc6e0874f60dceb0da1aef26e6b3ca9e0fc41afce759d99d"
+      },
+      "ModFeaturesBridge.lua": {
+        "source": "src/runtime/checkpoint/Scripts/ModFeaturesBridge.lua",
+        "sha256": "f8c76653500b50e00e00f3d7c412c540c5e05b6387606153ad8c01ae6a1ae937"
+      },
+      "ModLoaderSettings.lua": {
+        "source": "src/runtime/checkpoint/Scripts/ModLoaderSettings.lua",
+        "sha256": "5a04c3ae2735576af424a5a280485a03cef83d14efe12bea912d036291e22fd0"
+      },
+      "ModLoaderSettingsWrite.lua": {
+        "source": "src/runtime/checkpoint/Scripts/ModLoaderSettingsWrite.lua",
+        "sha256": "664ab84cf130beeb1b527c9d0309816f52277b2d0710eb52ea78ab71bd06ab70"
+      },
+      "NativeScreen.lua": {
+        "source": "src/runtime/checkpoint/Scripts/NativeScreen.lua",
+        "sha256": "87cdcabb90b1513a78da947054520609a28827a3ee1790003b161dacb12b1e4d"
+      },
+      "NativeSelection.lua": {
+        "source": "src/runtime/Scripts/NativeSelection.lua",
+        "sha256": "f48ff698ded9ba718c563637aae6023166825bc7e8e085b74b2dce29aa248992"
+      },
+      "NativeUiAssetsData.lua": {
+        "source": "src/runtime/Scripts/NativeUiAssetsData.lua",
+        "sha256": "1874e5bf5760f63139a264dd1320372914fe03e7869b4f7429831b264037101b"
+      },
+      "Panel.lua": {
+        "source": "src/runtime/checkpoint/Scripts/Panel.lua",
+        "sha256": "5d3ed87bdb1d34144a374413e615adcb8c894ac6a7198c04820444bf336166be"
+      },
+      "ParameterFeedback.lua": {
+        "source": "src/runtime/release_202/checkpoint/ParameterFeedback.lua",
+        "sha256": "e5f826a714adc9b86fbf524da7ec3bd1f8768db1ef16292eb429dc67bd8e7a63",
+        "packagedSha256": "5722996dd4ac89ad715dce9e00e953559f4afa1a54d566659369a883fb18e634"
+      },
+      "ParameterForm.lua": {
+        "source": "src/runtime/Scripts/ParameterForm.lua",
+        "sha256": "20b2718df32828e3c904c0cddc40680d2182b5da53c62b574b4b47d5e37c14aa"
+      },
+      "ParameterStyle.lua": {
+        "source": "src/runtime/Scripts/ParameterStyle.lua",
+        "sha256": "55584375838633d102936dd8ee439a29c4d553ea344465c4166da08af824e80e",
+        "packagedSha256": "7be5042c6e1d779a63c3bc0475872b4f66f31bba4a13ec7b0716b6eed170b73a"
+      },
+      "PendingEntry.lua": {
+        "source": "src/runtime/Scripts/PendingEntry.lua",
+        "sha256": "f368c01a30e99cd0edacbc805971d45dc22b1ce0f0f341a54b7473ded9e59ee3"
+      },
+      "PlayerDamageGuard.lua": {
+        "source": "src/runtime/Scripts/PlayerDamageGuard.lua",
+        "sha256": "388077aeec5b63a8db7190168314edff3444b3035cb7a9388536ab61f6c35da5"
+      },
+      "PlayerProfile.lua": {
+        "source": "src/runtime/release_202/checkpoint/PlayerProfile.lua",
+        "sha256": "ba3076144b3a21a7929226a40e82e4e50776172cb02557dd2497cd985a79b3cc",
+        "packagedSha256": "c430f4021d84e93d0debe39d5069c507e9a64f0c7a090659cc2167e270cd6fa7"
+      },
+      "PortraitLayout.lua": {
+        "source": "src/runtime/Scripts/PortraitLayout.lua",
+        "sha256": "5d9319d80e3b93ec2f3ea0d254aadd1af04ab63e170bda40202cad48131b22a7"
+      },
+      "PracticeBossInfo.lua": {
+        "source": "src/runtime/checkpoint/Scripts/PracticeBossInfo.lua",
+        "sha256": "a43fc69c462466e87071f2cd1b47b739ea21bf84b96f8a0297a7d3b838ccd3e9"
+      },
+      "PracticeHud.lua": {
+        "source": "src/runtime/checkpoint/Scripts/PracticeHud.lua",
+        "sha256": "e58ec2eedaed06e768a7cdc6bcc2c7759ece8c7e24625d6d3995a562e42ee01a"
+      },
+      "PracticeMode.lua": {
+        "source": "src/runtime/release_202/checkpoint/PracticeMode.lua",
+        "sha256": "95112d71a5567bab903011244119331b7e20b6f221ac00229b3f68e3c0607e82"
+      },
+      "PracticePhaseBossBar.lua": {
+        "source": "src/runtime/checkpoint/Scripts/PracticePhaseBossBar.lua",
+        "sha256": "29547865204220eb1e9d7270fe686901642d0ca5bc27ab013bcfb21478127f2d"
+      },
+      "PreloadReferences.lua": {
+        "source": "src/runtime/checkpoint/Scripts/PreloadReferences.lua",
+        "sha256": "abaa36906d5328c60cf003e24ffc8e2a923ccade859af00337d3842e2a21d655"
+      },
+      "PressureControls.lua": {
+        "source": "src/runtime/Scripts/PressureControls.lua",
+        "sha256": "5d1a44cd4b2b586df19ec7d4c2bb4cb2f7d605a14aa170502b13a17db0b6aa89"
+      },
+      "RetryPreload.lua": {
+        "source": "src/runtime/checkpoint/Scripts/RetryPreload.lua",
+        "sha256": "69e0c88c0ddd98db15d805c3902f2cdc5226d6d8145cd3545a927e4fff6751ec"
+      },
+      "SaveBarrier.lua": {
+        "source": "src/runtime/checkpoint/Scripts/SaveBarrier.lua",
+        "sha256": "2f60c47def8fe1ef8f27929cd35c249c91ec27b178726701be05bbfa07ca1c61",
+        "packagedSha256": "35b760d2c5f6a614861dd47878db24506364047afa130a6008d0c8b9029a4afe"
+      },
+      "SceneArena.lua": {
+        "source": "src/runtime/release_202/checkpoint/SceneArena.lua",
+        "sha256": "cf375ecd71f9c7fd0c65a72b484be8bd003b897ec497c008c10fa79c16f206df",
+        "packagedSha256": "06a6c771bc2fbe08e5db17ac2c083683214026f1b22219ee434c63bf80682024"
+      },
+      "ShengQuXinChiArena.lua": {
+        "source": "src/runtime/checkpoint/Scripts/ShengQuXinChiArena.lua",
+        "sha256": "ed58ef07f7a609e48cd323dbf7c3f6fc890ff3e6a9d19f310001f4e19f812b85"
+      },
+      "ShengQuXinChiScene.lua": {
+        "source": "src/runtime/release_202/checkpoint/ShengQuXinChiScene.lua",
+        "sha256": "93410e45bbd4b2d16c1ca5e52a95cc2ee9fd0d0187141c6ac440b34bd817d676"
+      },
+      "ShuangYueCharge.lua": {
+        "source": "src/runtime/checkpoint/Scripts/ShuangYueCharge.lua",
+        "sha256": "61d6dbeca7da11cafe21be4f6d41b8c677efd6da4c07abc65270ab0240a82b79",
+        "packagedSha256": "6c60c46fdf7fc7015b75eeb64c5ad8526c0c640be974d3e0a73da0bbea57bea0"
+      },
+      "SpawnClass.lua": {
+        "source": "src/runtime/checkpoint/Scripts/SpawnClass.lua",
+        "sha256": "7cbebafff71cd731f7f51259ee89a9dc3a6fdb5ab42177b3fc3fbd36a452d44e"
+      },
+      "StageFade.lua": {
+        "source": "src/runtime/checkpoint/Scripts/StageFade.lua",
+        "sha256": "7382e0a135782b7cd1bddd73ac03b64600e941ee2967faa97158ac0f962e0776"
+      },
+      "StageScreen.lua": {
+        "source": "src/runtime/release_202/checkpoint/StageScreen.lua",
+        "sha256": "53696d23f93c7a556956176fa73fad41bdc914c29fd01ecd32d504640aa0311b"
+      },
+      "StampPress.lua": {
+        "source": "src/runtime/Scripts/StampPress.lua",
+        "sha256": "a83c0433a11558fc0bf4c86fb1dfd08838238ceb920232ecffaa9db9b0559407"
+      },
+      "StatusBuildup.lua": {
+        "source": "src/runtime/checkpoint/Scripts/StatusBuildup.lua",
+        "sha256": "095800d78fb6b058d8463e38019e4d48c0f832647efd283a2f6628005f645dbd"
+      },
+      "StatusBuildupHud.lua": {
+        "source": "src/runtime/checkpoint/Scripts/StatusBuildupHud.lua",
+        "sha256": "99e3b99443ba19efbe4010e4fb0197d5c5eff0de410fe815a26a260f0478b71a"
+      },
+      "StatusEffectClock.lua": {
+        "source": "src/runtime/Scripts/StatusEffectClock.lua",
+        "sha256": "54fd70506f2910aff980848a0134d909eef4a8c6473f8da5571dcc474dc75a12"
+      },
+      "StatusHudSchedule.lua": {
+        "source": "src/runtime/checkpoint/Scripts/StatusHudSchedule.lua",
+        "sha256": "b0d1f700ffcfea1786d88fe08fba32393a9c0a08ed7cbcf510e1f6a57bc112d8"
+      },
+      "StockBellArena.lua": {
+        "source": "src/runtime/checkpoint/Scripts/StockBellArena.lua",
+        "sha256": "5da1b2f7d58fb32d425f0ddc0f666fbb51b9be8395b7021862ee30475cc3fe9d"
+      },
+      "StockCheckpoint.lua": {
+        "source": "src/runtime/release_202/checkpoint/StockCheckpoint.lua",
+        "sha256": "c77cf0f34004b59615ef1fabc3678f64199b948d96a320290d11e1575aba7d3a",
+        "packagedSha256": "53f7f5ff4f08305a45ef5db1e98113f2d85a38cf522770b23dcdef6cab9d1a98"
+      },
+      "StockLakeLayout.lua": {
+        "source": "src/runtime/release_202/checkpoint/StockLakeLayout.lua",
+        "sha256": "54fc9a777d204be4a2c79403ca999f7a74a5bcc6a596f2c19b2b03ce70217fdb",
+        "packagedSha256": "da358bfd3f7c5506eb15dc569def49190707d460eb49547b01eb317732c87c74"
+      },
+      "TitleHome.lua": {
+        "source": "src/runtime/checkpoint/Scripts/TitleHome.lua",
+        "sha256": "d29fd7a081f284a347895d1f789fabccb3a8284493b3f92fc8d72f4354380719"
+      },
+      "TitleProbe.lua": {
+        "source": "src/runtime/release_202/checkpoint/TitleProbe.lua",
+        "sha256": "d27c0ea83be1619183aa58f78711598c73e5f26fba73a0d2a3eb49701f92d98d"
+      },
+      "TitleSession.lua": {
+        "source": "src/runtime/checkpoint/Scripts/TitleSession.lua",
+        "sha256": "32078a9b242169c0c1d97fc205bcde8d789c19b5fe31a61ac1e84b9f1e0142c9"
+      },
+      "TrainingBell.lua": {
+        "source": "src/runtime/release_202/checkpoint/TrainingBell.lua",
+        "sha256": "634d1ebdfec763e2990674b0000a616644215666b33c27d22e34a7614329e535",
+        "packagedSha256": "78b3d83e7da02442fc5b46fd8788b312e16b522dfb840ac6f9fd4d9322c0f680"
+      },
+      "TrainingHud.lua": {
+        "source": "src/runtime/checkpoint/Scripts/TrainingHud.lua",
+        "sha256": "07fcc3a815e9eba22c6790abe129a7adb3fb1ea0919b43fa933876c593a437a0"
+      },
+      "TrainingMobCatalog.lua": {
+        "source": "src/runtime/release_202/checkpoint/TrainingMobCatalog.lua",
+        "sha256": "76c7f2d92bcf026bb9fa62237991777db95bf76931216eee41aa9e3909938612",
+        "packagedSha256": "ea14f9d8fc6a238301866799fe8c6cb5986ec625fa84edf26b8418c94443eb83"
+      },
+      "TrainingTarget.lua": {
+        "source": "src/runtime/Scripts/TrainingTarget.lua",
+        "sha256": "bdca2aea2e3c63caa6012e53e7f0bf96f11e0b17cd98faee759a9b106dc8142c",
+        "packagedSha256": "7ffc671fb7c0a1a04adb5f19487c92a71b0b37868153bcb77e3629edc6919a4f"
+      },
+      "UiUpdateTimer.lua": {
+        "source": "src/runtime/checkpoint/Scripts/UiUpdateTimer.lua",
+        "sha256": "5dbf3e624cef954935551a43dbd3b3f4d3c409950994fcc6045cc30faa81e2e3"
+      },
+      "XiguArena.lua": {
+        "source": "src/runtime/release_202/checkpoint/XiguArena.lua",
+        "sha256": "ac9a132d5422ebb494f15b13ea1a9b296b928a4899d3556f7c4ad75feb2fbf8e",
+        "packagedSha256": "49195b6ea9490a6eb98893fc916c78858d57774a0d1db1b50ed8bc88dba03690"
+      },
+      "XiguStreaming.lua": {
+        "source": "src/runtime/release_202/checkpoint/XiguStreaming.lua",
+        "sha256": "83c3348f4dc067a23bce00be76a640cedf527c98b27baf78d9cfee9f5fe77e6d"
+      }
+    },
+    "compatibility": {
+      "AbilityChallenge.lua": {
+        "source": "src/runtime/release_202/checkpoint/AbilityChallenge.lua",
+        "sha256": "7b1a78ca525f9fb6a90dba32f2d261d951964ce391d88ff1e197452ab0f5fcf5",
+        "packagedSha256": "ad6f433bffbb71b6c4fa4095f024c15cbae1d763c8bc62d53b05eedc7978c87c"
+      },
+      "ArenaEconomy.lua": {
+        "source": "src/runtime/Scripts/ArenaEconomy.lua",
+        "sha256": "e6fd0db0140552addd543cbeaaec9cdd2e4d2ae0e03c125ce45c072eb8a0b7c1"
+      },
+      "ArenaLoadout.lua": {
+        "source": "src/runtime/Scripts/ArenaLoadout.lua",
+        "sha256": "7b6a9b4b866e1380ee6d6287d80347439ef613daedd87f1f98df433b56ff4c29"
+      },
+      "ArenaLoadoutMemory.lua": {
+        "source": "src/runtime/Scripts/ArenaLoadoutMemory.lua",
+        "sha256": "65d394762bd25d0b85dcd6ce8502c944cd0fe19208b1f8440c16dd471dadcb24",
+        "packagedSha256": "57199b1736bf0ce36040331589ce6921faf8a1cf47dfab481e3416f947b022f4"
+      },
+      "ArenaLoadoutRestore.lua": {
+        "source": "src/runtime/Scripts/ArenaLoadoutRestore.lua",
+        "sha256": "f495d88fbcba6d66e0788a89c5674dc26e5fe64079a8d1b3c81a476a67c7c4e7"
+      },
+      "ArenaMapPolicy.lua": {
+        "source": "src/runtime/release_202/compatibility/ArenaMapPolicy.lua",
+        "sha256": "1ecdf17ce05960c53881abbccc94330794e4076d967ecb2c719706ec321c1142"
+      },
+      "ArenaScenes.lua": {
+        "source": "src/runtime/release_202/compatibility/ArenaScenes.lua",
+        "sha256": "079e7b6421ef60c5d70d59c5d0cb08e7366e6ad80c040afded2b7a17ef86e7cc"
+      },
+      "ArenaSummonAccess.lua": {
+        "source": "src/runtime/Scripts/ArenaSummonAccess.lua",
+        "sha256": "7c9059b14dafbd3adaf987af07d4d9d110086caf413f90eaebc63ab7b1f786f8"
+      },
+      "ArtAssets.lua": {
+        "source": "src/runtime/Scripts/ArtAssets.lua",
+        "sha256": "cb812471254347b03894e66893b21e0d88480002ca87feab35c7d47c67d0adae"
+      },
+      "AsyncClassLoad.lua": {
+        "source": "src/runtime/checkpoint/Scripts/AsyncClassLoad.lua",
+        "sha256": "36a20feac1e20f2a0ebb27079af45240b7557b6a7c5b4b692c905cd5ea359e0e"
+      },
+      "BattleMusic.lua": {
+        "source": "src/runtime/Scripts/BattleMusic.lua",
+        "sha256": "9fb6bcf97395396431b22473174b848bd28e55e7831f79b4b93668e4bc122335"
+      },
+      "BattleMusicData.lua": {
+        "source": "src/runtime/Scripts/BattleMusicData.lua",
+        "sha256": "f1ab13498d11bf69d64077b5592c2ecce251ac2143af750b0786a37d0931abb4"
+      },
+      "BloodyPalace.lua": {
+        "source": "src/runtime/release_202/compatibility/BloodyPalace.lua",
+        "sha256": "8f98a7112d42703bdc79f9e4258ce395f9a3793430aa61d1998affb32acd0ec5"
+      },
+      "BloodyPalaceEnding.lua": {
+        "source": "src/runtime/release_202/compatibility/BloodyPalaceEnding.lua",
+        "sha256": "829d1e86f82a5c15fc0618b07373bdbd90bdb9be7f7f48fa6639b2f5c50c89bd"
+      },
+      "BloodyPalaceEndingBackdrop.lua": {
+        "source": "src/runtime/release_202/compatibility/BloodyPalaceEndingBackdrop.lua",
+        "sha256": "8567b21d1842ea967084f9b7ae016ce05c96af0caf114b09ddc4cd7806f0c3a9"
+      },
+      "BloodyPalaceEndingFace.lua": {
+        "source": "src/runtime/release_202/compatibility/BloodyPalaceEndingFace.lua",
+        "sha256": "2b60877c043b51257fdd6c1640e0877194360908e89661b143de1c95e1f3274a"
+      },
+      "BloodyPalaceEndingProps.lua": {
+        "source": "src/runtime/release_202/compatibility/BloodyPalaceEndingProps.lua",
+        "sha256": "aa1d22e81108164f06d4df6be9ebcc717aafb2d405d059d2179c46c5c23a0701"
+      },
+      "BloodyPalaceEndingTitle.lua": {
+        "source": "src/runtime/release_202/compatibility/BloodyPalaceEndingTitle.lua",
+        "sha256": "f97652328b6071fdf69d281406c855a30cfe3ef055b717204f388b4702388049"
+      },
+      "BloodyPalaceGateScene.lua": {
+        "source": "src/runtime/release_202/compatibility/BloodyPalaceGateScene.lua",
+        "sha256": "e1a7f6b3a2a5550130298d36538686fabfdabbeb43718355bf68047365bd801a"
+      },
+      "BloodyPalaceMechanics.lua": {
+        "source": "src/runtime/release_202/compatibility/BloodyPalaceMechanics.lua",
+        "sha256": "a23da72bd0de71c22184615f402dc67a36320f8ab0d10b347f09cebd0885c41f"
+      },
+      "BloodyPalaceMenu.lua": {
+        "source": "src/runtime/checkpoint/Scripts/BloodyPalaceMenu.lua",
+        "sha256": "28aee4011fbe45ebe2960ab909e96f68bf782755f6474a5a8e121bc6f2cff112"
+      },
+      "BloodyPalaceMusic.lua": {
+        "source": "src/runtime/release_202/compatibility/BloodyPalaceMusic.lua",
+        "sha256": "ce00ad604eccd705ec87bf1dde59204a355f784b611283ab0e45dbc95acba136"
+      },
+      "BloodyPalaceOpeningShot.lua": {
+        "source": "src/runtime/release_202/compatibility/BloodyPalaceOpeningShot.lua",
+        "sha256": "aa086ef0dd85b2e05e8600115df28dae99ec38f6ffde3bb6b0702688140f58cb"
+      },
+      "BloodyPalacePerformance.lua": {
+        "source": "src/runtime/release_202/checkpoint/BloodyPalacePerformance.lua",
+        "sha256": "2cfef8ea4d7d6609c8ab95420b5b22daf8eedc0b8cee443a8cd1539e6ccd873b"
+      },
+      "BloodyPalacePortal.lua": {
+        "source": "src/runtime/release_202/compatibility/BloodyPalacePortal.lua",
+        "sha256": "ccf90998ba65899f7b967fd54df36cae6f66cbcaac17d04c2e66fd3155e6cb71"
+      },
+      "BloodyPalaceProgress.lua": {
+        "source": "src/runtime/checkpoint/Scripts/BloodyPalaceProgress.lua",
+        "sha256": "3e0d9409843e55fe1bd949ecda6f48f53438a6df4d6e6bd099dac71c964c44de"
+      },
+      "BloodyPalaceRoster.lua": {
+        "source": "src/runtime/release_202/compatibility/BloodyPalaceRoster.lua",
+        "sha256": "f77b4af94dc39081d457423b7fe46ce46eb56e4cc91478a09d5b0e7a6ec95eab"
+      },
+      "BossCatalog.lua": {
+        "source": "src/runtime/Scripts/BossCatalog.lua",
+        "sha256": "57b2293f7bb60ac7609a99ea302d8f4422d81d74c974eda4264e65a122691654"
+      },
+      "Challenge.lua": {
+        "source": "src/runtime/release_202/compatibility/Challenge.lua",
+        "sha256": "113be7abbface9f11a5d4b9c41a3bade061b13457d405f8b48dd5655994c762b"
+      },
+      "ChallengeLoadout.lua": {
+        "source": "src/runtime/Scripts/ChallengeLoadout.lua",
+        "sha256": "94f354b22782e0210563f23ec512b2347c6a7ed1e1cc19b7c44446f038904f89"
+      },
+      "ChallengeMedicine.lua": {
+        "source": "src/runtime/release_202/checkpoint/ChallengeMedicine.lua",
+        "sha256": "458e0f01e23b1020928f28c7bc5b13b87ea94afd6acafc88a5b2e388869debbf"
+      },
+      "ChallengeMenu.lua": {
+        "source": "src/runtime/release_202/compatibility/ChallengeMenu.lua",
+        "sha256": "0fe9b2770ce0a28f403f35039bd024dded87f13086867202737e22d9029ae3bc"
+      },
+      "ChallengeSignals.lua": {
+        "source": "src/runtime/release_202/compatibility/ChallengeSignals.lua",
+        "sha256": "5fd5ee997ee37171dad7a69a6c1fa75c814e4f4aeb92944204b2ed3916902508"
+      },
+      "ChallengeTarget.lua": {
+        "source": "src/runtime/release_202/compatibility/ChallengeTarget.lua",
+        "sha256": "46a091a734eacae324efac9d62d0f2214c25105c8c111f076e1b18dfd8095058"
+      },
+      "ChallengeVictory.lua": {
+        "source": "src/runtime/Scripts/ChallengeVictory.lua",
+        "sha256": "c644c3d88151e4a412d9056912aefc44577237daa5d97f6315203ed90a501dee"
+      },
+      "ChiLianArena.lua": {
+        "source": "src/runtime/Scripts/ChiLianArena.lua",
+        "sha256": "a622ed4209d67fb07ff2127bf1a8850379f26fdf9bbbea46b04d422968cc9a0c"
+      },
+      "ClosedArena.lua": {
+        "source": "src/runtime/release_202/checkpoint/ClosedArena.lua",
+        "sha256": "586bb54be91981000188c5c8074d6ecf9aa1b0627fe55eab1bdc58b638521a24"
+      },
+      "CombatSpawn.lua": {
+        "source": "src/runtime/Scripts/CombatSpawn.lua",
+        "sha256": "63c5e6214534226ea71238a93bd04e13ff392da3359d1d452033425a404bac58"
+      },
+      "CustomChallenges.lua": {
+        "source": "src/runtime/Scripts/CustomChallenges.lua",
+        "sha256": "b582c4781a36406590be09cdfafcab1147f6a2aa81cc5a875b355b3cf19f68ed"
+      },
+      "DayArena.lua": {
+        "source": "src/runtime/Scripts/DayArena.lua",
+        "sha256": "7b9aac611cd786a6ec0c5a0e005caf4a74fff20ff484f99b3a72f2d369f52cb3"
+      },
+      "DreamPalaceBalance.lua": {
+        "source": "src/dream_palace/DreamPalaceBalance.lua",
+        "sha256": "9b4a05ac84ec27fb0ae6bcc83bf0077018b96f9deaf60d856d8fa17d2808cfe1"
+      },
+      "DreamPalaceFengXuePursuit.lua": {
+        "source": "src/runtime/checkpoint/Scripts/DreamPalaceFengXuePursuit.lua",
+        "sha256": "1a160c9a0c7bf8291e3d290da405928074bfcf05a3cddb029ae537e35e6b6447"
+      },
+      "DreamPalaceMobPressure.lua": {
+        "source": "src/runtime/checkpoint/Scripts/DreamPalaceMobPressure.lua",
+        "sha256": "99bae3e6e2ce7315f8ab396d8755db2eb089b4f0b7a02f3b16c97d295135b537"
+      },
+      "DreamPalaceMobPressureRules.lua": {
+        "source": "src/runtime/checkpoint/Scripts/DreamPalaceMobPressureRules.lua",
+        "sha256": "057f030a296dbb2ed5ca20eddfd2a257e01b0ba3959c30ce618df3bfd74d27d2"
+      },
+      "DreamPalacePlayerControl.lua": {
+        "source": "src/runtime/checkpoint/Scripts/DreamPalacePlayerControl.lua",
+        "sha256": "e997c8c132315af7f591c4815d90402aca55bac77e2ac6407c8028ee4e85b8f0"
+      },
+      "DreamPalacePressurePolicy.lua": {
+        "source": "src/dream_palace/DreamPalacePressurePolicy.lua",
+        "sha256": "b5e21cdc9342de47818ac374fdbb2d0757cb4aa00b33cc278946c4c5d94fb841"
+      },
+      "DreamPalaceProfile.lua": {
+        "source": "src/runtime/release_202/compatibility/DreamPalaceProfile.lua",
+        "sha256": "cf0a90892bebacab6eab4aebc1c2606876690c2c9e8093cfd32a509d8ae55203"
+      },
+      "DreamPalaceUI.lua": {
+        "source": "src/runtime/release_202/compatibility/DreamPalaceUI.lua",
+        "sha256": "20d24d30ba8571fd36e014b82edb2d7547f39a5d8167caa0bfab7321c7c923cb"
+      },
+      "EncounterCatalog.lua": {
+        "source": "src/runtime/Scripts/EncounterCatalog.lua",
+        "sha256": "6137abb85300276ed6ef6724b28abaab4ee205cc3bcc28926bccc1d59c8450e9"
+      },
+      "EncounterEngage.lua": {
+        "source": "src/runtime/release_202/compatibility/EncounterEngage.lua",
+        "sha256": "bc89a916192303db8d9f8520705a4fc583ece323a32bbb0f482242e78d681d04"
+      },
+      "EncounterPlayerState.lua": {
+        "source": "src/runtime/release_202/checkpoint/EncounterPlayerState.lua",
+        "sha256": "4e5b6d1c40b4b13fb5fee076c25a049049dc41bd1bf64ed26979ed7f58e0f8c0"
+      },
+      "EnemyHealthGuard.lua": {
+        "source": "src/runtime/Scripts/EnemyHealthGuard.lua",
+        "sha256": "6a370565201bf62110ae64d1783d177277f329c3479d0271cdbf79f6e07f1293"
+      },
+      "GameplayDifficulty.lua": {
+        "source": "src/runtime/release_202/compatibility/GameplayDifficulty.lua",
+        "sha256": "92242260471ce565f2b6887e967e4ca33462e1bf140a0c1b25af113cc38b53a1"
+      },
+      "GeneratedArenaScenes.lua": {
+        "source": "src/runtime/Scripts/GeneratedArenaScenes.lua",
+        "sha256": "ee5caf8503936bbbe28f0b97b80206e683f2155f26d747a4db546924557f8601"
+      },
+      "GeneratedEncounterCatalog.lua": {
+        "source": "src/runtime/Scripts/GeneratedEncounterCatalog.lua",
+        "sha256": "235ad0153a4cd587e70c64c6c231f8a22c7eddb819120f269182da11cc1e1d63"
+      },
+      "Health.lua": {
+        "source": "src/runtime/Scripts/Health.lua",
+        "sha256": "f6776f7b4c559876e114ed3f625885ace901bb2be1e0206f1f1ebac5215bbe20"
+      },
+      "HistoryReport.lua": {
+        "source": "src/runtime/Scripts/HistoryReport.lua",
+        "sha256": "bea442e6d3c22e1088b6b41ee21b575b5de8662e8035d0483d3b460a70a7dfc7"
+      },
+      "InstalledPathIdentity.lua": {
+        "source": "src/runtime/Scripts/InstalledPathIdentity.lua",
+        "sha256": "b2dc3d966ba8ee82d8d615e07b591cf04faf1f9940a43bca439e1ebcce95fdcb"
+      },
+      "Integration.lua": {
+        "source": "src/runtime/checkpoint/Scripts/Integration.lua",
+        "sha256": "87f52969d54f30440b2c714b7caab35db9072384ac5b375082e095c1268f146d"
+      },
+      "JingYeMount.lua": {
+        "source": "src/runtime/Scripts/JingYeMount.lua",
+        "sha256": "184e45b4f9652c5d221c161394c890ba34e95c908265263c2f289fbcabf95422"
+      },
+      "LakeUpperArena.lua": {
+        "source": "src/runtime/Scripts/LakeUpperArena.lua",
+        "sha256": "349ec5aa1accbd8b558782db02835150938b6a916a67bb740bbf19cd0e38e90c"
+      },
+      "LakeUpperLayout.lua": {
+        "source": "src/runtime/Scripts/LakeUpperLayout.lua",
+        "sha256": "3442bfda1b237fd8e28f36d146c538a28d46c30ddedb9ec9489582649bb3296a"
+      },
+      "LengTuArena.lua": {
+        "source": "src/runtime/Scripts/LengTuArena.lua",
+        "sha256": "a57a50805ae8d673cfa904a2072c219a658f784230ba14a9f21e5a95175f1d99"
+      },
+      "LengTuSummons.lua": {
+        "source": "src/runtime/Scripts/LengTuSummons.lua",
+        "sha256": "52e08bea3ce0035bc196c27041834037b52621953aff20e36f4d9f9e0986ce36"
+      },
+      "LionArena.lua": {
+        "source": "src/runtime/Scripts/LionArena.lua",
+        "sha256": "da3038a97199af6d7d96c4fd3d409264d07be3cd4371bf4c4c7e07bbec2d8cb2"
+      },
+      "main.lua": {
+        "source": "src/runtime/release_202/compatibility/main.lua",
+        "sha256": "8bef5ca99a3b09425857e1c0684809c5a04d3fef10ed6b5a68378de8b7444894"
+      },
+      "MeiGuHuArena.lua": {
+        "source": "src/runtime/Scripts/MeiGuHuArena.lua",
+        "sha256": "20fc81a1d42bc1f38964a70700c92b8434cbfa81aba0b5411f4f58b0b5dc26dc"
+      },
+      "MeiGuHuStandaloneLayout.lua": {
+        "source": "src/runtime/Scripts/MeiGuHuStandaloneLayout.lua",
+        "sha256": "3c61d4539efee2291660cb2070910b901ddd96b401262177ece142543e49ffd6"
+      },
+      "NativeScreen.lua": {
+        "source": "src/runtime/release_202/compatibility/NativeScreen.lua",
+        "sha256": "1587bfb287837535d94e4df96ce108039c97e58fb9ee1f5a6cedcd2269dfb35d"
+      },
+      "NativeSelection.lua": {
+        "source": "src/runtime/release_202/compatibility/NativeSelection.lua",
+        "sha256": "540bec409316b67f27ab5c9598909b65ff2fbb28b3088be69a89f9777a166566"
+      },
+      "NativeUiAssetsData.lua": {
+        "source": "src/runtime/Scripts/NativeUiAssetsData.lua",
+        "sha256": "1874e5bf5760f63139a264dd1320372914fe03e7869b4f7429831b264037101b"
+      },
+      "Panel.lua": {
+        "source": "src/runtime/Scripts/Panel.lua",
+        "sha256": "e9141abf742b1bd5e1b749b8be41e8bfcba961de5035895476c60c003268f95f"
+      },
+      "ParameterFeedback.lua": {
+        "source": "src/runtime/release_202/compatibility/ParameterFeedback.lua",
+        "sha256": "d99b44a2a99265e088edb4ee95ab57c3c2735b828d42a0131512164e26f191bb"
+      },
+      "ParameterForm.lua": {
+        "source": "src/runtime/release_202/compatibility/ParameterForm.lua",
+        "sha256": "17cbe0fd509bc716fa9cb901f5d3a188e7145a1c83a6c5abc04ecf7703b66c8e"
+      },
+      "ParameterStyle.lua": {
+        "source": "src/runtime/release_202/compatibility/ParameterStyle.lua",
+        "sha256": "8f1d36c2441e3c08e0f8a7fa92fad619388f54098bb6fd9ad85b9107b59bffae"
+      },
+      "PendingEntry.lua": {
+        "source": "src/runtime/Scripts/PendingEntry.lua",
+        "sha256": "f368c01a30e99cd0edacbc805971d45dc22b1ce0f0f341a54b7473ded9e59ee3"
+      },
+      "PlayerDamageGuard.lua": {
+        "source": "src/runtime/Scripts/PlayerDamageGuard.lua",
+        "sha256": "388077aeec5b63a8db7190168314edff3444b3035cb7a9388536ab61f6c35da5"
+      },
+      "PlayerProfile.lua": {
+        "source": "src/runtime/Scripts/PlayerProfile.lua",
+        "sha256": "4a4bf5881088634075d57cc0539d6866b9495e1864c7badb05c83a13be9d02eb"
+      },
+      "PortraitLayout.lua": {
+        "source": "src/runtime/Scripts/PortraitLayout.lua",
+        "sha256": "5d9319d80e3b93ec2f3ea0d254aadd1af04ab63e170bda40202cad48131b22a7"
+      },
+      "PracticeBossInfo.lua": {
+        "source": "src/runtime/release_202/compatibility/PracticeBossInfo.lua",
+        "sha256": "076f10def9e1df6f4939d25dee2afa38037cd8e281d9b515e892104e8e313f7b"
+      },
+      "PracticeHud.lua": {
+        "source": "src/runtime/Scripts/PracticeHud.lua",
+        "sha256": "547fecbcf5cd936843f4d0f916f7aeacf1474fe00d21594744cebed63e0238e7"
+      },
+      "PracticeMode.lua": {
+        "source": "src/runtime/release_202/checkpoint/PracticeMode.lua",
+        "sha256": "95112d71a5567bab903011244119331b7e20b6f221ac00229b3f68e3c0607e82"
+      },
+      "PreloadReferences.lua": {
+        "source": "src/runtime/checkpoint/Scripts/PreloadReferences.lua",
+        "sha256": "abaa36906d5328c60cf003e24ffc8e2a923ccade859af00337d3842e2a21d655"
+      },
+      "RetryPreload.lua": {
+        "source": "src/runtime/checkpoint/Scripts/RetryPreload.lua",
+        "sha256": "69e0c88c0ddd98db15d805c3902f2cdc5226d6d8145cd3545a927e4fff6751ec"
+      },
+      "SaveBarrier.lua": {
+        "source": "src/runtime/Scripts/SaveBarrier.lua",
+        "sha256": "0a3a55309b134185c6e769c6ef5a7e8b7f80f29b4e36e65209fb2cc4064224d2"
+      },
+      "SceneArena.lua": {
+        "source": "src/runtime/Scripts/SceneArena.lua",
+        "sha256": "e35ed028ff0609b5feeaeb1bd01c7a8b54dd77cd621d3cc2e249c5213d22f6b5"
+      },
+      "SpawnClass.lua": {
+        "source": "src/runtime/Scripts/SpawnClass.lua",
+        "sha256": "0874a2aa4aec29f2abb7b4ed6ae85e7a230c2348191c89afbdd9a11f78f11d3f"
+      },
+      "StageFade.lua": {
+        "source": "src/runtime/release_202/compatibility/StageFade.lua",
+        "sha256": "39dd381c2cf4757a471542394e10bacf1e5ceb5522be5203abe0c6f5859f3a90"
+      },
+      "StageScreen.lua": {
+        "source": "src/runtime/release_202/compatibility/StageScreen.lua",
+        "sha256": "4c77a8c72d7fa2e37d333a56435b1f9be39a9e72ec34c22758400ef226fe6028"
+      },
+      "StampPress.lua": {
+        "source": "src/runtime/Scripts/StampPress.lua",
+        "sha256": "a83c0433a11558fc0bf4c86fb1dfd08838238ceb920232ecffaa9db9b0559407"
+      },
+      "StatusBuildup.lua": {
+        "source": "src/runtime/Scripts/StatusBuildup.lua",
+        "sha256": "066b6b016c3e3caa9cda9e00462966cc296fc54d531da2ba2159ce11896e310d"
+      },
+      "StatusBuildupHud.lua": {
+        "source": "src/runtime/Scripts/StatusBuildupHud.lua",
+        "sha256": "5b3161c9228cc71f6a360f7c3cf62f9d38cc552a9a54d784fad9af174bbbd921"
+      },
+      "StatusEffectClock.lua": {
+        "source": "src/runtime/Scripts/StatusEffectClock.lua",
+        "sha256": "54fd70506f2910aff980848a0134d909eef4a8c6473f8da5571dcc474dc75a12"
+      },
+      "TitleHome.lua": {
+        "source": "src/runtime/release_202/compatibility/TitleHome.lua",
+        "sha256": "01cf588f6e6d61f6096cb1ca78eceecd02af0ba861dc20651f1929c0ba2d0fcf"
+      },
+      "TitleProbe.lua": {
+        "source": "src/runtime/release_202/compatibility/TitleProbe.lua",
+        "sha256": "7eac28f8f43671002969c515d638ba4087487bf993cd74f783a111c6da98f818"
+      },
+      "TitleSession.lua": {
+        "source": "src/runtime/release_202/compatibility/TitleSession.lua",
+        "sha256": "5e47d7ff86f440c7133be31fad40645aeacc54252820384a09a344a8ec4b9bc4"
+      },
+      "TrainingHud.lua": {
+        "source": "src/runtime/release_202/compatibility/TrainingHud.lua",
+        "sha256": "e6715e500912289da83f7526dd318168a8fb3f4cd33320f46aff480d3d79734e"
+      },
+      "TrainingMobCatalog.lua": {
+        "source": "src/runtime/Scripts/TrainingMobCatalog.lua",
+        "sha256": "62909a24025954c9300493e6b17dfde67ed00f0c322b7bf140f0768a7f728b76"
+      },
+      "XiguArena.lua": {
+        "source": "src/runtime/release_202/compatibility/XiguArena.lua",
+        "sha256": "0ec54345ca7171599ac374e91578d9657b5f6c36d045cdccfb690de0ea7a2266"
+      },
+      "XiguStreaming.lua": {
+        "source": "src/runtime/release_202/checkpoint/XiguStreaming.lua",
+        "sha256": "83c3348f4dc067a23bce00be76a640cedf527c98b27baf78d9cfee9f5fe77e6d"
+      }
+    }
+  }
+}

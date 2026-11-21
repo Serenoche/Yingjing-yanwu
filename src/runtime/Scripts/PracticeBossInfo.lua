@@ -15,13 +15,17 @@ local function valid(value)
 end
 local function same(a,b) return valid(a) and valid(b) and a:GetAddress() == b:GetAddress() end
 local function unwrap(value)
-    for _=1,4 do
-        if value == nil then return value end
-        local get = property(value,"get")
-        if type(get) ~= "function" then
-            if type(property(value,"IsValid")) == "function" and type(property(value,"GetAddress")) == "function" then return value end
-            get = property(value,"Get")
+    for _ = 1, 4 do
+        if value == nil then return nil end
+        -- UObject validity is a native Lua method. Probing an absent get
+        -- on a retired UObject would enter the loader's reflection walker.
+        local test = property(value, "IsValid")
+        if type(test) == "function" then
+            if not test(value) then return nil end
+            if type(property(value, "GetAddress")) == "function" then return value end
         end
+        local get = property(value, "get")
+        if type(get) ~= "function" then get = property(value, "Get") end
         if type(get) ~= "function" then return value end
         local nextValue = get(value)
         assert(nextValue ~= value, "practice boss info wrapper cycle")
@@ -30,23 +34,11 @@ local function unwrap(value)
     error("practice boss info wrapper depth")
 end
 local function actorKey(value)
-    for _=1,4 do
-        if value == nil then return nil end -- expired weak actor
-        local get = property(value,"get")
-        if type(get) ~= "function" then
-            local test = property(value,"IsValid")
-            if type(test) == "function" and not test(value) then return nil end
-            -- AActor helpers are Lua functions. Reflected methods such as
-            -- IsActorBeingDestroyed are callable UFunction userdata instead.
-            if type(property(value,"GetAddress")) == "function" and type(property(value,"GetWorld")) == "function" then return value end
-            get = property(value,"Get")
-        end
-        assert(type(get) == "function", "practice boss info weak actor is unreadable")
-        local nextValue = get(value)
-        assert(nextValue ~= value, "practice boss info weak actor cycle")
-        value = nextValue
-    end
-    error("practice boss info weak actor depth")
+    local actor = unwrap(value)
+    if actor == nil then return nil end
+    assert(valid(actor) and type(property(actor, "GetWorld")) == "function",
+        "practice boss info weak actor is unreadable")
+    return actor
 end
 local function worldOf(actor)
     return valid(actor) and unwrap(actor:GetWorld()) or nil

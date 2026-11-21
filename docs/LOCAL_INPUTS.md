@@ -11,6 +11,12 @@ produce a complete usable binary distribution without the separately supplied
 local inputs below. Missing inputs cause a clear error; the tools do not download
 them, invent placeholder data, or extract them from a running game.
 
+The four-arena build uses the installed game's Wwise events for Dream Palace
+results, including the final flute phrase and the full weapon-finale score.
+The private playtest recording is neither an input nor an output of public
+builds. For additions to a release, use installed game assets or original art.
+See [the release asset policy](SOURCE_SCOPE.md#发行素材).
+
 ## Requirements
 
 - Windows x64, Python 3.10 or newer, MSVC with the Windows SDK, and the .NET
@@ -31,7 +37,7 @@ them, invent placeholder data, or extract them from a running game.
   installer has a separate reuse path that preserves other MOD files and
   loader settings; compatibility is limited to the combinations actually tested.
 - A complete reviewed stable runtime directory containing `Scripts/` with the
-  exact 63-module Lua allowlist and a blank `enabled.txt`. Version 1.1.0 uses
+  current 72-module Lua allowlist and a blank `enabled.txt`. Version 1.1.0 uses
   the confirmed three-mode `TitleHome.lua` and the confirmed Jingye registration
   repair, without experimental entry points or camera sampling. Development
   source may retain experimental branches: selecting a source version alone
@@ -82,12 +88,39 @@ local-inputs/
   UIAssets/
     Manifest.json
     ...the thirteen actual PNG/JPG files...
+  MeiGuHuArena/
+    zzz_PBZMeiGuHuArenaTestR62_P.pak
+    zzz_PBZMeiGuHuArenaTestR62_P.utoc
+    zzz_PBZMeiGuHuArenaTestR62_P.ucas
+  LakeUpperArena/
+    zzz_PBZLakeUpperArenaTestR8_P.pak
+    zzz_PBZLakeUpperArenaTestR8_P.utoc
+    zzz_PBZLakeUpperArenaTestR8_P.ucas
 ```
 
 Keep the game executable in its own installation; do not copy it into the
 repository. Never commit local inputs, generated binaries, personal saves or
 the assembled distribution. The `local-inputs/`, `build/` and `dist/`
 directories are ignored for this reason.
+
+## Local MeiGuHu map input
+
+The standalone 梅谷乐坊 arena uses the tested R6.2 container. The runtime
+offers it in Practice and Challenge when all three files above are installed
+in `ProjectPBZ/Content/Paks/~mods` before launch. Install them together on the
+compatible game build and remove them together when reverting the map. A clean
+source build leaves the option hidden when the files are absent. The release
+assembler does not redistribute these game-derived files. 三面封印地 and the
+battle music selector use assets already installed with the game.
+
+## Local Lake Upper map input
+
+Practice and Challenge share the standalone Lake R8. Place the three R8 map
+files together in `ProjectPBZ/Content/Paks/~mods` on the compatible game build.
+They are local game-derived inputs, just like the MeiGuHu files above. With an
+incomplete set, the Lake option is hidden in Practice and Challenge and a saved
+Lake selection opens on the night arena. The separate Training mode keeps the
+stock Lake route. All three modes reuse the existing Lake preset slots.
 
 ## Build and assemble
 
@@ -123,7 +156,7 @@ built with its separate `--legacy-presets` input; that old bundle is not shipped
 
 Assembly validates the component manifests and actual x64 PE files. It checks
 the three generated Lua modules against the current `config/` inputs, selects
-the explicit runtime allowlist, and creates the installer's required 89-file
+the explicit runtime allowlist, and creates the installer's 98-file
 `NativeEnemyRuntime/Payload` plus `PayloadHashes.json`. It writes a complete
 `IntegratedMenu/Tools/Build.json` compatible with the installer while retaining
 the compiled reference-game and presets fingerprints. `BuildProvenance.json`
@@ -154,7 +187,7 @@ dist/yingjing-yanwu-1.1.0-local/
     Tools/Build.json
     Tools/JSON-LICENSE.MIT
   NativeEnemyRuntime/
-    Payload/...89 verified files...
+    Payload/...96 verified files...
     PayloadHashes.json
   BuildProvenance.json
   PackageManifest.json

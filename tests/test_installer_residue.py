@@ -22,6 +22,7 @@ $ErrorActionPreference='Stop'
 $tokens=$null;$errors=$null
 $ast=[Management.Automation.Language.Parser]::ParseFile($Source,[ref]$tokens,[ref]$errors)
 if($errors.Count){throw 'Source did not parse'}
+. (Join-Path (Split-Path -Parent $Source) 'PBZInstallHealth.ps1')
 # Load only the two preflight functions, not the installer entry point.
 foreach($name in @('Assert-OrdinaryPath','Assert-OwnedRuntime')) {
     $definition=$ast.Find({param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name},$true)

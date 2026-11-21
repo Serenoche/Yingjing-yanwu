@@ -57,13 +57,17 @@ class SourceAndInputChecks(unittest.TestCase):
         cls.build.mkdir(exist_ok=True)
 
     def test_payload_contract(self):
-        self.assertEqual(release.EXPECTED_RUNTIME_COUNT, 63)
+        self.assertEqual(release.EXPECTED_RUNTIME_COUNT, 80)
         self.assertEqual(len(release.RUNTIME_FILES), release.EXPECTED_RUNTIME_COUNT)
         self.assertEqual(len(set(release.RUNTIME_FILES)), release.EXPECTED_RUNTIME_COUNT)
         self.assertTrue({"LionArena.lua", "EnemyHealthGuard.lua", "StampPress.lua",
                          "JingYeMount.lua", "ChiLianArena.lua", "PlayerDamageGuard.lua", "CustomChallenges.lua", "KryptonDemo.lua", "PendingEntry.lua",
-                         "StatusBuildup.lua", "StatusBuildupHud.lua", "StatusEffectClock.lua", "PracticeBossInfo.lua", "ChallengeMedicine.lua"}.issubset(release.RUNTIME_FILES))
-        self.assertEqual(set(release.RUNTIME_FILES),
+                         "StatusBuildup.lua", "StatusBuildupHud.lua", "StatusEffectClock.lua", "PracticeBossInfo.lua",
+                         "ChallengeMedicine.lua", "XiguArena.lua", "XiguStreaming.lua", "MeiGuHuArena.lua",
+                         "MeiGuHuStandaloneLayout.lua", "LakeUpperArena.lua", "LakeUpperLayout.lua",
+                         "ArenaSummonAccess.lua", "BattleMusic.lua", "BattleMusicData.lua",
+                         "ShuangYueCharge.lua", "FirstEntryPrompts.lua"}.issubset(release.RUNTIME_FILES))
+        self.assertEqual(set(release.RUNTIME_FILES) | set(release.PRESSURE_RUNTIME_FILES),
                          {p.name for p in (release.ROOT / "src/runtime/Scripts").glob("*.lua")})
         self.assertNotIn("ChallengeUI.lua", release.RUNTIME_FILES)
         self.assertIn("ue4ss/Mods/shared/UEHelpers/UEHelpers.lua", release.LOADER_FILES)
@@ -188,7 +192,7 @@ class RuntimeSelectionChecks(unittest.TestCase):
         with patch.object(release, "generated_data", return_value=self.generated) as generated:
             scripts, enabled, _ = release.load_runtime(selected)
         generated.assert_called_once_with(selected / "Scripts")
-        self.assertEqual(len(scripts), 63)
+        self.assertEqual(len(scripts), release.EXPECTED_RUNTIME_COUNT)
         self.assertEqual(enabled, b"\r\n")
         for name in release.RUNTIME_FILES:
             self.assertEqual(scripts[name], (selected / "Scripts" / name).read_bytes())
@@ -214,6 +218,17 @@ class RuntimeSelectionChecks(unittest.TestCase):
         (selected / "Scripts/main.lua").unlink()
         with self.assertRaisesRegex(ValueError, "missing: main.lua"):
             release.load_runtime(selected)
+
+    def test_custom_pressure_runtime_requires_both_modules(self):
+        selected = self.runtime("selected")
+        first, second = (selected / "Scripts" / name for name in release.PRESSURE_RUNTIME_FILES)
+        first.write_bytes(b"-- pressure backend\n")
+        with self.assertRaisesRegex(ValueError, f"missing: {second.name}"):
+            release.load_runtime(selected)
+        second.write_bytes(b"-- pressure controls\n")
+        with patch.object(release, "generated_data", return_value=self.generated):
+            scripts, _, _ = release.load_runtime(selected)
+        self.assertEqual(scripts[second.name], second.read_bytes())
 
     def test_extra_module_including_uppercase_extension_is_rejected(self):
         selected = self.runtime("selected")

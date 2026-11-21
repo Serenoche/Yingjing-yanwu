@@ -13,11 +13,13 @@ from pathlib import Path
 import re
 
 from arena_scenes import arena_scenes_lua
-from encounter_catalog import DEFAULT_BOSSES, encounter_catalog_lua
+from encounter_catalog import DEFAULT_BOSSES, _lua, encounter_catalog_lua
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT = ROOT / "src/runtime/Scripts"
 BOSS_FIELDS = {"id", "name", "classPath", "capsuleRadius", "capsuleHalfHeight", "trainingNote"}
+TRAINING_MOBS = ROOT / "config/TrainingMobCatalog.json"
+TRAINING_MOB_FIELDS = {"id", "name", "classPath", "rank", "role", "family"}
 
 
 def boss_catalog_lua() -> bytes:
@@ -58,10 +60,43 @@ def boss_catalog_lua() -> bytes:
     return ("\n".join(lines) + "\n").encode("utf-8")
 
 
+def training_mob_catalog_lua() -> bytes:
+    data = json.loads(TRAINING_MOBS.read_text(encoding="utf-8-sig"))
+    rows = data["mobs"]
+    if set(data) != {"schemaVersion", "mobs"} or data["schemaVersion"] != 1 or not rows:
+        raise ValueError("Invalid training mob catalog")
+    ids, classes = set(), set()
+    roles = {"近战", "远程", "前排", "长柄", "重型", "兽类", "投掷", "飞行", "召唤", "控场", "机制型", "异常"}
+    for entry in rows:
+        if set(entry) != TRAINING_MOB_FIELDS or any(
+            not isinstance(value, str) or not value or any(ord(char) < 32 for char in value)
+            for value in entry.values()
+        ):
+            raise ValueError("Training mobs require only native class references and short filter labels")
+        identity, path, rank = entry["id"], entry["classPath"], entry["rank"]
+        if rank not in {"ordinary", "elite"} or entry["family"] == "具名精英":
+            raise ValueError("Only ordinary mobs and unnamed elites may be test-field targets")
+        prefix = "M" if rank == "ordinary" else "E"
+        if not re.fullmatch(prefix + r"[0-9]{3}", identity) or identity in ids:
+            raise ValueError("Duplicate or invalid training mob identifier: " + identity)
+        if not re.fullmatch(r"/[A-Za-z0-9_./-]+_C", path) or path.casefold() in classes:
+            raise ValueError("Duplicate or invalid training mob class: " + identity)
+        if entry["role"] not in roles:
+            raise ValueError("Unknown training mob role: " + identity)
+        ids.add(identity)
+        classes.add(path.casefold())
+    lines = ["-- Generated from config/TrainingMobCatalog.json; do not edit.", "return {"]
+    for entry in rows:
+        row = {key: entry[key] for key in ("id", "name", "classPath", "rank", "role", "family")}
+        lines.append("    " + _lua(row) + ",")
+    return ("\n".join([*lines, "}"]) + "\n").encode("utf-8")
+
+
 def generated_files() -> dict[str, bytes]:
     return {"BossCatalog.lua": boss_catalog_lua(),
             "GeneratedEncounterCatalog.lua": encounter_catalog_lua(),
-            "GeneratedArenaScenes.lua": arena_scenes_lua()}
+            "GeneratedArenaScenes.lua": arena_scenes_lua(),
+            "TrainingMobCatalog.lua": training_mob_catalog_lua()}
 
 
 def main() -> None:
