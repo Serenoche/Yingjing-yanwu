@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "version": "2.0.2",
+  "version": "2.0.3",
   "profile": "windows-x64-release-source",
   "runtimeManifest": "src/runtime/release_202/Manifest.json",
   "runtimeModules": {
@@ -14,6 +14,6 @@
     "pathIdentity": "src/save_barrier/PathIdentity.cpp"
   },
   "installerSources": "src/installer",
-  "installationGuide": "docs/INSTALL_2.0.2.md",
+  "installationGuide": "docs/INSTALL_2.0.3.md",
   "gameResourcesAndNativeBinariesIncluded": false
 }

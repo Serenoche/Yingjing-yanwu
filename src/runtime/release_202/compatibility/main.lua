@@ -331,7 +331,7 @@ local function prepareSession(system)
     end
     if installedConfig then
         ArenaScenes.useLegacyMaps(installedConfig.legacyMaps)
-        log("版本 2.0.2 兼容地图流程；平台=" .. (installedConfig.platform or "steam")
+        log("版本 2.0.3 兼容地图流程；平台=" .. (installedConfig.platform or "steam")
             .. "; 资源=" .. (installedConfig.legacyMaps and "legacy" or "standalone"))
         local palacePath, palaceLoadoutPath = require("BloodyPalaceProgress").paths(profile, loadoutMemoryPath)
         local options = {

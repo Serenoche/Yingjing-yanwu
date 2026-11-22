@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": "2.0.2",
+  "version": "2.0.3",
   "scope": "source-and-build-documentation-only",
   "selfExcluded": "SourceManifest.json",
   "files": {
@@ -29,11 +29,11 @@
       "bytes": 1084
     },
     "README.md": {
-      "sha256": "3fc49fd15b071d6578bf8288f308deefd401f82d242e56c09b5a26d7f5804677",
-      "bytes": 5356
+      "sha256": "bfa268d263b38f8a3acb624a4cfea2131bfb82a5ebb3d6d650942a5a5954527a",
+      "bytes": 5658
     },
     "RELEASE_PROFILE.json": {
-      "sha256": "2329553ff064597a30d6874bb2f2303ac3d16589155a2c061c61797357dfa0ed",
+      "sha256": "dfc1b56080b091a1af87609ec22cca3050ff890b3326b8adc5e59ad4c2085e53",
       "bytes": 547
     },
     "THIRD_PARTY_NOTICES.md": {
@@ -65,12 +65,16 @@
       "bytes": 24253
     },
     "docs/BUILD.md": {
-      "sha256": "5a46656db85759fcd665a0579098971d85016dbbea010f200637159afa9d2e2e",
-      "bytes": 10683
+      "sha256": "66730770b5712152a73938a660a464f38595502b44e91aa8edd76457a0ecc3f4",
+      "bytes": 10664
     },
     "docs/INSTALL_2.0.2.md": {
       "sha256": "daa424911cac24cccd3adf0cee31e1f48c1cdb8324c20dcb6329940472dccf76",
       "bytes": 2148
+    },
+    "docs/INSTALL_2.0.3.md": {
+      "sha256": "c4e7fc199cb0422200a781e0c3bfcdff002826d6c3ebe418b82b54906c92dacc",
+      "bytes": 2210
     },
     "docs/LOCAL_INPUTS.md": {
       "sha256": "e864c291d9bb6a9ef96394659c281abd3f776becefb9f2c706487d45b00fa8c3",
@@ -83,6 +87,10 @@
     "docs/RELEASE_NOTES_2.0.2.md": {
       "sha256": "a353f0a7c66bba466dac6bebe25f751cdd1f3d517da77b15895eb05abff01337",
       "bytes": 1312
+    },
+    "docs/RELEASE_NOTES_2.0.3.md": {
+      "sha256": "b90e95a4a907f035f84fa3ba5b563153731cc446e457ec21f782bd4101b63693",
+      "bytes": 376
     },
     "docs/RELEASE_README.md": {
       "sha256": "d1274c519d37ebdf8832247a0582f8970d64cf84a32adfb54f2c3aa3c1a63c8f",
@@ -97,8 +105,8 @@
       "bytes": 3617
     },
     "src/dream_palace/DreamPalaceBalance.lua": {
-      "sha256": "9b4a05ac84ec27fb0ae6bcc83bf0077018b96f9deaf60d856d8fa17d2808cfe1",
-      "bytes": 8302
+      "sha256": "c2c5fa3c7aeb9bb7588cc2a33356dbebefdc85043efac9524a3b8a3670d609a5",
+      "bytes": 8329
     },
     "src/dream_palace/DreamPalacePressurePolicy.lua": {
       "sha256": "b5e21cdc9342de47818ac374fdbb2d0757cb4aa00b33cc278946c4c5d94fb841",
@@ -261,8 +269,8 @@
       "bytes": 14698
     },
     "src/runtime/Scripts/CombatSpawn.lua": {
-      "sha256": "63c5e6214534226ea71238a93bd04e13ff392da3359d1d452033425a404bac58",
-      "bytes": 9445
+      "sha256": "14b4606f2de7b6ad5a304a90456dda53499e96848920b67f3d7776a173a0f0e5",
+      "bytes": 9727
     },
     "src/runtime/Scripts/CustomChallenges.lua": {
       "sha256": "b582c4781a36406590be09cdfafcab1147f6a2aa81cc5a875b355b3cf19f68ed",
@@ -749,7 +757,7 @@
       "bytes": 2305
     },
     "src/runtime/checkpoint/Scripts/main.lua": {
-      "sha256": "71cb28b1b0a38e69607e21dea91448d32bb2c1570800c1f116a2f83da1044e38",
+      "sha256": "29514da5c4f2ba09f02e5ab3d573ef4f15231da39d2c4f4f6a1ec5368e9d836b",
       "bytes": 82265
     },
     "src/runtime/enabled.txt": {
@@ -757,7 +765,7 @@
       "bytes": 1
     },
     "src/runtime/release_202/Manifest.json": {
-      "sha256": "6833e144e89a16ce64dcb0a0a0504d3023a61c35578ff6969fde5e0588243693",
+      "sha256": "0e7dd05f3aa930eb394adb60eb05c62ee2a843fe5e5f06cceec4f94c1d66438c",
       "bytes": 50329
     },
     "src/runtime/release_202/checkpoint/AbilityChallenge.lua": {
@@ -1073,7 +1081,7 @@
       "bytes": 30219
     },
     "src/runtime/release_202/compatibility/main.lua": {
-      "sha256": "8bef5ca99a3b09425857e1c0684809c5a04d3fef10ed6b5a68378de8b7444894",
+      "sha256": "954703316ed573672bf5235d713585783d8d2a7ff40a3a1a2baa71b7f6c01395",
       "bytes": 53552
     },
     "src/save_barrier/PathIdentity.cpp": {
@@ -1181,8 +1189,8 @@
       "bytes": 3972
     },
     "tests/test_dream_palace_balance.lua": {
-      "sha256": "8f05d89b459d655153cf22f9033e4c2ee066072cbe90dc9b5a91bb10e58fe92b",
-      "bytes": 9958
+      "sha256": "cdc30cc32e1633f8a908d566d82895ab24d4e22ab82e6253f2dc6472200a47e8",
+      "bytes": 12448
     },
     "tests/test_dream_palace_fengxue_pursuit.lua": {
       "sha256": "c4c2bbaedb14e8497598bcfb4dac5fbd7577e1ce859cfe87b85d83b4de150473",

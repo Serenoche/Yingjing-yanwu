@@ -181,7 +181,12 @@ local function applyStatCycles(actor, attributes, level, enemyCycle, cycles)
         scaleAttribute(actor, attributes, "Attack", data.Attack, level, attackLevel, setAttribute)
     end
     if shachiLevel ~= level then
-        scaleResource(actor, attributes, "Shachi", data.MaxShachi, level, shachiLevel, setAttribute)
+        local maxShachi = data.MaxShachi
+        -- Identify an absent Shachi pool from the native curve at the spawn level.
+        local zeroShachiMax = cycles.allowZeroShachiMax and valid(maxShachi) and maxShachi:GetValue(level) == 0
+        if not zeroShachiMax then
+            scaleResource(actor, attributes, "Shachi", maxShachi, level, shachiLevel, setAttribute)
+        end
         scaleAttribute(actor, attributes, "ShachiAttack", data.ShachiAttack, level, shachiLevel, setAttribute)
     end
 end

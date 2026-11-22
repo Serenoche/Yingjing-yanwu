@@ -181,7 +181,7 @@
       },
       "CombatSpawn.lua": {
         "source": "src/runtime/Scripts/CombatSpawn.lua",
-        "sha256": "63c5e6214534226ea71238a93bd04e13ff392da3359d1d452033425a404bac58"
+        "sha256": "14b4606f2de7b6ad5a304a90456dda53499e96848920b67f3d7776a173a0f0e5"
       },
       "CustomChallenges.lua": {
         "source": "src/runtime/Scripts/CustomChallenges.lua",
@@ -205,7 +205,7 @@
       },
       "DreamPalaceBalance.lua": {
         "source": "src/dream_palace/DreamPalaceBalance.lua",
-        "sha256": "9b4a05ac84ec27fb0ae6bcc83bf0077018b96f9deaf60d856d8fa17d2808cfe1"
+        "sha256": "c2c5fa3c7aeb9bb7588cc2a33356dbebefdc85043efac9524a3b8a3670d609a5"
       },
       "DreamPalaceCombatAwards.lua": {
         "source": "src/runtime/release_202/checkpoint/DreamPalaceCombatAwards.lua",
@@ -371,7 +371,7 @@
       },
       "main.lua": {
         "source": "src/runtime/checkpoint/Scripts/main.lua",
-        "sha256": "71cb28b1b0a38e69607e21dea91448d32bb2c1570800c1f116a2f83da1044e38"
+        "sha256": "29514da5c4f2ba09f02e5ab3d573ef4f15231da39d2c4f4f6a1ec5368e9d836b"
       },
       "MeiGuHuArena.lua": {
         "source": "src/runtime/release_202/checkpoint/MeiGuHuArena.lua",
@@ -755,7 +755,7 @@
       },
       "CombatSpawn.lua": {
         "source": "src/runtime/Scripts/CombatSpawn.lua",
-        "sha256": "63c5e6214534226ea71238a93bd04e13ff392da3359d1d452033425a404bac58"
+        "sha256": "14b4606f2de7b6ad5a304a90456dda53499e96848920b67f3d7776a173a0f0e5"
       },
       "CustomChallenges.lua": {
         "source": "src/runtime/Scripts/CustomChallenges.lua",
@@ -767,7 +767,7 @@
       },
       "DreamPalaceBalance.lua": {
         "source": "src/dream_palace/DreamPalaceBalance.lua",
-        "sha256": "9b4a05ac84ec27fb0ae6bcc83bf0077018b96f9deaf60d856d8fa17d2808cfe1"
+        "sha256": "c2c5fa3c7aeb9bb7588cc2a33356dbebefdc85043efac9524a3b8a3670d609a5"
       },
       "DreamPalaceFengXuePursuit.lua": {
         "source": "src/runtime/checkpoint/Scripts/DreamPalaceFengXuePursuit.lua",
@@ -867,7 +867,7 @@
       },
       "main.lua": {
         "source": "src/runtime/release_202/compatibility/main.lua",
-        "sha256": "8bef5ca99a3b09425857e1c0684809c5a04d3fef10ed6b5a68378de8b7444894"
+        "sha256": "954703316ed573672bf5235d713585783d8d2a7ff40a3a1a2baa71b7f6c01395"
       },
       "MeiGuHuArena.lua": {
         "source": "src/runtime/Scripts/MeiGuHuArena.lua",

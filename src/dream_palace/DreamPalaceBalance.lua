@@ -1,5 +1,5 @@
 local Balance = {}
-local EARLY_MOB_CYCLES = { health = 1, attack = 1, shachi = 1 }
+local EARLY_MOB_CYCLES = { health = 1, attack = 1, shachi = 1, allowZeroShachiMax = true }
 local PLAYER_SHACHI_CYCLE = { nightmare = 3, sunk = 4, deep = 5, entry = 5 }
 local TALENT_CURVE = "/PBZCombatAsset/Prototypes/GameplayEffects/Talent/CurveTable/CT_Talent_IncreaseAttack.CT_Talent_IncreaseAttack"
 local CURVE_LIBRARY = "/Script/Engine.Default__DataTableFunctionLibrary"

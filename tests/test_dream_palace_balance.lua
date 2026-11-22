@@ -67,6 +67,7 @@ local function enemy()
     local tags = {}
     return object({
         IsActorBeingDestroyed = function() return false end,
+        K2_DestroyActor = function(self) self.destroyed = true end,
         tags = tags,
         AbilitySystemComponent = object({ GetGameplayTagCount = function(_, tag) return tags[tag.TagName:ToString()] or 0 end }),
         AttributeSetBase = object({ Health_Max = attribute(200), Health = attribute(100), Attack = attribute(70),
@@ -93,6 +94,56 @@ near(a.Shachi.CurrentValue, 750)
 near(a.ShachiAttack.CurrentValue, 88)
 local late = Spawn.finish(gameplay, nil, enemy(), nil, 2, true, { health = 3, attack = 5 })
 assert(late.AttributeSetBase.Shachi_Max.CurrentValue == 1000 and late.AttributeSetBase.ShachiAttack.CurrentValue == 80)
+
+local zeroShachiCurve = object({ GetValue = function() return 0 end })
+local zeroShachiPlacements = {
+    { 2, "M026" }, { 7, "M027" }, { 13, "M029" }, { 34, "M028" }, { 34, "M030" }, { 46, "M026" },
+}
+for _, placement in ipairs(zeroShachiPlacements) do
+    local floor, id = table.unpack(placement)
+    local entry = Progress.floor(floor)
+    local member
+    for _, candidate in ipairs(entry.stages[1].members) do
+        if candidate.id == id then
+            member = candidate
+            break
+        end
+    end
+    assert(member and member.regularMob, id)
+
+    local health, attack, shachiAttack = 200, 70, 80
+    if member.statCycles then
+        health, attack, shachiAttack = 240, 98, 88
+    elseif entry.statCycles then
+        health, attack = 800 / 3, 150
+    end
+    for _, currentMaximum in ipairs({ 0, 1 }) do
+        local mob = enemy()
+        local attributes = mob.AttributeSetBase
+        attributes.Shachi_Max = attribute(0, currentMaximum)
+        attributes.Shachi = attribute(0, currentMaximum)
+        mob["Actor Config"]["Attribute Data"].MaxShachi = zeroShachiCurve
+        assert(Spawn.finish(gameplay, nil, mob, nil, member.enemyCycle, true, member.statCycles or entry.statCycles) == mob)
+        assert(not mob.destroyed and attributes.Level.CurrentValue == 1 + 25 * member.enemyCycle)
+        assert(attributes.Shachi_Max.BaseValue == 0 and attributes.Shachi_Max.CurrentValue == currentMaximum)
+        assert(attributes.Shachi.BaseValue == 0 and attributes.Shachi.CurrentValue == currentMaximum)
+        near(attributes.Health_Max.CurrentValue, health)
+        near(attributes.Health.CurrentValue, health / 2)
+        near(attributes.Attack.CurrentValue, attack)
+        near(attributes.ShachiAttack.CurrentValue, shachiAttack)
+    end
+end
+
+local emptyShachi = enemy()
+emptyShachi.AttributeSetBase.Shachi = attribute(0)
+assert(Spawn.finish(gameplay, nil, emptyShachi, nil, ordinary.enemyCycle, true, ordinary.statCycles) == emptyShachi)
+near(emptyShachi.AttributeSetBase.Shachi_Max.CurrentValue, 1500)
+near(emptyShachi.AttributeSetBase.Shachi.CurrentValue, 0)
+
+local invalidShachi = enemy()
+invalidShachi.AttributeSetBase.Shachi_Max = attribute(0)
+local ok, reason = pcall(Spawn.finish, gameplay, nil, invalidShachi, nil, ordinary.enemyCycle, true, ordinary.statCycles)
+assert(not ok and invalidShachi.destroyed and reason:find("浊梦敌人初始资源无效：Shachi", 1, true))
 
 for _, case in ipairs({ {"nightmare", 10, 3}, {"sunk", 15, 4}, {"deep", 20, 5}, {"entry", 20, 5} }) do
     local tier, old, target = table.unpack(case)
@@ -195,4 +246,4 @@ assert(palace.playerDied and not palace.checkpointFloor and not Progress.load(pa
 stop()
 assert(unregistered)
 assert(not Progress.watchDeath({ tier = { assist = true } }, player, error))
-print("PASS early mob curves, four ShachiAttack profiles, floor-scaled recovery and lethal-health checkpoint handling")
+print("PASS mob curves including all zero-Shachi placements, ShachiAttack profiles, recovery and lethal-health checkpoints")

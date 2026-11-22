@@ -129,6 +129,6 @@ Use `--runtime-dir` to select one complete reviewed runtime, including `Scripts/
 
 原版存点运行时在基础合成完成后读取 `src/runtime/checkpoint`，其中的清单固定了脚本基线。构建以 `config/ShengQuXinChi.json` 生成圣躯心池场景和第五个原版存点，重新编译与该存点清单配对的保存保护组件。两张菜单题字从 `local-inputs/CheckpointMenuTitles` 读取。图形安装器也会组装两个 PBZModLoader 桥接脚本，在已有前置环境时安装。
 
-2.0.2 源码快照的 [发行清单](../RELEASE_PROFILE.json)指向两套已组装运行时的 Lua 源文件及 SHA-256。优先引用已有源文件，构建后内容有差异的脚本收入 `src/runtime/release_202`。本地完整组装仍需要已经核验的安装基线、预设和素材。
+2.0.3 的 [发行清单](../RELEASE_PROFILE.json)记录两套已组装运行时的 Lua 源文件及 SHA-256。兼容流程继续使用 `src/runtime/release_202` 中的脚本。本次发行以经过核验的 2.0.2 安装包为基线，更新浊梦刷怪修复和版本标识。
 
 浊梦开门跳过由 `BloodyPalaceGateScene.lua` 和 `BloodyPalacePortal.lua` 随原版存点运行时组装。开门过场的右下角显示原生「跳过」按钮，按 Xbox A、鼠标左键或 PlayStation × 后即可走进传送门换层。
