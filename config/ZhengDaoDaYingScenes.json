@@ -1,0 +1,1069 @@
+{
+  "map": "PBZ_Zhengdaodaying_WP",
+  "originalPath": "/Game/Maps/B04_05/PBZ_Zhengdaodaying_WP",
+  "scenes": [
+    {
+      "additionalCombatFogs": [
+        "BP_FogDoor_C_UAID_E89C25A75120B37802_1893840998"
+      ],
+      "anchor": {
+        "X": 17939.475,
+        "Y": 75837.1,
+        "Z": 6504.7617
+      },
+      "arenaOnlyBell": true,
+      "bellGround": {
+        "X": 18038.828,
+        "Y": 75908.836,
+        "Z": 6374.4604
+      },
+      "bellSaveId": "Bell_YXZR_016",
+      "bossSpawnIndex": {
+        "BP_Monster_WanJun_JinGua": 1
+      },
+      "checkpointActors": {
+        "BP_AISpawnerTriggerVolume_C_UAID_E89C25A754347B7602_1566876437": true,
+        "BP_AISpawner_C_UAID_E89C25A75434014502_1638726190": true,
+        "BP_FogDoor_C_UAID_E89C25A75120196A02_1981121613": true,
+        "BP_FogDoor_C_UAID_E89C25A75120B37802_1893840998": true
+      },
+      "checkpointBell": {
+        "classPath": "/Game/PBZContent/Blueprint/Item/BP_MelodiousBell.BP_MelodiousBell_C",
+        "id": "Bell_YXZR_016",
+        "name": "BP_MelodiousBell_C_UAID_E89C25A75120757002_1746128236"
+      },
+      "combatBoundary": [
+        {
+          "X": 19450,
+          "Y": 74750,
+          "Z": 0
+        },
+        {
+          "X": 19700,
+          "Y": 73750,
+          "Z": 0
+        },
+        {
+          "X": 20150,
+          "Y": 73350,
+          "Z": 0
+        },
+        {
+          "X": 20740,
+          "Y": 73980,
+          "Z": 0
+        },
+        {
+          "X": 20980,
+          "Y": 74300,
+          "Z": 0
+        },
+        {
+          "X": 21310,
+          "Y": 74720,
+          "Z": 0
+        },
+        {
+          "X": 21510,
+          "Y": 75180,
+          "Z": 0
+        },
+        {
+          "X": 21610,
+          "Y": 75580,
+          "Z": 0
+        },
+        {
+          "X": 21780,
+          "Y": 75960,
+          "Z": 0
+        },
+        {
+          "X": 21750,
+          "Y": 77050,
+          "Z": 0
+        },
+        {
+          "X": 20100,
+          "Y": 77200,
+          "Z": 0
+        },
+        {
+          "X": 19590,
+          "Y": 76225,
+          "Z": 0
+        },
+        {
+          "X": 19400,
+          "Y": 75712,
+          "Z": 0
+        }
+      ],
+      "combatFog": "BP_FogDoor_C_UAID_E89C25A75120196A02_1981121613",
+      "combatHeight": {
+        "max": 7100,
+        "min": 6450
+      },
+      "componentPointMask": true,
+      "entryBlocker": {
+        "childClass": "BP_Roadblocker_I_C",
+        "class": "BP_ChainBlocker_C",
+        "name": "BP_ChainBlocker_C_UAID_74563C6A7033176602_1658605276"
+      },
+      "entryGround": {
+        "X": 17939.475,
+        "Y": 75837.1,
+        "Z": 6378.89
+      },
+      "entryPathStart": {
+        "X": 19800,
+        "Y": 75500,
+        "Z": 6654.7
+      },
+      "id": "zhengdaodaying_wanjun",
+      "loadedLayers": [],
+      "name": "万钧战场",
+      "openStoryDoors": [],
+      "phaseReturnPoints": [
+        {
+          "X": 19445,
+          "Y": 75712,
+          "Z": 6651
+        },
+        {
+          "X": 19970,
+          "Y": 75200,
+          "Z": 6656.02
+        },
+        {
+          "X": 19800,
+          "Y": 75100,
+          "Z": 6658.66
+        },
+        {
+          "X": 19750,
+          "Y": 76050,
+          "Z": 6654.28
+        }
+      ],
+      "phaseSpawnClearance": 1100,
+      "recommendedEncounters": [
+        "BP_Monster_WanJun_JinGua"
+      ],
+      "reviveCameraRotation": {
+        "Pitch": 0.0,
+        "Roll": 0.0,
+        "Yaw": 9.03835
+      },
+      "reviveClearance": 2300,
+      "roadFogs": [
+        {
+          "emitter": {
+            "fillCenter": true,
+            "name": "N3",
+            "point": {
+              "X": 17571,
+              "Y": 76246,
+              "Z": 6200
+            }
+          },
+          "name": "H4",
+          "phantom": true,
+          "points": [
+            {
+              "X": 17653,
+              "Y": 76645,
+              "Z": 6200.81
+            },
+            {
+              "X": 17430,
+              "Y": 75460,
+              "Z": 6251.4
+            }
+          ]
+        },
+        {
+          "emitter": {
+            "fillCenter": true,
+            "name": "N1",
+            "point": {
+              "X": 19025,
+              "Y": 76903,
+              "Z": 6699
+            }
+          },
+          "name": "H5",
+          "phantom": true,
+          "points": [
+            {
+              "X": 18743,
+              "Y": 76962,
+              "Z": 6691
+            },
+            {
+              "X": 19189,
+              "Y": 76880,
+              "Z": 6696.48
+            }
+          ]
+        },
+        {
+          "emitter": {
+            "fillCenter": true,
+            "name": "N2",
+            "point": {
+              "X": 18485,
+              "Y": 75179,
+              "Z": 6603
+            }
+          },
+          "name": "H6",
+          "phantom": true,
+          "points": [
+            {
+              "X": 18239,
+              "Y": 75237,
+              "Z": 6583.08
+            },
+            {
+              "X": 18697,
+              "Y": 75167,
+              "Z": 6611.03
+            }
+          ]
+        }
+      ],
+      "rotation": {
+        "Pitch": 0,
+        "Roll": 0,
+        "Yaw": 24.03835
+      },
+      "spawnClearance": 1350,
+      "spawnPoints": [
+        {
+          "X": 21184.725,
+          "Y": 74919.51,
+          "Z": 6645.411
+        },
+        {
+          "X": 21520,
+          "Y": 75560,
+          "Z": 6680.87
+        },
+        {
+          "X": 21020,
+          "Y": 76000,
+          "Z": 6668.67
+        },
+        {
+          "X": 21080,
+          "Y": 74570,
+          "Z": 6673.65
+        },
+        {
+          "X": 20860,
+          "Y": 74400,
+          "Z": 6678.95
+        },
+        {
+          "X": 21400,
+          "Y": 75800,
+          "Z": 6663.88
+        }
+      ],
+      "spawnTrace": {
+        "bottom": 6430,
+        "localGround": true,
+        "top": 6930,
+        "worldStaticFallback": true
+      },
+      "storySpawners": [
+        "BP_AISpawner_C_UAID_E89C25A75434014502_1638726190"
+      ],
+      "unloadedLayers": [],
+      "walkIn": true
+    },
+    {
+      "anchor": {
+        "X": 28425,
+        "Y": 74400,
+        "Z": 7989.34
+      },
+      "arenaOnlyBell": true,
+      "bellGround": {
+        "X": 28426,
+        "Y": 74568,
+        "Z": 7863
+      },
+      "bellName": "三高塔战场",
+      "bellSaveId": "Bell_YXZR_012",
+      "bossSpawnIndex": {
+        "BP_Monster_EMei_Sword_JianZhen": 3,
+        "BP_Monster_EMei_Sword_Top": 3,
+        "BP_Monster_HuaShan_Blue": 1,
+        "BP_Monster_HuaShan_JianOu": 2
+      },
+      "checkpointActors": {
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1979997677": true,
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1979998678": true,
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1979998679": true,
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1979999680": true,
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1980000681": true,
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1980001682": true,
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1980002683": true,
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1980002684": true,
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1980005686": true,
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1980006687": true,
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1980006688": true,
+        "BP_AISpawner_C_UAID_E89C25A7516AEC7302_1405639150": true,
+        "BP_FogDoor_C_UAID_0A6230820DE85F4502_1980003685": true,
+        "MelodiousBell_UAID_74563CC57EE2FD3B02_1145911571": true,
+        "MelodiousBell_UAID_E89C25A75120136602_1455829935": true
+      },
+      "checkpointCreatesBell": true,
+      "combatBoundary": [
+        {
+          "X": 28010,
+          "Y": 70850,
+          "Z": 0
+        },
+        {
+          "X": 28510,
+          "Y": 70010,
+          "Z": 0
+        },
+        {
+          "X": 29640,
+          "Y": 69750,
+          "Z": 0
+        },
+        {
+          "X": 30670,
+          "Y": 70180,
+          "Z": 0
+        },
+        {
+          "X": 31080,
+          "Y": 71100,
+          "Z": 0
+        },
+        {
+          "X": 30790,
+          "Y": 72000,
+          "Z": 0
+        },
+        {
+          "X": 30060,
+          "Y": 72860,
+          "Z": 0
+        },
+        {
+          "X": 29480,
+          "Y": 72920,
+          "Z": 0
+        },
+        {
+          "X": 29010,
+          "Y": 72925,
+          "Z": 0
+        },
+        {
+          "X": 28600,
+          "Y": 72700,
+          "Z": 0
+        },
+        {
+          "X": 28280,
+          "Y": 72160,
+          "Z": 0
+        },
+        {
+          "X": 27960,
+          "Y": 71730,
+          "Z": 0
+        }
+      ],
+      "combatFog": "BP_FogDoor_C_UAID_0A6230820DE85F4502_1980003685",
+      "combatHeight": {
+        "max": 7290,
+        "min": 6650
+      },
+      "componentPointMask": true,
+      "entryGround": {
+        "X": 28425,
+        "Y": 74400,
+        "Z": 7859.34
+      },
+      "entryPathStart": {
+        "X": 28600,
+        "Y": 74000,
+        "Z": 6874.36
+      },
+      "hiddenStoryProps": {
+        "BP_FlowInteractActor_Character_C_UAID_E89C25A754347E4D02_2146454755": {
+          "className": "BP_FlowInteractActor_Character_C",
+          "label": "大师兄剧情尸体"
+        },
+        "BP_FlowInteractActor_Character_C_UAID_E89C25A75434B57102_1133737136": {
+          "className": "BP_FlowInteractActor_Character_C",
+          "label": "红衣女剑客剧情尸体"
+        }
+      },
+      "id": "zhengdaodaying_sangaota",
+      "interactiveTraversal": {
+        "className": "BP_SpecialMove_ClimLadder_C",
+        "name": "BP_SpecialMove_ClimLadder_C_UAID_BCFCE7058A982B6F02_1758693116"
+      },
+      "loadedLayers": [],
+      "name": "三高塔战场",
+      "openStoryDoors": [],
+      "phaseReturnPoints": [
+        {
+          "X": 29005,
+          "Y": 72875,
+          "Z": 6842
+        },
+        {
+          "X": 29055,
+          "Y": 72480,
+          "Z": 6842.99
+        },
+        {
+          "X": 29500,
+          "Y": 72600,
+          "Z": 6850.92
+        }
+      ],
+      "phaseSpawnClearance": 1100,
+      "recommendedEncounters": [
+        "BP_Monster_HuaShan_Blue",
+        "BP_Monster_HuaShan_JianOu",
+        "BP_Monster_EMei_Sword_Top",
+        "gauntlet_sangaota"
+      ],
+      "requireRoads": true,
+      "retiredBells": {
+        "MelodiousBell_UAID_74563CC57EE2FD3B02_1145911571": true,
+        "MelodiousBell_UAID_E89C25A75120136602_1455829935": true
+      },
+      "reviveCameraRotation": {
+        "Pitch": 0,
+        "Roll": 0,
+        "Yaw": -65.77225
+      },
+      "reviveClearance": 2300,
+      "roadFogs": [
+        {
+          "collisionTop": 8498,
+          "emitter": {
+            "fillCenter": true,
+            "name": "N3",
+            "point": {
+              "X": 28452,
+              "Y": 74828,
+              "Z": 7868
+            }
+          },
+          "name": "H4",
+          "phantom": true,
+          "points": [
+            {
+              "X": 28116,
+              "Y": 74920,
+              "Z": 7139
+            },
+            {
+              "X": 28728,
+              "Y": 74769,
+              "Z": 7128.89
+            }
+          ]
+        }
+      ],
+      "rotation": {
+        "Pitch": 0,
+        "Roll": 0,
+        "Yaw": -65.77225
+      },
+      "spawnClearance": 1400,
+      "spawnPoints": [
+        {
+          "X": 29997.16,
+          "Y": 70795.73,
+          "Z": 6832.3975
+        },
+        {
+          "X": 29810.01,
+          "Y": 71414.09,
+          "Z": 6838.687
+        },
+        {
+          "X": 29975.21,
+          "Y": 71525.01,
+          "Z": 6839.0684
+        },
+        {
+          "X": 30700,
+          "Y": 71450,
+          "Z": 6846.47
+        },
+        {
+          "X": 29100,
+          "Y": 70870,
+          "Z": 6847.23
+        },
+        {
+          "X": 30600,
+          "Y": 70225,
+          "Z": 6842.07
+        }
+      ],
+      "spawnTrace": {
+        "bottom": 6590,
+        "localGround": true,
+        "top": 7100,
+        "worldStaticFallback": true
+      },
+      "storySpawners": [
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1979997677",
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1979998678",
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1979998679",
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1979999680",
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1980000681",
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1980001682",
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1980002683",
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1980002684",
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1980005686",
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1980006687",
+        "BP_AISpawner_C_UAID_0A6230820DE85F4502_1980006688",
+        "BP_AISpawner_C_UAID_E89C25A7516AEC7302_1405639150"
+      ],
+      "unloadedLayers": [],
+      "walkIn": true
+    },
+    {
+      "anchor": {
+        "X": 67525,
+        "Y": 66175,
+        "Z": 11881.21
+      },
+      "arenaOnlyBell": true,
+      "bellClampToNav": true,
+      "bellGround": {
+        "X": 67346,
+        "Y": 66156,
+        "Z": 11755
+      },
+      "bellName": "幽禁之地",
+      "bellSaveId": "Bell_YXZR_010",
+      "blockedTraversal": {
+        "BP_ASM_RopeSwing_C_UAID_BCFCE7058A988E7902_1610233165": {
+          "className": "BP_ASM_RopeSwing_C",
+          "components": {
+            "BoxA": true,
+            "BoxB": true
+          }
+        }
+      },
+      "bossSpawnIndex": {
+        "BP_Monster_WuLengShuang": 1
+      },
+      "checkpointActors": {
+        "BP_AISpawner_C_UAID_E89C25A754346A4A02_2137054667": true,
+        "BP_FogDoor_C_UAID_BCFCE788D449BF7002_1854446884": true
+      },
+      "checkpointCreatesBell": true,
+      "combatBoundary": [
+        {
+          "X": 65500,
+          "Y": 68780,
+          "Z": 0
+        },
+        {
+          "X": 65510,
+          "Y": 68350,
+          "Z": 0
+        },
+        {
+          "X": 65120,
+          "Y": 67950,
+          "Z": 0
+        },
+        {
+          "X": 64520,
+          "Y": 67630,
+          "Z": 0
+        },
+        {
+          "X": 64140,
+          "Y": 67450,
+          "Z": 0
+        },
+        {
+          "X": 64360,
+          "Y": 66870,
+          "Z": 0
+        },
+        {
+          "X": 64840,
+          "Y": 65460,
+          "Z": 0
+        },
+        {
+          "X": 65180,
+          "Y": 65210,
+          "Z": 0
+        },
+        {
+          "X": 65670,
+          "Y": 65440,
+          "Z": 0
+        },
+        {
+          "X": 66540,
+          "Y": 66140,
+          "Z": 0
+        },
+        {
+          "X": 66915,
+          "Y": 66540,
+          "Z": 0
+        },
+        {
+          "X": 67310,
+          "Y": 67470,
+          "Z": 0
+        },
+        {
+          "X": 67180,
+          "Y": 68290,
+          "Z": 0
+        },
+        {
+          "X": 66470,
+          "Y": 68675,
+          "Z": 0
+        }
+      ],
+      "combatFog": "BP_FogDoor_C_UAID_BCFCE788D449BF7002_1854446884",
+      "combatHeight": {
+        "max": 12300,
+        "min": 11550
+      },
+      "componentPointMask": true,
+      "entryGround": {
+        "X": 67525,
+        "Y": 66175,
+        "Z": 11751.21
+      },
+      "id": "zhengdaodaying_wulengshuang",
+      "loadedLayers": [],
+      "name": "乌冷霜战场",
+      "openStoryDoors": [],
+      "phaseReturnPoints": [
+        {
+          "X": 66774,
+          "Y": 66459,
+          "Z": 11799
+        },
+        {
+          "X": 66470,
+          "Y": 66750,
+          "Z": 11826.73
+        },
+        {
+          "X": 66650,
+          "Y": 67030,
+          "Z": 11825.88
+        }
+      ],
+      "phaseSpawnClearance": 1100,
+      "recommendedEncounters": [
+        "BP_Monster_WuLengShuang"
+      ],
+      "requireRoads": true,
+      "retiredBells": {
+        "MelodiousBell_UAID_74563CC57EE2FD3B02_1145907569": true
+      },
+      "reviveCameraRotation": {
+        "Pitch": 0,
+        "Roll": 0,
+        "Yaw": 159.28526
+      },
+      "reviveClearance": 1800,
+      "roadFogs": [
+        {
+          "emitter": {
+            "fillCenter": true,
+            "name": "N3",
+            "point": {
+              "X": 63625,
+              "Y": 67859,
+              "Z": 12266
+            }
+          },
+          "name": "H4",
+          "phantom": true,
+          "points": [
+            {
+              "X": 63187,
+              "Y": 67538,
+              "Z": 12361.57
+            },
+            {
+              "X": 64004,
+              "Y": 68180,
+              "Z": 12228.33
+            }
+          ]
+        }
+      ],
+      "rotation": {
+        "Pitch": 0,
+        "Roll": 0,
+        "Yaw": 159.28526
+      },
+      "spawnClearance": 1350,
+      "spawnPoints": [
+        {
+          "X": 64858.48,
+          "Y": 66947.4,
+          "Z": 11881.625
+        },
+        {
+          "X": 65150,
+          "Y": 67690,
+          "Z": 11927.65
+        },
+        {
+          "X": 65325,
+          "Y": 66350,
+          "Z": 11841.05
+        },
+        {
+          "X": 65600,
+          "Y": 67000,
+          "Z": 11859.29
+        },
+        {
+          "X": 65890,
+          "Y": 67675,
+          "Z": 11872.11
+        },
+        {
+          "X": 65250,
+          "Y": 66090,
+          "Z": 11826.98
+        }
+      ],
+      "spawnTrace": {
+        "bottom": 11480,
+        "localGround": true,
+        "top": 12220,
+        "worldStaticFallback": true
+      },
+      "storySpawners": [
+        "BP_AISpawner_C_UAID_E89C25A754346A4A02_2137054667"
+      ],
+      "unloadedLayers": [],
+      "walkIn": true
+    },
+    {
+      "anchor": {
+        "X": 32390.963,
+        "Y": 59799.707,
+        "Z": 8301.367
+      },
+      "arenaOnlyBell": true,
+      "bellGround": {
+        "X": 32382.959,
+        "Y": 59677.43,
+        "Z": 8171.0654
+      },
+      "bellSaveId": "Bell_YXZR_009",
+      "bossSpawnIndex": {
+        "BP_Monster_YuBi": 1
+      },
+      "checkpointActors": {
+        "BP_AISpawner_C_UAID_E89C25A75434736602_1397830835": true,
+        "BP_FogDoor_C_UAID_E89C25A754346F6602_1373050722": true
+      },
+      "checkpointBell": {
+        "classPath": "/Game/PBZContent/Blueprint/Item/BP_MelodiousBell.BP_MelodiousBell_C",
+        "id": "Bell_YXZR_009",
+        "name": "MelodiousBell_UAID_74563CC57EE2FD3B02_1145939593"
+      },
+      "combatBoundary": [
+        {
+          "X": 25680,
+          "Y": 55440,
+          "Z": 0
+        },
+        {
+          "X": 25570,
+          "Y": 54380,
+          "Z": 0
+        },
+        {
+          "X": 26290,
+          "Y": 53720,
+          "Z": 0
+        },
+        {
+          "X": 27140,
+          "Y": 53200,
+          "Z": 0
+        },
+        {
+          "X": 28120,
+          "Y": 52880,
+          "Z": 0
+        },
+        {
+          "X": 29180,
+          "Y": 52980,
+          "Z": 0
+        },
+        {
+          "X": 30010,
+          "Y": 53640,
+          "Z": 0
+        },
+        {
+          "X": 30510,
+          "Y": 54500,
+          "Z": 0
+        },
+        {
+          "X": 30830,
+          "Y": 55360,
+          "Z": 0
+        },
+        {
+          "X": 31060,
+          "Y": 55650,
+          "Z": 0
+        },
+        {
+          "X": 31100,
+          "Y": 56000,
+          "Z": 0
+        },
+        {
+          "X": 30990,
+          "Y": 56300,
+          "Z": 0
+        },
+        {
+          "X": 30530,
+          "Y": 57020,
+          "Z": 0
+        },
+        {
+          "X": 30080,
+          "Y": 57660,
+          "Z": 0
+        },
+        {
+          "X": 29540,
+          "Y": 58190,
+          "Z": 0
+        },
+        {
+          "X": 28900,
+          "Y": 58620,
+          "Z": 0
+        },
+        {
+          "X": 28120,
+          "Y": 59040,
+          "Z": 0
+        },
+        {
+          "X": 27210,
+          "Y": 59050,
+          "Z": 0
+        },
+        {
+          "X": 26350,
+          "Y": 58670,
+          "Z": 0
+        },
+        {
+          "X": 25920,
+          "Y": 57840,
+          "Z": 0
+        },
+        {
+          "X": 25820,
+          "Y": 56980,
+          "Z": 0
+        },
+        {
+          "X": 25770,
+          "Y": 56240,
+          "Z": 0
+        }
+      ],
+      "combatFog": "BP_FogDoor_C_UAID_E89C25A754346F6602_1373050722",
+      "combatHeight": {
+        "max": 6350,
+        "min": 5640
+      },
+      "componentPointMask": true,
+      "entryGround": {
+        "X": 32390.963,
+        "Y": 59799.707,
+        "Z": 8180.15
+      },
+      "entryPathStart": {
+        "X": 30220,
+        "Y": 57400,
+        "Z": 5896.39
+      },
+      "id": "zhengdaodaying_yubi",
+      "interactiveTraversal": {
+        "className": "BP_SpecialMove_UpRunning_C",
+        "name": "BP_SpecialMove_UpRunning_C_UAID_E89C25A7512036CD02_1140247577"
+      },
+      "loadedLayers": [],
+      "name": "玉璧战场",
+      "openStoryDoors": [],
+      "phaseReturnPoints": [
+        {
+          "X": 31027,
+          "Y": 55940,
+          "Z": 5889
+        },
+        {
+          "X": 29840,
+          "Y": 56520,
+          "Z": 5898.89
+        },
+        {
+          "X": 29640,
+          "Y": 57180,
+          "Z": 5898.89
+        },
+        {
+          "X": 29750,
+          "Y": 55850,
+          "Z": 5894.24
+        }
+      ],
+      "phaseSpawnClearance": 1100,
+      "recommendedEncounters": [
+        "BP_Monster_YuBi"
+      ],
+      "reviveCameraRotation": {
+        "Pitch": 0.0,
+        "Roll": 0.0,
+        "Yaw": 239.46555
+      },
+      "reviveClearance": 2300,
+      "roadFogs": [
+        {
+          "collisionBottom": 7780,
+          "emitter": {
+            "fillCenter": true,
+            "name": "N1",
+            "point": {
+              "X": 32694,
+              "Y": 60245,
+              "Z": 8199
+            }
+          },
+          "name": "H2",
+          "phantom": true,
+          "points": [
+            {
+              "X": 33098,
+              "Y": 59926,
+              "Z": 8424
+            },
+            {
+              "X": 32333,
+              "Y": 60436,
+              "Z": 8215
+            }
+          ]
+        },
+        {
+          "emitter": {
+            "fillCenter": true,
+            "name": "N3",
+            "point": {
+              "X": 25235,
+              "Y": 56059,
+              "Z": 5898
+            }
+          },
+          "name": "H4",
+          "phantom": true,
+          "points": [
+            {
+              "X": 25171,
+              "Y": 54911,
+              "Z": 5889
+            },
+            {
+              "X": 25235,
+              "Y": 57206,
+              "Z": 5882
+            }
+          ]
+        }
+      ],
+      "rotation": {
+        "Pitch": 0,
+        "Roll": 0,
+        "Yaw": -105.53446
+      },
+      "spawnClearance": 1350,
+      "spawnPoints": [
+        {
+          "X": 28123.5,
+          "Y": 56235.695,
+          "Z": 5890.9253
+        },
+        {
+          "X": 27150,
+          "Y": 55300,
+          "Z": 5907.89
+        },
+        {
+          "X": 27080,
+          "Y": 56350,
+          "Z": 5896.14
+        },
+        {
+          "X": 27240,
+          "Y": 57225,
+          "Z": 5889.89
+        },
+        {
+          "X": 28150,
+          "Y": 55300,
+          "Z": 5895.08
+        },
+        {
+          "X": 28280,
+          "Y": 57225,
+          "Z": 5895.24
+        }
+      ],
+      "spawnTrace": {
+        "bottom": 5610,
+        "localGround": true,
+        "top": 6550,
+        "worldStaticFallback": true
+      },
+      "storySpawners": [
+        "BP_AISpawner_C_UAID_E89C25A75434736602_1397830835"
+      ],
+      "unloadedLayers": [],
+      "walkIn": true
+    }
+  ],
+  "schemaVersion": 1
+}

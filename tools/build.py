@@ -88,6 +88,18 @@ def run(command: list[str], output: Path, env: dict[str, str] | None = None) -> 
 
 
 def native(args: argparse.Namespace) -> None:
+    if args.component == "checkpoint":
+        from build_checkpoint_native import compile_native
+
+        if not args.checkpoint_presets:
+            raise ValueError("Checkpoint build requires --checkpoint-presets <staged StockArenaPresets.json>")
+        compiler, env = find_toolchain(args)
+        report = compile_native(Path(args.output).resolve() / "checkpoint",
+                                Path(args.checkpoint_presets).resolve(strict=True), compiler, env,
+                                tests=args.tests)
+        print(json.dumps(report, indent=2))
+        return
+
     parts = ("barrier", "save-tool", "pressure", "path-identity") if args.component == "all" else (args.component,)
     preset_sha = legacy_sha = ""
     if "save-tool" in parts:
@@ -166,33 +178,50 @@ def installer(args: argparse.Namespace) -> None:
     target = output / "影境演武安装器.exe"
     run([csc, "/nologo", "/target:winexe", "/platform:x64", "/optimize+",
          "/reference:System.Windows.Forms.dll", "/out:" + str(target), str(source / "InstallerHost.cs")], output)
-    for pattern in ("*.ps1", "*.cmd"):
+    for pattern in ("*.ps1", "*.cmd", "EpicNativeRequirements.json"):
         for path in source.glob(pattern):
             shutil.copyfile(path, output / path.name)
     report = {"component": "installer-host", "file": target.name, "sha256": sha256(target),
-              "completeRelease": False, "guiStarted": False}
+              "completeRelease": False, "guiStarted": False, "runtimeProfile": "checkpoint-210"}
     (output / "InstallerBuild.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, ensure_ascii=False))
 
 
 def check(args: argparse.Namespace) -> None:
+    from stage_checkpoint_210 import PRESETS, RUNTIME_DIR, SCRIPTS_DIR, load_runtime_sources
+
+    profile, manifest, *_ = load_runtime_sources()
     external = Path(args.external_inputs).resolve() if args.external_inputs else ROOT / "local-inputs"
-    missing = []
+    base = external / f"YingjingYanwu-{profile['baseVersion']}"
+    runtime = base / RUNTIME_DIR
+    staging_files = [base / "PackageManifest.json",
+                     runtime / "CheckpointPayload" / SCRIPTS_DIR / PRESETS]
+    staging_files.extend(external / "ArenaMenuBackgrounds" / name for name in manifest["menuBackgrounds"])
+    missing = [path.relative_to(external).as_posix() for path in staging_files if not path.is_file()]
     missing_generated = [name for name in RUNTIME_DATA
                          if not (ROOT / "src/runtime/Scripts" / name).is_file()]
-    for name in ("UIAssets/Manifest.json", "PrivatePresets.pbzs", "UE4SS-release.zip"):
-        if not (external / name).is_file():
-            missing.append(name)
-    report = {"coreSourceReady": all((ROOT / "src" / path).is_file() for path in
-                                    ("runtime/Scripts/main.lua", "save_barrier/barrier.cpp", "save_tool/main.cpp", "installer/InstallerHost.cs")),
+    report = {"version": profile["version"], "runtimeSourceChecksumsValid": True,
+              "coreSourceReady": all((ROOT / "src" / path).is_file() for path in
+                                    ("save_barrier/barrier.cpp", "installer/InstallerHost.cs",
+                                     "installer/EpicNativeCheck.ps1", "installer/EpicNativeRequirements.json")),
               "jsonHeaderChecksumValid": sha256(ROOT / "src/save_tool/vendor/json.hpp") == JSON_SHA256,
               "generatedRuntimeDataPresent": not missing_generated,
               "missingGeneratedRuntimeData": missing_generated,
-              "completeReleaseInputsPresent": not missing and not missing_generated, "missingLocalOnlyInputs": missing,
-              "note": "Presence check only; release packaging must validate schemas, hashes and input rights separately."}
+              "stagingInputsPresent": not missing, "missingStagingInputs": missing,
+              "note": "Local staging inputs are checked for presence. Staging validates their contents separately."}
     print(json.dumps(report, indent=2))
     if not report["coreSourceReady"] or not report["jsonHeaderChecksumValid"] or (args.require_release_inputs and (missing or missing_generated)):
-        raise ValueError("Source check failed or required local-only release inputs are missing")
+        raise ValueError("Source check failed or required local staging inputs are missing")
+
+
+def checkpoint_210(args: argparse.Namespace) -> None:
+    from stage_checkpoint_210 import stage
+
+    base_presets = Path(args.base_presets).resolve(strict=True) if args.base_presets else None
+    base_release = Path(args.base_release).resolve(strict=True) if args.base_release else None
+    menu_backgrounds = Path(args.menu_backgrounds).resolve(strict=True) if args.menu_backgrounds else None
+    report = stage(base_presets, Path(args.output).resolve(), base_release=base_release, menu_backgrounds=menu_backgrounds)
+    print(json.dumps(report, ensure_ascii=False, indent=2))
 
 
 def parser() -> argparse.ArgumentParser:
@@ -200,23 +229,32 @@ def parser() -> argparse.ArgumentParser:
     sub = result.add_subparsers(dest="command", required=True)
     p = sub.add_parser("check", help="Cross-platform source and missing-input inventory; no installation")
     p.add_argument("--external-inputs")
-    p.add_argument("--require-release-inputs", action="store_true")
+    p.add_argument("--require-release-inputs", action="store_true", help="Require local inputs for 2.1.0 staging")
     p.set_defaults(action=check)
     p = sub.add_parser("native", help="Compile Windows native components")
-    p.add_argument("--component", choices=("barrier", "save-tool", "pressure", "path-identity", "all"), default="barrier")
+    p.add_argument("--component", choices=("barrier", "checkpoint", "save-tool", "pressure", "path-identity", "all"),
+                   default="barrier")
     p.add_argument("--output", default=str(ROOT / "build"))
     p.add_argument("--cl")
     p.add_argument("--msvc-root", help="MSVC toolset directory containing bin/Hostx64/x64/cl.exe")
     p.add_argument("--windows-sdk-root")
     p.add_argument("--sdk-version")
     p.add_argument("--presets", help="Read-only local eighteen-block PBZS bundle; never distributed by this script")
+    p.add_argument("--checkpoint-presets", help="Staged 2.1.0 StockArenaPresets.json for the checkpoint component")
     p.add_argument("--legacy-presets", help="Optional read-only local eight-block bundle for legacy ownership migration")
-    p.add_argument("--tests", action="store_true", help="Compile/run synthetic barrier and wrong-host tests only")
+    p.add_argument("--tests", action="store_true", help="Run synthetic native component tests")
     p.set_defaults(action=native)
     p = sub.add_parser("installer", help="Compile host and copy its source scripts, without launching GUI")
     p.add_argument("--csc")
     p.add_argument("--output", default=str(ROOT / "build"))
     p.set_defaults(action=installer)
+    p = sub.add_parser("checkpoint-210", help="Stage the 2.1.0 native-checkpoint runtime")
+    base = p.add_mutually_exclusive_group(required=True)
+    base.add_argument("--base-release", help="Unpacked 2.0.3 release providing the original checkpoint presets")
+    base.add_argument("--base-presets", help="Local five-map 2.0.3 preset bundle for staging")
+    p.add_argument("--menu-backgrounds", help="Directory containing the four reviewed arena background PNGs")
+    p.add_argument("--output", required=True, help="New staging directory")
+    p.set_defaults(action=checkpoint_210)
     return result
 
 

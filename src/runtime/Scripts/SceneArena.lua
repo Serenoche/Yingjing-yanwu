@@ -906,4 +906,27 @@ function Arena.runtimeWorld(object)
     local actor=ownerActor(object)
     return actor and owningWorld(actor) or nil
 end
+
+function Arena.actorIsInWorld(actor, world)
+    local live = Arena.runtimeWorld(actor)
+    return valid(live) and valid(world) and live:GetAddress() == world:GetAddress()
+end
+
+function Arena.actorsOfClass(gameplay, pawn, world, class)
+    local found, actors = {}, {}
+    gameplay:GetAllActorsOfClass(pawn, class, found)
+    for _, value in ipairs(found) do
+        local actor = value
+        if not valid(actor) and type(value.get) == "function" then actor = value:get() end
+        if valid(actor) and not actor:HasAnyFlags(PENDING) and not actor:IsActorBeingDestroyed() then
+            local live = Arena.runtimeWorld(actor)
+            -- A native world-context query still reports a conflict while the
+            -- streamed actor's OwningWorld is becoming available.
+            if not valid(live) or live:GetAddress() == world:GetAddress() then
+                actors[#actors + 1] = actor
+            end
+        end
+    end
+    return actors
+end
 return Arena

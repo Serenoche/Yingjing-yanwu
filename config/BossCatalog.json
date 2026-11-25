@@ -496,6 +496,11 @@
       "classPath": "/PBZCombatAsset/ActorData/Mobs/FengXueDaoKe/BP_Monster_FengXueDaoKe.BP_Monster_FengXueDaoKe_C",
       "capsuleRadius": 70.0,
       "capsuleHalfHeight": 160.0
+    },
+    {
+      "id": "BP_Monster_EMei_Sword_JianZhen",
+      "name": "红衣女剑客",
+      "classPath": "/PBZCombatAsset/ActorData/Mobs/034_EMei/BP_Monster_EMei_Sword_JianZhen.BP_Monster_EMei_Sword_JianZhen_C"
     }
   ]
 }

@@ -1,0 +1,3292 @@
+{
+  "schemaVersion": 1,
+  "scenes": [
+    {
+      "additionalCombatFogs": [],
+      "allowSeparateBellFloor": true,
+      "anchor": {
+        "X": -166780,
+        "Y": 133720,
+        "Z": -5999.0
+      },
+      "arenaOnlyBell": true,
+      "bellGround": {
+        "X": -165321,
+        "Y": 136289,
+        "Z": -6123
+      },
+      "bellSaveId": "BrokenBell_TheEnd01",
+      "bossRecovery": true,
+      "bossSpawnIndex": {
+        "BP_Monster_GuiChai_Red": 1,
+        "BP_Monster_GuiChai_Red_P2": 2
+      },
+      "checkpointActors": {
+        "BP_AICombatTriggerVolume_C_UAID_60CF848217CA86E702_1439911132": true,
+        "BP_AICombatTriggerVolume_C_UAID_BCFCE704F7253CCB02_1632092639": true,
+        "BP_AICombatTriggerVolume_C_UAID_BCFCE704F725B1CA02_1443579206": true,
+        "BP_AICombatTriggerVolume_C_UAID_BCFCE7078B5A1CB302_1166009514": true,
+        "BP_AICombatTriggerVolume_C_UAID_BCFCE7078B5A65B202_1570022565": true,
+        "BP_AICombatTriggerVolume_C_UAID_BCFCE7078B5A6BB302_1960744444": true,
+        "BP_AICombatTriggerVolume_C_UAID_BCFCE7078B5A71B202_1802473416": true,
+        "BP_AICombatTriggerVolume_C_UAID_BCFCE7078B5A73B202_1678694786": true,
+        "BP_AICombatTriggerVolume_C_UAID_BCFCE7078B5A73B202_1787560787": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_BCFCE7078B5A63B202_2044451199": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_BCFCE7078B5A68B202_1895380118": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_BCFCE7078B5A6FB202_1335980048": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_BCFCE7078B5A72B202_1454840594": true,
+        "BP_AISpawner_C_UAID_60CF848217CA01E202_1097416369": true,
+        "BP_AISpawner_C_UAID_60CF848217CA01E202_1130364370": true,
+        "BP_AISpawner_C_UAID_60CF848217CA01E202_1313214371": true,
+        "BP_AISpawner_C_UAID_60CF848217CA01E202_1313311372": true,
+        "BP_AISpawner_C_UAID_60CF848217CA85E702_1229258948": true,
+        "BP_AISpawner_C_UAID_60CF848217CA85E702_1229351949": true,
+        "BP_AISpawner_C_UAID_60CF848217CA85E702_1229353950": true,
+        "BP_AISpawner_C_UAID_BCFCE7058A98ED7702_1150320007": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A64B202_1279933377": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A64B202_1280101378": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A64B202_1915927382": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A69B202_1466976296": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A69B202_1471926297": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A69B202_1472114298": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A6FB202_1518113050": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A70B202_1605081226": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A71B202_1144336405": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A71B202_1206421406": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A71B202_1646982412": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A71B202_1670846413": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A71B202_1715075414": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A73B202_1951982788": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A75B202_1993535157": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5AE7B002_1305531539": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5AEAB002_1800683584": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5AEAB002_1953458585": true,
+        "BP_AISpawner_C_UAID_E89C25A75434917902_1523163972": true,
+        "BP_FogDoor_C_UAID_60CF848217CA91E702_1097931074": true,
+        "BP_FogDoor_C_UAID_60CF848217CA92E702_1613142267": true,
+        "BP_FogDoor_C_UAID_60CF848217CACEB302_1973267848": true,
+        "BP_FogDoor_C_UAID_BCFCE704F7256CC902_1524763802": true,
+        "BP_FogDoor_C_UAID_BCFCE704F7256CC902_1528351803": true,
+        "BP_FogDoor_C_UAID_BCFCE7058A9892B002_1191264132": true,
+        "BP_MobDomain_C_UAID_BCFCE7058A98ED7702_1150309000": true,
+        "BP_MobDomain_C_UAID_BCFCE7078B5A64B202_1077156376": true,
+        "BP_MobDomain_C_UAID_BCFCE7078B5A68B202_1895214117": true,
+        "BP_MobDomain_C_UAID_BCFCE7078B5A6FB202_1419127049": true,
+        "BP_MobDomain_C_UAID_BCFCE7078B5A72B202_1610422595": true,
+        "BP_PBZAISpawnerTriggerVolume_C_UAID_BCFCE7058A98ED7702_1150306999": true,
+        "PBZ_MobDomain_C_UAID_60CF848217CA83E702_1892140552": true,
+        "PBZ_MobDomain_C_UAID_BCFCE704F72509C902_1281822370": true,
+        "PBZ_MobDomain_C_UAID_BCFCE704F72509C902_1401658371": true,
+        "PBZ_MobDomain_C_UAID_BCFCE704F725A4CA02_2080161886": true,
+        "PBZ_MobDomain_C_UAID_BCFCE704F725B1CA02_1170405205": true
+      },
+      "checkpointCreatesBell": true,
+      "chiLianUltimate": {
+        "center": {
+          "X": -169769.78,
+          "Y": 132620.7,
+          "Z": -6116.0
+        },
+        "snakes": [
+          {
+            "X": -169526.55,
+            "Y": 132745.64,
+            "Z": -6121.0
+          },
+          {
+            "X": -168420,
+            "Y": 133840,
+            "Z": -6102.0
+          },
+          {
+            "X": -168140,
+            "Y": 132560,
+            "Z": -6117.0
+          },
+          {
+            "X": -169180,
+            "Y": 133520,
+            "Z": -6111.0
+          }
+        ]
+      },
+      "combatBoundary": [
+        {
+          "X": -167466.5,
+          "Y": 132787.4,
+          "Z": 0
+        },
+        {
+          "X": -167329.9,
+          "Y": 133154.3,
+          "Z": 0
+        },
+        {
+          "X": -167773.8,
+          "Y": 133956.6,
+          "Z": 0
+        },
+        {
+          "X": -168135.2,
+          "Y": 133984.2,
+          "Z": 0
+        },
+        {
+          "X": -168829.8,
+          "Y": 133670.3,
+          "Z": 0
+        },
+        {
+          "X": -169385.4,
+          "Y": 133443.3,
+          "Z": 0
+        },
+        {
+          "X": -169994.2,
+          "Y": 133206.7,
+          "Z": 0
+        },
+        {
+          "X": -170433.5,
+          "Y": 132896.2,
+          "Z": 0
+        },
+        {
+          "X": -170063.3,
+          "Y": 132033.4,
+          "Z": 0
+        },
+        {
+          "X": -169959.8,
+          "Y": 131903.8,
+          "Z": 0
+        },
+        {
+          "X": -169353.1,
+          "Y": 132114.7,
+          "Z": 0
+        },
+        {
+          "X": -167790.2,
+          "Y": 132676.4,
+          "Z": 0
+        }
+      ],
+      "combatFog": "BP_FogDoor_C_UAID_BCFCE7058A9892B002_1191264132",
+      "combatHeight": {
+        "max": -4752.0,
+        "min": -6266.0
+      },
+      "componentPointMask": true,
+      "entryGround": {
+        "X": -166780,
+        "Y": 133720,
+        "Z": -6119.0
+      },
+      "id": "pangzhen_south_gate",
+      "lionArena": {
+        "center": {
+          "X": -169769.78,
+          "Y": 132620.7,
+          "Z": -5116.0
+        },
+        "exits": [
+          {
+            "X": -169526.55,
+            "Y": 132745.64,
+            "Z": -6121.0
+          },
+          {
+            "X": -168420,
+            "Y": 133840,
+            "Z": -6102.0
+          },
+          {
+            "X": -168140,
+            "Y": 132560,
+            "Z": -6117.0
+          },
+          {
+            "X": -169180,
+            "Y": 133520,
+            "Z": -6111.0
+          }
+        ],
+        "extent": {
+          "X": 2689.8800000000047,
+          "Y": 1613.5,
+          "Z": 1240
+        }
+      },
+      "loadedLayers": [],
+      "map": "PBZ_Pangzhen_WP",
+      "name": "庞镇·南门廊桥大石阶",
+      "openStoryDoors": [
+        "BP_FogDoor_C_UAID_60CF848217CA91E702_1097931074",
+        "BP_FogDoor_C_UAID_60CF848217CA92E702_1613142267",
+        "BP_FogDoor_C_UAID_BCFCE704F7256CC902_1528351803",
+        "BP_FogDoor_C_UAID_BCFCE704F7256CC902_1524763802",
+        "BP_FogDoor_C_UAID_60CF848217CACEB302_1973267848"
+      ],
+      "originalPath": "/Game/Maps/B08_09_10/PBZ_Pangzhen_WP",
+      "phaseReturnPoints": [
+        {
+          "X": -167697,
+          "Y": 133367,
+          "Z": -6106
+        }
+      ],
+      "phaseSpawnClearance": 800,
+      "requireRoads": true,
+      "reviveClearance": 520,
+      "roadFogs": [
+        {
+          "emitter": {
+            "name": "N3",
+            "point": {
+              "X": -171737,
+              "Y": 131582,
+              "Z": -6024
+            },
+            "fillCenter": true
+          },
+          "name": "H1",
+          "phantom": true,
+          "points": [
+            {
+              "X": -171469,
+              "Y": 131085,
+              "Z": -6028.0
+            },
+            {
+              "X": -171965,
+              "Y": 132105,
+              "Z": -6031.0
+            }
+          ]
+        },
+        {
+          "emitter": {
+            "name": "N4",
+            "point": {
+              "X": -164999,
+              "Y": 136521,
+              "Z": -6124
+            },
+            "fillCenter": true
+          },
+          "name": "H2",
+          "phantom": true,
+          "points": [
+            {
+              "X": -164274,
+              "Y": 136078,
+              "Z": -6121.0
+            },
+            {
+              "X": -165804,
+              "Y": 137085,
+              "Z": -6123
+            }
+          ]
+        }
+      ],
+      "rotation": {
+        "Pitch": 0,
+        "Roll": 0,
+        "Yaw": -159.81
+      },
+      "spawnClearance": 1050,
+      "spawnPoints": [
+        {
+          "X": -169769.78,
+          "Y": 132620.7,
+          "Z": -6116.0
+        },
+        {
+          "X": -169526.55,
+          "Y": 132745.64,
+          "Z": -6121.0
+        },
+        {
+          "X": -168420,
+          "Y": 133840,
+          "Z": -6102.0
+        },
+        {
+          "X": -168140,
+          "Y": 132560,
+          "Z": -6117.0
+        },
+        {
+          "X": -169180,
+          "Y": 133520,
+          "Z": -6111.0
+        },
+        {
+          "X": -168900,
+          "Y": 132280,
+          "Z": -6121.0
+        }
+      ],
+      "spawnTrace": {
+        "bottom": -6316.0,
+        "localGround": true,
+        "top": -5927.0,
+        "worldStaticFallback": true
+      },
+      "storySpawners": [
+        "BP_AISpawner_C_UAID_60CF848217CA01E202_1097416369",
+        "BP_AISpawner_C_UAID_60CF848217CA01E202_1130364370",
+        "BP_AISpawner_C_UAID_60CF848217CA01E202_1313214371",
+        "BP_AISpawner_C_UAID_60CF848217CA01E202_1313311372",
+        "BP_AISpawner_C_UAID_60CF848217CA85E702_1229258948",
+        "BP_AISpawner_C_UAID_60CF848217CA85E702_1229351949",
+        "BP_AISpawner_C_UAID_60CF848217CA85E702_1229353950",
+        "BP_AISpawner_C_UAID_BCFCE7058A98ED7702_1150320007",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A64B202_1279933377",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A64B202_1280101378",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A64B202_1915927382",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A69B202_1466976296",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A69B202_1471926297",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A69B202_1472114298",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A6FB202_1518113050",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A70B202_1605081226",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A71B202_1144336405",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A71B202_1206421406",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A71B202_1646982412",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A71B202_1670846413",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A71B202_1715075414",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A73B202_1951982788",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A75B202_1993535157",
+        "BP_AISpawner_C_UAID_BCFCE7078B5AE7B002_1305531539",
+        "BP_AISpawner_C_UAID_BCFCE7078B5AEAB002_1800683584",
+        "BP_AISpawner_C_UAID_BCFCE7078B5AEAB002_1953458585",
+        "BP_AISpawner_C_UAID_E89C25A75434917902_1523163972"
+      ],
+      "unloadedLayers": [],
+      "walkIn": true,
+      "guardTerrainDefeat": true
+    },
+    {
+      "additionalCombatFogs": [],
+      "allowSeparateBellFloor": true,
+      "anchor": {
+        "X": -181700,
+        "Y": 119340,
+        "Z": -4011.0
+      },
+      "arenaOnlyBell": true,
+      "bellGround": {
+        "X": -181827,
+        "Y": 119435,
+        "Z": -4131
+      },
+      "bellSaveId": "BrokenBell_TheEnd01",
+      "bossRecovery": true,
+      "bossSpawnIndex": {
+        "BP_Monster_GuiChai_Yellow_MoDao": 1
+      },
+      "checkpointActors": {
+        "BP_AICombatTriggerVolume_C_UAID_60CF848217CA32E402_1795491130": true,
+        "BP_AICombatTriggerVolume_C_UAID_60CF848217CA6A0A03_1188995139": true,
+        "BP_AICombatTriggerVolume_C_UAID_60CF848217CA6AFC02_2091759296": true,
+        "BP_AICombatTriggerVolume_C_UAID_60CF848217CAFC0103_1209953316": true,
+        "BP_AICombatTriggerVolume_C_UAID_BCFCE7058A98D6F302_1125129809": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_BCFCE704F72589E802_1176234636": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_BCFCE704F7258AE802_1866546813": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_BCFCE7078B5A49B502_2095309510": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_BCFCE7078B5A4BB502_1503880862": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_BCFCE7078B5A4CB502_1350383041": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_BCFCE7078B5A81B202_1339823331": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_BCFCE7078B5A83B202_1115200716": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_BCFCE7078B5AC0B202_2079754366": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_E89C25A75433FBD502_1161731739": true,
+        "BP_AISpawner_C_UAID_60CF848217CA05E202_2004661238": true,
+        "BP_AISpawner_C_UAID_60CF848217CA0EE202_1407483665": true,
+        "BP_AISpawner_C_UAID_60CF848217CA0EE202_1407584666": true,
+        "BP_AISpawner_C_UAID_60CF848217CA1BD602_1553060246": true,
+        "BP_AISpawner_C_UAID_60CF848217CA1BD602_1622678247": true,
+        "BP_AISpawner_C_UAID_60CF848217CA1BD602_1704271250": true,
+        "BP_AISpawner_C_UAID_60CF848217CA1BD602_2011341252": true,
+        "BP_AISpawner_C_UAID_60CF848217CA1BD602_2011342253": true,
+        "BP_AISpawner_C_UAID_60CF848217CA1BD602_2132640254": true,
+        "BP_AISpawner_C_UAID_60CF848217CA1CD602_1077046431": true,
+        "BP_AISpawner_C_UAID_60CF848217CA1CD602_1489428432": true,
+        "BP_AISpawner_C_UAID_60CF848217CA1CD602_1489538433": true,
+        "BP_AISpawner_C_UAID_60CF848217CA1CD602_1504157434": true,
+        "BP_AISpawner_C_UAID_60CF848217CA41E302_1525374732": true,
+        "BP_AISpawner_C_UAID_60CF848217CA72DF02_2116194409": true,
+        "BP_AISpawner_C_UAID_60CF848217CA73DF02_1094487586": true,
+        "BP_AISpawner_C_UAID_60CF848217CA73DF02_1099443587": true,
+        "BP_AISpawner_C_UAID_60CF848217CAA9FC02_1152386585": true,
+        "BP_AISpawner_C_UAID_60CF848217CAA9FC02_1439212586": true,
+        "BP_AISpawner_C_UAID_60CF848217CAA9FC02_1452977587": true,
+        "BP_AISpawner_C_UAID_60CF848217CACAE302_1748526836": true,
+        "BP_AISpawner_C_UAID_60CF848217CACAE302_1748561837": true,
+        "BP_AISpawner_C_UAID_60CF848217CACAE302_1748562838": true,
+        "BP_AISpawner_C_UAID_60CF848217CACFE302_1078244720": true,
+        "BP_AISpawner_C_UAID_60CF848217CACFE302_1098418721": true,
+        "BP_AISpawner_C_UAID_60CF848217CAEFE702_1667983708": true,
+        "BP_AISpawner_C_UAID_60CF848217CAEFE702_1668071709": true,
+        "BP_AISpawner_C_UAID_60CF848217CAEFE702_1720627710": true,
+        "BP_AISpawner_C_UAID_BCFCE704F7258B0203_1277176429": true,
+        "BP_AISpawner_C_UAID_BCFCE704F7258B0203_1304139430": true,
+        "BP_AISpawner_C_UAID_BCFCE704F7258B0203_1305527431": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725C0D402_1293420352": true,
+        "BP_AISpawner_C_UAID_BCFCE7058A8B987E02_2089605020": true,
+        "BP_AISpawner_C_UAID_BCFCE7058A98ED7702_1150320006": true,
+        "BP_AISpawner_C_UAID_BCFCE7058A98ED7702_1150328014": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A7CB202_2009694437": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A7DB202_1637116616": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A7DB202_1933052619": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A7DB202_2033760622": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A82B202_1195265517": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5A82B202_1202356523": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5ABFB202_1450199174": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5ABFB202_1570924175": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5AC1B202_1389510545": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5AC3B302_1488759891": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5AC3B302_1846547897": true,
+        "BP_AISpawner_C_UAID_BCFCE7078B5AC3B302_2056133900": true,
+        "BP_AISpawner_C_UAID_E89C25A75433FBD502_1164639740": true,
+        "BP_FogDoor_C_UAID_60CF848217CA978002_1366641873": true,
+        "BP_FogDoor_C_UAID_60CF848217CAEFE702_1244746706": true,
+        "BP_FogDoor_C_UAID_BCFCE704F7253AD802_1288819916": true,
+        "BP_MobDomain_C_UAID_60CF848217CAA4FC02_1351589644": true,
+        "BP_MobDomain_C_UAID_60CF848217CAA9FC02_1152282584": true,
+        "BP_MobDomain_C_UAID_60CF848217CACEE302_2033029543": true,
+        "BP_MobDomain_C_UAID_60CF848217CAEFE702_1498650707": true,
+        "BP_MobDomain_C_UAID_BCFCE7058A8B987E02_1962981019": true,
+        "BP_MobDomain_C_UAID_BCFCE7058A98ED7702_1150327013": true,
+        "BP_MobDomain_C_UAID_BCFCE7078B5A4BB502_1722564863": true,
+        "BP_MobDomain_C_UAID_BCFCE7078B5A7CB202_1921304436": true,
+        "BP_MobDomain_C_UAID_BCFCE7078B5A81B202_2035342337": true,
+        "BP_MobDomain_C_UAID_BCFCE7078B5ABFB202_1159110173": true,
+        "BP_MobDomain_C_UAID_BCFCE7078B5AC3B302_1665095895": true,
+        "BP_MobDomain_C_UAID_E89C25A75433FBD502_1172180741": true,
+        "BP_PBZAISpawnerTriggerVolume_C_UAID_BCFCE7058A98ED7702_1150318005": true,
+        "PBZ_MobDomain_C_UAID_BCFCE704F7258B0203_1223432428": true
+      },
+      "checkpointCreatesBell": true,
+      "chiLianUltimate": {
+        "center": {
+          "X": -183872.73,
+          "Y": 119289.96,
+          "Z": -4131.0
+        },
+        "snakes": [
+          {
+            "X": -182860,
+            "Y": 117540,
+            "Z": -4129.0
+          },
+          {
+            "X": -182260,
+            "Y": 120180,
+            "Z": -4119.0
+          },
+          {
+            "X": -184460,
+            "Y": 117780,
+            "Z": -4121.0
+          },
+          {
+            "X": -182580,
+            "Y": 118860,
+            "Z": -4131.0
+          }
+        ]
+      },
+      "combatBoundary": [
+        {
+          "X": -183890.8,
+          "Y": 120263.0,
+          "Z": 0
+        },
+        {
+          "X": -184288.4,
+          "Y": 120256.7,
+          "Z": 0
+        },
+        {
+          "X": -184553.4,
+          "Y": 120196.7,
+          "Z": 0
+        },
+        {
+          "X": -184628.5,
+          "Y": 119941.4,
+          "Z": 0
+        },
+        {
+          "X": -184654.8,
+          "Y": 118894.3,
+          "Z": 0
+        },
+        {
+          "X": -184607.8,
+          "Y": 118010.5,
+          "Z": 0
+        },
+        {
+          "X": -184409.0,
+          "Y": 117434.1,
+          "Z": 0
+        },
+        {
+          "X": -183179.0,
+          "Y": 117459.1,
+          "Z": 0
+        },
+        {
+          "X": -181771.8,
+          "Y": 117745.8,
+          "Z": 0
+        },
+        {
+          "X": -182000.0,
+          "Y": 118899.3,
+          "Z": 0
+        },
+        {
+          "X": -182094.8,
+          "Y": 119610.6,
+          "Z": 0
+        },
+        {
+          "X": -182194.8,
+          "Y": 120185.6,
+          "Z": 0
+        },
+        {
+          "X": -182419.8,
+          "Y": 120285.6,
+          "Z": 0
+        }
+      ],
+      "combatFog": "BP_FogDoor_C_UAID_BCFCE704F7253AD802_1288819916",
+      "combatHeight": {
+        "max": -2769.0,
+        "min": -4276.0
+      },
+      "componentPointMask": true,
+      "entryGround": {
+        "X": -181700,
+        "Y": 119340,
+        "Z": -4131.0
+      },
+      "id": "pangzhen_zhanqi",
+      "lionArena": {
+        "center": {
+          "X": -183872.73,
+          "Y": 119289.96,
+          "Z": -3131.0
+        },
+        "exits": [
+          {
+            "X": -182860,
+            "Y": 117540,
+            "Z": -4129.0
+          },
+          {
+            "X": -182260,
+            "Y": 120180,
+            "Z": -4119.0
+          },
+          {
+            "X": -184460,
+            "Y": 117780,
+            "Z": -4121.0
+          },
+          {
+            "X": -182580,
+            "Y": 118860,
+            "Z": -4131.0
+          }
+        ],
+        "extent": {
+          "X": 2350.930000000022,
+          "Y": 2105.8600000000006,
+          "Z": 1240
+        }
+      },
+      "loadedLayers": [],
+      "map": "PBZ_Pangzhen_WP",
+      "name": "庞镇·黄家宅邸前路口",
+      "openStoryDoors": [
+        "BP_FogDoor_C_UAID_60CF848217CAEFE702_1244746706",
+        "BP_FogDoor_C_UAID_60CF848217CA978002_1366641873"
+      ],
+      "originalPath": "/Game/Maps/B08_09_10/PBZ_Pangzhen_WP",
+      "phaseReturnPoints": [
+        {
+          "X": -182067,
+          "Y": 117880,
+          "Z": -4131
+        }
+      ],
+      "phaseSpawnClearance": 800,
+      "requireRoads": true,
+      "reviveClearance": 520,
+      "roadFogs": [
+        {
+          "emitter": {
+            "name": "N2",
+            "point": {
+              "X": -183875,
+              "Y": 117374,
+              "Z": -4082
+            },
+            "fillCenter": true
+          },
+          "name": "H4",
+          "phantom": true,
+          "points": [
+            {
+              "X": -183167,
+              "Y": 117336,
+              "Z": -4070.0
+            },
+            {
+              "X": -184937,
+              "Y": 117286,
+              "Z": -4001.0
+            }
+          ]
+        },
+        {
+          "emitter": {
+            "name": "N3",
+            "point": {
+              "X": -184659,
+              "Y": 119561,
+              "Z": -4131
+            },
+            "fillCenter": true
+          },
+          "name": "H5",
+          "phantom": true,
+          "points": [
+            {
+              "X": -184697,
+              "Y": 118980,
+              "Z": -4131.0
+            },
+            {
+              "X": -184545,
+              "Y": 120282,
+              "Z": -4121.0
+            }
+          ]
+        },
+        {
+          "emitter": {
+            "name": "N1",
+            "point": {
+              "X": -181499,
+              "Y": 119448,
+              "Z": -4131
+            },
+            "fillCenter": true
+          },
+          "name": "H6",
+          "phantom": true,
+          "points": [
+            {
+              "X": -181511,
+              "Y": 118993,
+              "Z": -3569
+            },
+            {
+              "X": -181537,
+              "Y": 119877,
+              "Z": -4131
+            }
+          ]
+        }
+      ],
+      "rotation": {
+        "Pitch": 0,
+        "Roll": 0,
+        "Yaw": -178.68
+      },
+      "spawnClearance": 1050,
+      "spawnPoints": [
+        {
+          "X": -183872.73,
+          "Y": 119289.96,
+          "Z": -4131.0
+        },
+        {
+          "X": -182860,
+          "Y": 117540,
+          "Z": -4129.0
+        },
+        {
+          "X": -182260,
+          "Y": 120180,
+          "Z": -4119.0
+        },
+        {
+          "X": -184460,
+          "Y": 117780,
+          "Z": -4121.0
+        },
+        {
+          "X": -182580,
+          "Y": 118860,
+          "Z": -4131.0
+        },
+        {
+          "X": -183580,
+          "Y": 118300,
+          "Z": -4129.0
+        }
+      ],
+      "spawnTrace": {
+        "bottom": -4326.0,
+        "localGround": true,
+        "top": -3944.0,
+        "worldStaticFallback": true
+      },
+      "storySpawners": [
+        "BP_AISpawner_C_UAID_60CF848217CA05E202_2004661238",
+        "BP_AISpawner_C_UAID_60CF848217CA0EE202_1407483665",
+        "BP_AISpawner_C_UAID_60CF848217CA0EE202_1407584666",
+        "BP_AISpawner_C_UAID_60CF848217CA1BD602_1553060246",
+        "BP_AISpawner_C_UAID_60CF848217CA1BD602_1622678247",
+        "BP_AISpawner_C_UAID_60CF848217CA1BD602_1704271250",
+        "BP_AISpawner_C_UAID_60CF848217CA1BD602_2011341252",
+        "BP_AISpawner_C_UAID_60CF848217CA1BD602_2011342253",
+        "BP_AISpawner_C_UAID_60CF848217CA1BD602_2132640254",
+        "BP_AISpawner_C_UAID_60CF848217CA1CD602_1077046431",
+        "BP_AISpawner_C_UAID_60CF848217CA1CD602_1489428432",
+        "BP_AISpawner_C_UAID_60CF848217CA1CD602_1489538433",
+        "BP_AISpawner_C_UAID_60CF848217CA1CD602_1504157434",
+        "BP_AISpawner_C_UAID_60CF848217CA41E302_1525374732",
+        "BP_AISpawner_C_UAID_60CF848217CA72DF02_2116194409",
+        "BP_AISpawner_C_UAID_60CF848217CA73DF02_1094487586",
+        "BP_AISpawner_C_UAID_60CF848217CA73DF02_1099443587",
+        "BP_AISpawner_C_UAID_60CF848217CAA9FC02_1152386585",
+        "BP_AISpawner_C_UAID_60CF848217CAA9FC02_1439212586",
+        "BP_AISpawner_C_UAID_60CF848217CAA9FC02_1452977587",
+        "BP_AISpawner_C_UAID_60CF848217CACAE302_1748526836",
+        "BP_AISpawner_C_UAID_60CF848217CACAE302_1748561837",
+        "BP_AISpawner_C_UAID_60CF848217CACAE302_1748562838",
+        "BP_AISpawner_C_UAID_60CF848217CACFE302_1078244720",
+        "BP_AISpawner_C_UAID_60CF848217CACFE302_1098418721",
+        "BP_AISpawner_C_UAID_60CF848217CAEFE702_1667983708",
+        "BP_AISpawner_C_UAID_60CF848217CAEFE702_1668071709",
+        "BP_AISpawner_C_UAID_60CF848217CAEFE702_1720627710",
+        "BP_AISpawner_C_UAID_BCFCE704F7258B0203_1277176429",
+        "BP_AISpawner_C_UAID_BCFCE704F7258B0203_1304139430",
+        "BP_AISpawner_C_UAID_BCFCE704F7258B0203_1305527431",
+        "BP_AISpawner_C_UAID_BCFCE704F725C0D402_1293420352",
+        "BP_AISpawner_C_UAID_BCFCE7058A8B987E02_2089605020",
+        "BP_AISpawner_C_UAID_BCFCE7058A98ED7702_1150320006",
+        "BP_AISpawner_C_UAID_BCFCE7058A98ED7702_1150328014",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A7CB202_2009694437",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A7DB202_1637116616",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A7DB202_1933052619",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A7DB202_2033760622",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A82B202_1195265517",
+        "BP_AISpawner_C_UAID_BCFCE7078B5A82B202_1202356523",
+        "BP_AISpawner_C_UAID_BCFCE7078B5ABFB202_1450199174",
+        "BP_AISpawner_C_UAID_BCFCE7078B5ABFB202_1570924175",
+        "BP_AISpawner_C_UAID_BCFCE7078B5AC1B202_1389510545",
+        "BP_AISpawner_C_UAID_BCFCE7078B5AC3B302_1488759891",
+        "BP_AISpawner_C_UAID_BCFCE7078B5AC3B302_1846547897",
+        "BP_AISpawner_C_UAID_BCFCE7078B5AC3B302_2056133900",
+        "BP_AISpawner_C_UAID_E89C25A75433FBD502_1164639740"
+      ],
+      "unloadedLayers": [],
+      "walkIn": true,
+      "guardTerrainDefeat": true
+    },
+    {
+      "additionalCombatFogs": [],
+      "allowSeparateBellFloor": true,
+      "anchor": {
+        "X": -213320,
+        "Y": 130420,
+        "Z": -3889.0
+      },
+      "arenaOnlyBell": true,
+      "bellGround": {
+        "X": -212936,
+        "Y": 130306,
+        "Z": -4117
+      },
+      "bellSaveId": "BrokenBell_TheEnd01",
+      "bossRecovery": true,
+      "bossSpawnIndex": {
+        "BP_Monster_WuXuan": 1
+      },
+      "checkpointActors": {
+        "BP_AICombatTriggerVolume_C_UAID_60CF848099096A0003_2115909513": true,
+        "BP_AICombatTriggerVolume_C_UAID_60CF84809909A7FC02_1715323155": true,
+        "BP_AICombatTriggerVolume_C_UAID_BCFCE704F725E8B002_1151088198": true,
+        "BP_AISpawner_C_UAID_60CF8480990904E102_1772528818": true,
+        "BP_AISpawner_C_UAID_60CF8480990904E102_1953348819": true,
+        "BP_AISpawner_C_UAID_60CF8480990906E102_1640510184": true,
+        "BP_AISpawner_C_UAID_60CF848099097EE302_1405058425": true,
+        "BP_AISpawner_C_UAID_60CF8480990990FD02_1951854082": true,
+        "BP_AISpawner_C_UAID_60CF8480990990FD02_2043431083": true,
+        "BP_AISpawner_C_UAID_60CF84809909E1B002_2023366968": true,
+        "BP_AISpawner_C_UAID_BCFCE704F72533D202_1825461246": true,
+        "BP_AISpawner_C_UAID_BCFCE704F72533D202_1834117247": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725DFB002_1704908620": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725E0B002_1288798797": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725E0B002_1298040798": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725E0B002_1531430800": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725E4B002_1973903489": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725E7B002_1173891021": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725E9B002_1933938378": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725E9B002_2045181380": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725E9B002_2105825381": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725EAB002_1138158558": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725ECB002_1878523433": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725ECB002_2103754435": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC018B202_1403488699": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC0D0B202_1542367083": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC0D0B202_1568204084": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC0D0B202_1577936085": true,
+        "BP_FogDoor_C_UAID_60CF8480990954EC02_1712313674": true,
+        "BP_FogDoor_C_UAID_60CF8480990978FF02_1995207935": true,
+        "BP_FogDoor_C_UAID_60CF84809909E2B002_1263023145": true,
+        "BP_MobDomain_C_UAID_60CF84809909550703_1468296428": true,
+        "BP_MobDomain_C_UAID_BCFCE704F725DFB002_1639923619": true,
+        "BP_MobDomain_C_UAID_BCFCE704F725E0B002_1446784799": true,
+        "BP_MobDomain_C_UAID_BCFCE704F725E9B002_1627873376": true,
+        "BP_MobDomain_C_UAID_BCFCE704F725EBB002_2063301253": true,
+        "BP_MobDomain_C_UAID_EC9161CFEDC018B202_1181155698": true,
+        "BP_MobDomain_C_UAID_EC9161CFEDC0CFB202_1882326906": true,
+        "BP_PBZAISpawnerTriggerVolume_C_UAID_BCFCE704F725D5B002_1131495854": true,
+        "BP_PBZAISpawnerTriggerVolume_C_UAID_EC9161CFEDC020B202_1589216129": true
+      },
+      "checkpointCreatesBell": true,
+      "chiLianUltimate": {
+        "center": {
+          "X": -216163.1,
+          "Y": 131251.53,
+          "Z": -3914.0
+        },
+        "snakes": [
+          {
+            "X": -214240,
+            "Y": 129580,
+            "Z": -3925.0
+          },
+          {
+            "X": -214080,
+            "Y": 131940,
+            "Z": -3930.0
+          },
+          {
+            "X": -215960,
+            "Y": 129540,
+            "Z": -3922.0
+          },
+          {
+            "X": -214880,
+            "Y": 130780,
+            "Z": -3903.0
+          }
+        ]
+      },
+      "combatBoundary": [
+        {
+          "X": -214632.3,
+          "Y": 129259.6,
+          "Z": 0
+        },
+        {
+          "X": -214054.1,
+          "Y": 129623.4,
+          "Z": 0
+        },
+        {
+          "X": -213741.4,
+          "Y": 130022.8,
+          "Z": 0
+        },
+        {
+          "X": -213581.8,
+          "Y": 130399.1,
+          "Z": 0
+        },
+        {
+          "X": -213559.4,
+          "Y": 130852.5,
+          "Z": 0
+        },
+        {
+          "X": -213644.6,
+          "Y": 131439.3,
+          "Z": 0
+        },
+        {
+          "X": -214152.8,
+          "Y": 132147.2,
+          "Z": 0
+        },
+        {
+          "X": -214848.2,
+          "Y": 132411.7,
+          "Z": 0
+        },
+        {
+          "X": -215650.6,
+          "Y": 132357.0,
+          "Z": 0
+        },
+        {
+          "X": -216247.3,
+          "Y": 132029.8,
+          "Z": 0
+        },
+        {
+          "X": -216728.9,
+          "Y": 131172.8,
+          "Z": 0
+        },
+        {
+          "X": -216681.4,
+          "Y": 130409.3,
+          "Z": 0
+        },
+        {
+          "X": -216111.9,
+          "Y": 129569.4,
+          "Z": 0
+        },
+        {
+          "X": -215227.3,
+          "Y": 129292.1,
+          "Z": 0
+        }
+      ],
+      "combatFog": "BP_FogDoor_C_UAID_60CF84809909E2B002_1263023145",
+      "combatHeight": {
+        "max": -2553.0,
+        "min": -4075.0
+      },
+      "componentPointMask": true,
+      "entryGround": {
+        "X": -213320,
+        "Y": 130420,
+        "Z": -4009.0
+      },
+      "id": "pangzhen_wuxuan",
+      "lionArena": {
+        "center": {
+          "X": -216163.1,
+          "Y": 131251.53,
+          "Z": -2914.0
+        },
+        "exits": [
+          {
+            "X": -214240,
+            "Y": 129580,
+            "Z": -3925.0
+          },
+          {
+            "X": -214080,
+            "Y": 131940,
+            "Z": -3930.0
+          },
+          {
+            "X": -215960,
+            "Y": 129540,
+            "Z": -3922.0
+          },
+          {
+            "X": -214880,
+            "Y": 130780,
+            "Z": -3903.0
+          }
+        ],
+        "extent": {
+          "X": 2853.7000000000116,
+          "Y": 2241.929999999993,
+          "Z": 1240
+        }
+      },
+      "loadedLayers": [],
+      "map": "PBZ_Houjie_WP",
+      "name": "庞镇·后街圆形戏台",
+      "openStoryDoors": [
+        "BP_FogDoor_C_UAID_60CF8480990954EC02_1712313674",
+        "BP_FogDoor_C_UAID_60CF8480990978FF02_1995207935"
+      ],
+      "originalPath": "/Game/Maps/B09/PBZ_Houjie_WP",
+      "phaseReturnPoints": [
+        {
+          "X": -213858,
+          "Y": 130350,
+          "Z": -3923
+        }
+      ],
+      "phaseSpawnClearance": 800,
+      "requireRoads": true,
+      "reviveClearance": 520,
+      "roadFogs": [
+        {
+          "collisionOnly": true,
+          "name": "戏台外沿空气墙",
+          "phantom": true,
+          "points": [
+            {
+              "X": -213454.5,
+              "Y": 130857.7,
+              "Z": -3951.2
+            },
+            {
+              "X": -213551.2,
+              "Y": 131487.3,
+              "Z": -3951.2
+            },
+            {
+              "X": -214101.3,
+              "Y": 132238.7,
+              "Z": -3951.2
+            },
+            {
+              "X": -214843.7,
+              "Y": 132516.6,
+              "Z": -3951.2
+            },
+            {
+              "X": -215694.9,
+              "Y": 132452.2,
+              "Z": -3951.2
+            },
+            {
+              "X": -216323.9,
+              "Y": 132101.6,
+              "Z": -3951.2
+            },
+            {
+              "X": -216831.6,
+              "Y": 131194.8,
+              "Z": -3951.2
+            },
+            {
+              "X": -216784.1,
+              "Y": 130387.4,
+              "Z": -3951.2
+            },
+            {
+              "X": -216185.5,
+              "Y": 129494.5,
+              "Z": -3951.2
+            },
+            {
+              "X": -215248.6,
+              "Y": 129189.3,
+              "Z": -3951.2
+            },
+            {
+              "X": -214612.9,
+              "Y": 129156.4,
+              "Z": -3951.2
+            },
+            {
+              "X": -213991.4,
+              "Y": 129539.2,
+              "Z": -3951.2
+            },
+            {
+              "X": -213653.2,
+              "Y": 129965.8,
+              "Z": -3951.2
+            }
+          ]
+        },
+        {
+          "emitter": {
+            "name": "N1",
+            "point": {
+              "X": -211444,
+              "Y": 130321,
+              "Z": -4196
+            },
+            "fillCenter": true
+          },
+          "name": "H2",
+          "phantom": true,
+          "points": [
+            {
+              "X": -211414,
+              "Y": 129619,
+              "Z": -4202.0
+            },
+            {
+              "X": -211473,
+              "Y": 131726,
+              "Z": -4210.0
+            }
+          ]
+        }
+      ],
+      "rotation": {
+        "Pitch": 0,
+        "Roll": 0,
+        "Yaw": 163.7
+      },
+      "spawnClearance": 1050,
+      "spawnPoints": [
+        {
+          "X": -216163.1,
+          "Y": 131251.53,
+          "Z": -3914.0
+        },
+        {
+          "X": -214240,
+          "Y": 129580,
+          "Z": -3925.0
+        },
+        {
+          "X": -214080,
+          "Y": 131940,
+          "Z": -3930.0
+        },
+        {
+          "X": -215960,
+          "Y": 129540,
+          "Z": -3922.0
+        },
+        {
+          "X": -214880,
+          "Y": 130780,
+          "Z": -3903.0
+        },
+        {
+          "X": -215360,
+          "Y": 132300,
+          "Z": -3912.0
+        }
+      ],
+      "spawnTrace": {
+        "bottom": -4125.0,
+        "localGround": true,
+        "top": -3728.0,
+        "worldStaticFallback": true
+      },
+      "storySpawners": [
+        "BP_AISpawner_C_UAID_60CF8480990904E102_1772528818",
+        "BP_AISpawner_C_UAID_60CF8480990904E102_1953348819",
+        "BP_AISpawner_C_UAID_60CF8480990906E102_1640510184",
+        "BP_AISpawner_C_UAID_60CF848099097EE302_1405058425",
+        "BP_AISpawner_C_UAID_60CF8480990990FD02_1951854082",
+        "BP_AISpawner_C_UAID_60CF8480990990FD02_2043431083",
+        "BP_AISpawner_C_UAID_60CF84809909E1B002_2023366968",
+        "BP_AISpawner_C_UAID_BCFCE704F72533D202_1825461246",
+        "BP_AISpawner_C_UAID_BCFCE704F72533D202_1834117247",
+        "BP_AISpawner_C_UAID_BCFCE704F725DFB002_1704908620",
+        "BP_AISpawner_C_UAID_BCFCE704F725E0B002_1288798797",
+        "BP_AISpawner_C_UAID_BCFCE704F725E0B002_1298040798",
+        "BP_AISpawner_C_UAID_BCFCE704F725E0B002_1531430800",
+        "BP_AISpawner_C_UAID_BCFCE704F725E4B002_1973903489",
+        "BP_AISpawner_C_UAID_BCFCE704F725E7B002_1173891021",
+        "BP_AISpawner_C_UAID_BCFCE704F725E9B002_1933938378",
+        "BP_AISpawner_C_UAID_BCFCE704F725E9B002_2045181380",
+        "BP_AISpawner_C_UAID_BCFCE704F725E9B002_2105825381",
+        "BP_AISpawner_C_UAID_BCFCE704F725EAB002_1138158558",
+        "BP_AISpawner_C_UAID_BCFCE704F725ECB002_1878523433",
+        "BP_AISpawner_C_UAID_BCFCE704F725ECB002_2103754435",
+        "BP_AISpawner_C_UAID_EC9161CFEDC018B202_1403488699",
+        "BP_AISpawner_C_UAID_EC9161CFEDC0D0B202_1542367083",
+        "BP_AISpawner_C_UAID_EC9161CFEDC0D0B202_1568204084",
+        "BP_AISpawner_C_UAID_EC9161CFEDC0D0B202_1577936085"
+      ],
+      "unloadedLayers": [],
+      "walkIn": true,
+      "guardTerrainDefeat": true
+    },
+    {
+      "additionalCombatFogs": [
+        "BP_FogDoor_C_UAID_E89C25A7512647AF02_1739510994"
+      ],
+      "airFloor": {
+        "center": {
+          "X": -254285.0,
+          "Y": 100440.0,
+          "Z": -3595.0
+        },
+        "extent": {
+          "X": 435.0,
+          "Y": 480.0,
+          "Z": 15.0
+        },
+        "top": -3580
+      },
+      "allowSeparateBellFloor": true,
+      "anchor": {
+        "X": -248980,
+        "Y": 103300,
+        "Z": -3468.0
+      },
+      "arenaOnlyBell": true,
+      "bellGround": {
+        "X": -248837.05,
+        "Y": 103353.29,
+        "Z": -3584.0
+      },
+      "bellSaveId": "BrokenBell_TheEnd01",
+      "blockedTraversal": {
+        "BP_SpecialMove_DownSliding_C_UAID_E89C25A7512647AF02_1748557626": true
+      },
+      "bossRecovery": true,
+      "bossSpawnIndex": {
+        "BP_Monster_GuWanYue": 1
+      },
+      "checkpointActors": {
+        "BP_AICombatTriggerVolume_C_UAID_60CF84809909DB0303_1603898563": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_60CF8480990978DE02_1149031104": true,
+        "BP_AISpawner_C_UAID_60CF8480990986E302_1285143867": true,
+        "BP_AISpawner_C_UAID_60CF8480990986E302_1472832868": true,
+        "BP_AISpawner_C_UAID_60CF84809909D4E302_2049639674": true,
+        "BP_AISpawner_C_UAID_60CF84809909D4E302_2064274675": true,
+        "BP_AISpawner_C_UAID_60CF84809909D4E302_2142100676": true,
+        "BP_AISpawner_C_UAID_E89C25A7512642AF02_1937568465": true,
+        "BP_AISpawner_C_UAID_E89C25A7512642AF02_1937580472": true,
+        "BP_AISpawner_C_UAID_E89C25A7512647AF02_1730568483": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC066B202_1691934436": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC067B202_1829107615": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC067B202_2133063618": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC068B202_1092729795": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC068B202_1282267797": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC06FB202_1585510054": true,
+        "BP_FogDoor_C_UAID_E89C25A7512647AF02_1739502990": true,
+        "BP_FogDoor_C_UAID_E89C25A7512647AF02_1739509993": true,
+        "BP_FogDoor_C_UAID_E89C25A7512647AF02_1739510994": true,
+        "BP_MelodiousBell_C_UAID_E89C25A751264AAF02_1377798569": true,
+        "BP_MobDomain_C_UAID_E89C25A7512642AF02_1937574468": true,
+        "BP_MobDomain_C_UAID_E89C25A7512642AF02_1937583475": true,
+        "BP_MobDomain_C_UAID_EC9161CFEDC066B202_1645697435": true,
+        "BP_MobDomain_C_UAID_EC9161CFEDC067B202_1829005614": true,
+        "BP_MobDomain_C_UAID_EC9161CFEDC068B202_1282159796": true,
+        "BP_MobDomain_C_UAID_EC9161CFEDC06FB202_1254257052": true,
+        "BP_PBZAISpawnerTriggerVolume_C_UAID_E89C25A7512642AF02_1937578470": true,
+        "BP_PBZAISpawnerTriggerVolume_C_UAID_EC9161CFEDC065B202_2018413257": true,
+        "BP_SpecialMove_DownSliding_C_UAID_E89C25A7512647AF02_1748557626": true,
+        "PBZ_MobDomain_C_UAID_60CF8480990985E302_1646076688": true,
+        "PBZ_MobDomain_C_UAID_60CF84809909D4E302_1992060673": true
+      },
+      "checkpointCreatesBell": true,
+      "chiLianUltimate": {
+        "center": {
+          "X": -253324.67,
+          "Y": 100874.94,
+          "Z": -3573.0
+        },
+        "snakes": [
+          {
+            "X": -249580,
+            "Y": 102580,
+            "Z": -3575.0
+          },
+          {
+            "X": -252220,
+            "Y": 98340,
+            "Z": -3547.0
+          },
+          {
+            "X": -250660,
+            "Y": 100300,
+            "Z": -3555.0
+          },
+          {
+            "X": -251940,
+            "Y": 102820,
+            "Z": -3560.0
+          }
+        ]
+      },
+      "combatBoundary": [
+        {
+          "X": -254285.0,
+          "Y": 100440.0,
+          "Z": 0
+        },
+        {
+          "X": -253922.0,
+          "Y": 98290.8,
+          "Z": 0
+        },
+        {
+          "X": -252033.7,
+          "Y": 98339.6,
+          "Z": 0
+        },
+        {
+          "X": -249446.3,
+          "Y": 101970.8,
+          "Z": 0
+        },
+        {
+          "X": -249573,
+          "Y": 102579,
+          "Z": 0
+        },
+        {
+          "X": -250539.3,
+          "Y": 103838.8,
+          "Z": 0
+        },
+        {
+          "X": -253324.67,
+          "Y": 101824.94,
+          "Z": 0
+        },
+        {
+          "X": -254274.67,
+          "Y": 100874.94,
+          "Z": 0
+        }
+      ],
+      "combatFog": "BP_FogDoor_C_UAID_E89C25A7512647AF02_1739509993",
+      "combatHeight": {
+        "max": -2197.0,
+        "min": -3742
+      },
+      "componentPointMask": true,
+      "entryGround": {
+        "X": -248980,
+        "Y": 103300,
+        "Z": -3588.0
+      },
+      "id": "pangzhen_guwanyue",
+      "lionArena": {
+        "center": {
+          "X": -253324.67,
+          "Y": 100874.94,
+          "Z": -2573.0
+        },
+        "exits": [
+          {
+            "X": -249580,
+            "Y": 102580,
+            "Z": -3575.0
+          },
+          {
+            "X": -252220,
+            "Y": 98340,
+            "Z": -3547.0
+          },
+          {
+            "X": -250660,
+            "Y": 100300,
+            "Z": -3555.0
+          },
+          {
+            "X": -251940,
+            "Y": 102820,
+            "Z": -3560.0
+          }
+        ],
+        "extent": {
+          "X": 4128.370000000024,
+          "Y": 3213.8600000000006,
+          "Z": 1240
+        }
+      },
+      "loadedLayers": [],
+      "map": "PBZ_Houjie_WP",
+      "name": "庞镇·戏声缥缈的水塘",
+      "openStoryDoors": [
+        "BP_FogDoor_C_UAID_E89C25A7512647AF02_1739502990"
+      ],
+      "originalPath": "/Game/Maps/B09/PBZ_Houjie_WP",
+      "phaseReturnPoints": [
+        {
+          "X": -251024,
+          "Y": 102050,
+          "Z": -3579
+        }
+      ],
+      "phaseSpawnClearance": 800,
+      "requireRoads": true,
+      "retiredBell": "BP_MelodiousBell_C_UAID_E89C25A751264AAF02_1377798569",
+      "reviveClearance": 520,
+      "roadFogs": [
+        {
+          "emitter": {
+            "name": "N1",
+            "point": {
+              "X": -248447,
+              "Y": 103988,
+              "Z": -3622
+            },
+            "fillCenter": true
+          },
+          "name": "H2",
+          "phantom": true,
+          "points": [
+            {
+              "X": -247829,
+              "Y": 102846,
+              "Z": -3562.0
+            },
+            {
+              "X": -249256,
+              "Y": 104844,
+              "Z": -2622
+            }
+          ]
+        }
+      ],
+      "rotation": {
+        "Pitch": 0,
+        "Roll": 0,
+        "Yaw": -150.83
+      },
+      "spawnClearance": 1050,
+      "spawnPoints": [
+        {
+          "X": -253324.67,
+          "Y": 100874.94,
+          "Z": -3573.0
+        },
+        {
+          "X": -249580,
+          "Y": 102580,
+          "Z": -3575.0
+        },
+        {
+          "X": -252220,
+          "Y": 98340,
+          "Z": -3547.0
+        },
+        {
+          "X": -250660,
+          "Y": 100300,
+          "Z": -3555.0
+        },
+        {
+          "X": -251940,
+          "Y": 102820,
+          "Z": -3560.0
+        },
+        {
+          "X": -254020,
+          "Y": 99060,
+          "Z": -3584.0
+        }
+      ],
+      "spawnTrace": {
+        "bottom": -3792,
+        "localGround": true,
+        "top": -3372.0,
+        "worldStaticFallback": true
+      },
+      "storySpawners": [
+        "BP_AISpawner_C_UAID_60CF8480990986E302_1285143867",
+        "BP_AISpawner_C_UAID_60CF8480990986E302_1472832868",
+        "BP_AISpawner_C_UAID_60CF84809909D4E302_2049639674",
+        "BP_AISpawner_C_UAID_60CF84809909D4E302_2064274675",
+        "BP_AISpawner_C_UAID_60CF84809909D4E302_2142100676",
+        "BP_AISpawner_C_UAID_E89C25A7512642AF02_1937568465",
+        "BP_AISpawner_C_UAID_E89C25A7512642AF02_1937580472",
+        "BP_AISpawner_C_UAID_E89C25A7512647AF02_1730568483",
+        "BP_AISpawner_C_UAID_EC9161CFEDC066B202_1691934436",
+        "BP_AISpawner_C_UAID_EC9161CFEDC067B202_1829107615",
+        "BP_AISpawner_C_UAID_EC9161CFEDC067B202_2133063618",
+        "BP_AISpawner_C_UAID_EC9161CFEDC068B202_1092729795",
+        "BP_AISpawner_C_UAID_EC9161CFEDC068B202_1282267797",
+        "BP_AISpawner_C_UAID_EC9161CFEDC06FB202_1585510054"
+      ],
+      "unloadedLayers": [],
+      "walkIn": true,
+      "guardTerrainDefeat": true
+    },
+    {
+      "additionalCombatFogs": [],
+      "allowSeparateBellFloor": true,
+      "anchor": {
+        "X": -271605,
+        "Y": 73190,
+        "Z": -7840
+      },
+      "arenaOnlyBell": true,
+      "bellClampToNav": true,
+      "bellGround": {
+        "X": -270815,
+        "Y": 73029,
+        "Z": -7965
+      },
+      "bellSaveId": "BrokenBell_TheEnd01",
+      "bossRecovery": true,
+      "bossSpawnIndex": {
+        "BP_Monster_YouLong_SecondBrother": 1
+      },
+      "checkpointActors": {
+        "BP_AICombatTriggerVolume_C_UAID_60CF8480990985E302_2140849689": true,
+        "BP_AICombatTriggerVolume_C_UAID_60CF84809909EE0203_1905126853": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_BCFCE704F725970203_1682279592": true,
+        "BP_AISpawner_C_UAID_60CF848099090AF102_1600238832": true,
+        "BP_AISpawner_C_UAID_60CF8480990992E702_2092118154": true,
+        "BP_AISpawner_C_UAID_60CF84809909A9E002_1338212875": true,
+        "BP_AISpawner_C_UAID_60CF84809909C8DE02_1550037210": true,
+        "BP_AISpawner_C_UAID_60CF84809909C8DE02_1550106211": true,
+        "BP_AISpawner_C_UAID_60CF84809909C8DE02_1550109213": true,
+        "BP_AISpawner_C_UAID_60CF84809909C8DE02_1550111214": true,
+        "BP_AISpawner_C_UAID_BCFCE704F72507D402_1982112614": true,
+        "BP_AISpawner_C_UAID_BCFCE704F72508D402_1485468791": true,
+        "BP_AISpawner_C_UAID_BCFCE704F72508D402_1590132792": true,
+        "BP_AISpawner_C_UAID_BCFCE704F72580D202_1554452809": true,
+        "BP_AISpawner_C_UAID_BCFCE704F72580D202_1577164810": true,
+        "BP_AISpawner_C_UAID_BCFCE704F72580D202_1639664811": true,
+        "BP_AISpawner_C_UAID_BCFCE704F72584D202_1185083528": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC071B202_1769775414": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC071B202_1805626416": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC071B202_2109487422": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC072B202_1143789600": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC072B202_1812290608": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC073B202_1905850796": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC076B202_1675403330": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC076B202_1756767332": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC076B202_1765069333": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC07BB202_1564726127": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC07BB202_1670396129": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC07BB202_1773265131": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC07DB202_1720672476": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC07DB202_1729047477": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC07DB202_1878705479": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC07DB202_2060491481": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC07DB202_2063504482": true,
+        "BP_FogDoor_C_UAID_60CF84809909EE0203_1945471854": true,
+        "BP_FogDoor_C_UAID_60CF84809909EE0203_2010888855": true,
+        "BP_MobDomain_C_UAID_60CF84809909C8DE02_1550114216": true,
+        "BP_MobDomain_C_UAID_EC9161CFEDC071B202_1648409413": true,
+        "BP_MobDomain_C_UAID_EC9161CFEDC071B202_2109580423": true,
+        "BP_MobDomain_C_UAID_EC9161CFEDC072B202_1812196607": true,
+        "BP_MobDomain_C_UAID_EC9161CFEDC073B202_1183850789": true,
+        "BP_MobDomain_C_UAID_EC9161CFEDC073B202_1543745791": true,
+        "BP_MobDomain_C_UAID_EC9161CFEDC076B202_1675300329": true,
+        "BP_MobDomain_C_UAID_EC9161CFEDC07BB202_1564826128": true,
+        "BP_MobDomain_C_UAID_EC9161CFEDC07BB202_1670510130": true,
+        "BP_MobDomain_C_UAID_EC9161CFEDC07BB202_1773372132": true,
+        "BP_PBZAISpawnerTriggerVolume_C_UAID_EC9161CFEDC071B202_1499814412": true,
+        "PBZ_MobDomain_C_UAID_BCFCE704F725BAD302_1741408063": true
+      },
+      "checkpointCreatesBell": true,
+      "chiLianUltimate": {
+        "center": {
+          "X": -273923.2,
+          "Y": 74156.57,
+          "Z": -7990.0
+        },
+        "snakes": [
+          {
+            "X": -271740,
+            "Y": 73730,
+            "Z": -7970.0
+          },
+          {
+            "X": -273945,
+            "Y": 72335,
+            "Z": -7966.0
+          },
+          {
+            "X": -272865,
+            "Y": 75575,
+            "Z": -7980.0
+          },
+          {
+            "X": -273000,
+            "Y": 73280,
+            "Z": -7983.0
+          }
+        ]
+      },
+      "combatBoundary": [
+        {
+          "X": -274253.2,
+          "Y": 74156.57,
+          "Z": 0
+        },
+        {
+          "X": -273927.6,
+          "Y": 72195.0,
+          "Z": 0
+        },
+        {
+          "X": -272193,
+          "Y": 72644,
+          "Z": 0
+        },
+        {
+          "X": -271863,
+          "Y": 72974,
+          "Z": 0
+        },
+        {
+          "X": -271711.0,
+          "Y": 73472.4,
+          "Z": 0
+        },
+        {
+          "X": -271737.5,
+          "Y": 74286.0,
+          "Z": 0
+        },
+        {
+          "X": -272053.9,
+          "Y": 75032.6,
+          "Z": 0
+        },
+        {
+          "X": -272812.5,
+          "Y": 75642.8,
+          "Z": 0
+        }
+      ],
+      "combatFog": "BP_FogDoor_C_UAID_60CF84809909EE0203_2010888855",
+      "combatHeight": {
+        "max": -6612,
+        "min": -8135.0
+      },
+      "componentPointMask": true,
+      "entryGround": {
+        "X": -271605,
+        "Y": 73190,
+        "Z": -7960
+      },
+      "id": "pangzhen_youlong",
+      "lionArena": {
+        "center": {
+          "X": -273923.2,
+          "Y": 74156.57,
+          "Z": -6990.0
+        },
+        "exits": [
+          {
+            "X": -271740,
+            "Y": 73730,
+            "Z": -7970.0
+          },
+          {
+            "X": -273945,
+            "Y": 72335,
+            "Z": -7966.0
+          },
+          {
+            "X": -272865,
+            "Y": 75575,
+            "Z": -7980.0
+          },
+          {
+            "X": -273000,
+            "Y": 73280,
+            "Z": -7983.0
+          }
+        ],
+        "extent": {
+          "X": 2462.2000000000116,
+          "Y": 2211.570000000007,
+          "Z": 1240
+        }
+      },
+      "loadedLayers": [],
+      "map": "PBZ_Houjie_WP",
+      "name": "庞镇·舞狮馆下方浅水塘",
+      "openStoryDoors": [
+        "BP_FogDoor_C_UAID_60CF84809909EE0203_1945471854"
+      ],
+      "originalPath": "/Game/Maps/B09/PBZ_Houjie_WP",
+      "phaseReturnPoints": [
+        {
+          "X": -272262,
+          "Y": 73363,
+          "Z": -7969
+        }
+      ],
+      "phaseSpawnClearance": 800,
+      "requireRoads": true,
+      "reviveClearance": 520,
+      "roadFogs": [
+        {
+          "emitter": {
+            "name": "N1",
+            "point": {
+              "X": -270328,
+              "Y": 72640,
+              "Z": -7923
+            },
+            "fillCenter": true
+          },
+          "name": "H2",
+          "phantom": true,
+          "points": [
+            {
+              "X": -270912,
+              "Y": 71999,
+              "Z": -7922.0
+            },
+            {
+              "X": -269673,
+              "Y": 73433,
+              "Z": -7902.0
+            }
+          ]
+        },
+        {
+          "emitter": {
+            "name": "N5",
+            "point": {
+              "X": -276814,
+              "Y": 73419,
+              "Z": -7812
+            },
+            "fillCenter": true
+          },
+          "name": "H6",
+          "phantom": true,
+          "points": [
+            {
+              "X": -276814,
+              "Y": 73113,
+              "Z": -7888.0
+            },
+            {
+              "X": -276787,
+              "Y": 73767,
+              "Z": -7900.0
+            }
+          ]
+        }
+      ],
+      "rotation": {
+        "Pitch": 0,
+        "Roll": 0,
+        "Yaw": 157.37
+      },
+      "spawnClearance": 1050,
+      "spawnPoints": [
+        {
+          "X": -273923.2,
+          "Y": 74156.57,
+          "Z": -7990.0
+        },
+        {
+          "X": -271740,
+          "Y": 73730,
+          "Z": -7970.0
+        },
+        {
+          "X": -273945,
+          "Y": 72335,
+          "Z": -7966.0
+        },
+        {
+          "X": -272865,
+          "Y": 75575,
+          "Z": -7980.0
+        },
+        {
+          "X": -273000,
+          "Y": 73280,
+          "Z": -7983.0
+        },
+        {
+          "X": -272685,
+          "Y": 74405,
+          "Z": -7988.0
+        }
+      ],
+      "spawnTrace": {
+        "bottom": -8185.0,
+        "localGround": true,
+        "top": -7787,
+        "worldStaticFallback": true
+      },
+      "storySpawners": [
+        "BP_AISpawner_C_UAID_60CF848099090AF102_1600238832",
+        "BP_AISpawner_C_UAID_60CF8480990992E702_2092118154",
+        "BP_AISpawner_C_UAID_60CF84809909A9E002_1338212875",
+        "BP_AISpawner_C_UAID_60CF84809909C8DE02_1550037210",
+        "BP_AISpawner_C_UAID_60CF84809909C8DE02_1550106211",
+        "BP_AISpawner_C_UAID_60CF84809909C8DE02_1550109213",
+        "BP_AISpawner_C_UAID_60CF84809909C8DE02_1550111214",
+        "BP_AISpawner_C_UAID_BCFCE704F72507D402_1982112614",
+        "BP_AISpawner_C_UAID_BCFCE704F72508D402_1485468791",
+        "BP_AISpawner_C_UAID_BCFCE704F72508D402_1590132792",
+        "BP_AISpawner_C_UAID_BCFCE704F72580D202_1554452809",
+        "BP_AISpawner_C_UAID_BCFCE704F72580D202_1577164810",
+        "BP_AISpawner_C_UAID_BCFCE704F72580D202_1639664811",
+        "BP_AISpawner_C_UAID_BCFCE704F72584D202_1185083528",
+        "BP_AISpawner_C_UAID_EC9161CFEDC071B202_1769775414",
+        "BP_AISpawner_C_UAID_EC9161CFEDC071B202_1805626416",
+        "BP_AISpawner_C_UAID_EC9161CFEDC071B202_2109487422",
+        "BP_AISpawner_C_UAID_EC9161CFEDC072B202_1143789600",
+        "BP_AISpawner_C_UAID_EC9161CFEDC072B202_1812290608",
+        "BP_AISpawner_C_UAID_EC9161CFEDC073B202_1905850796",
+        "BP_AISpawner_C_UAID_EC9161CFEDC076B202_1675403330",
+        "BP_AISpawner_C_UAID_EC9161CFEDC076B202_1756767332",
+        "BP_AISpawner_C_UAID_EC9161CFEDC076B202_1765069333",
+        "BP_AISpawner_C_UAID_EC9161CFEDC07BB202_1564726127",
+        "BP_AISpawner_C_UAID_EC9161CFEDC07BB202_1670396129",
+        "BP_AISpawner_C_UAID_EC9161CFEDC07BB202_1773265131",
+        "BP_AISpawner_C_UAID_EC9161CFEDC07DB202_1720672476",
+        "BP_AISpawner_C_UAID_EC9161CFEDC07DB202_1729047477",
+        "BP_AISpawner_C_UAID_EC9161CFEDC07DB202_1878705479",
+        "BP_AISpawner_C_UAID_EC9161CFEDC07DB202_2060491481",
+        "BP_AISpawner_C_UAID_EC9161CFEDC07DB202_2063504482"
+      ],
+      "unloadedLayers": [],
+      "walkIn": true,
+      "guardTerrainDefeat": true
+    },
+    {
+      "additionalCombatFogs": [
+        "BP_FogDoor_C_UAID_60CF848099097E0403_2065682318"
+      ],
+      "allowSeparateBellFloor": true,
+      "anchor": {
+        "X": -259580,
+        "Y": 49020,
+        "Z": -5028
+      },
+      "arenaOnlyBell": true,
+      "bellGround": {
+        "X": -259416.27,
+        "Y": 49062.29,
+        "Z": -5142.54
+      },
+      "bellSaveId": "Bell_SZ_023",
+      "bossRecovery": true,
+      "bossSpawnIndex": {
+        "BP_Monster_ChangHong_P2": 2,
+        "BP_Monster_ChangHong_Spear": 1
+      },
+      "checkpointActors": {
+        "BP_AICombatTriggerVolume_C_UAID_60CF84809909390903_1622652441": true,
+        "BP_AICombatTriggerVolume_C_UAID_60CF84809909E0E202_1393777650": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_60CF8480990967B302_1941619744": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_60CF8480990982C702_1396631567": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_60CF84809909ACCF02_1428355429": true,
+        "BP_AISpawner_C_UAID_60CF848099095FE502_1335467102": true,
+        "BP_AISpawner_C_UAID_60CF8480990982C702_1178641564": true,
+        "BP_AISpawner_C_UAID_60CF8480990982C702_1180893565": true,
+        "BP_AISpawner_C_UAID_60CF8480990982C702_1183164566": true,
+        "BP_AISpawner_C_UAID_60CF84809909ACCF02_1428350425": true,
+        "BP_AISpawner_C_UAID_60CF84809909ACCF02_1428352426": true,
+        "BP_AISpawner_C_UAID_BCFCE704F72580D202_1839378813": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC076B202_1423932328": true,
+        "BP_AISpawner_C_UAID_EC9161CFEDC07BB202_1489359126": true,
+        "BP_FogDoor_C_UAID_60CF848099097E0403_2065682318": true,
+        "BP_FogDoor_C_UAID_60CF8480990981C702_1504251379": true,
+        "BP_MobDomain_C_UAID_60CF8480990982C702_1145601563": true,
+        "BP_MobDomain_C_UAID_60CF84809909ACCF02_1428255424": true,
+        "BP_MobDomain_C_UAID_EC9161CFEDC076B202_1341105327": true,
+        "BP_MobDomain_C_UAID_EC9161CFEDC07BB202_1458785124": true,
+        "BP_PBZAISpawnerTriggerVolume_C_UAID_EC9161CFEDC076B202_1269851326": true
+      },
+      "checkpointBell": {
+        "classPath": "/Game/PBZContent/Blueprint/Item/BP_MelodiousBell.BP_MelodiousBell_C",
+        "id": "Bell_SZ_023",
+        "name": "BP_MelodiousBell_C_UAID_E89C25A751264AAF02_1377817577"
+      },
+      "chiLianUltimate": {
+        "center": {
+          "X": -254075.11,
+          "Y": 47752.46,
+          "Z": -6261.0
+        },
+        "snakes": [
+          {
+            "X": -254351.3,
+            "Y": 47348.77,
+            "Z": -6251.0
+          },
+          {
+            "X": -251180,
+            "Y": 48020,
+            "Z": -6260.0
+          },
+          {
+            "X": -253540,
+            "Y": 44580,
+            "Z": -6246.0
+          },
+          {
+            "X": -254060,
+            "Y": 50420,
+            "Z": -6251.0
+          }
+        ]
+      },
+      "combatBoundary": [
+        {
+          "X": -254320.2,
+          "Y": 45002.7,
+          "Z": 0
+        },
+        {
+          "X": -253532.7,
+          "Y": 44541.9,
+          "Z": 0
+        },
+        {
+          "X": -252433.8,
+          "Y": 45834.8,
+          "Z": 0
+        },
+        {
+          "X": -251083.8,
+          "Y": 47952.2,
+          "Z": 0
+        },
+        {
+          "X": -252669.3,
+          "Y": 49454.6,
+          "Z": 0
+        },
+        {
+          "X": -254053.5,
+          "Y": 50439.4,
+          "Z": 0
+        },
+        {
+          "X": -255218.6,
+          "Y": 49325.9,
+          "Z": 0
+        },
+        {
+          "X": -255756.6,
+          "Y": 48509.7,
+          "Z": 0
+        },
+        {
+          "X": -256259.0,
+          "Y": 47963.7,
+          "Z": 0
+        },
+        {
+          "X": -256464.8,
+          "Y": 47199.4,
+          "Z": 0
+        },
+        {
+          "X": -256234.6,
+          "Y": 46455.1,
+          "Z": 0
+        },
+        {
+          "X": -255258.9,
+          "Y": 45787.6,
+          "Z": 0
+        }
+      ],
+      "combatFog": "BP_FogDoor_C_UAID_60CF8480990981C702_1504251379",
+      "combatHeight": {
+        "max": -4896.0,
+        "min": -6452
+      },
+      "componentPointMask": true,
+      "entryGround": {
+        "X": -259580,
+        "Y": 49020,
+        "Z": -5148
+      },
+      "id": "pangzhen_changhong",
+      "lionArena": {
+        "center": {
+          "X": -254075.11,
+          "Y": 47752.46,
+          "Z": -5261.0
+        },
+        "exits": [
+          {
+            "X": -254351.3,
+            "Y": 47348.77,
+            "Z": -6251.0
+          },
+          {
+            "X": -251180,
+            "Y": 48020,
+            "Z": -6260.0
+          },
+          {
+            "X": -253540,
+            "Y": 44580,
+            "Z": -6246.0
+          },
+          {
+            "X": -254060,
+            "Y": 50420,
+            "Z": -6251.0
+          }
+        ],
+        "extent": {
+          "X": 3241.3099999999977,
+          "Y": 3460.5599999999977,
+          "Z": 1240
+        }
+      },
+      "loadedLayers": [],
+      "map": "PBZ_Houjie_WP",
+      "name": "庞镇·祠堂广场",
+      "openStoryDoors": [],
+      "originalPath": "/Game/Maps/B09/PBZ_Houjie_WP",
+      "phaseReturnPoints": [
+        {
+          "X": -255925,
+          "Y": 47566,
+          "Z": -6307
+        }
+      ],
+      "phaseSpawnClearance": 800,
+      "requireRoads": true,
+      "reviveClearance": 520,
+      "roadFogs": [
+        {
+          "emitter": {
+            "fillCenter": true,
+            "name": "N2",
+            "point": {
+              "X": -256089,
+              "Y": 45869,
+              "Z": -6230
+            }
+          },
+          "name": "H6",
+          "phantom": true,
+          "points": [
+            {
+              "X": -256457,
+              "Y": 46114,
+              "Z": -5430
+            },
+            {
+              "X": -255761,
+              "Y": 45623,
+              "Z": -6230.0
+            }
+          ]
+        },
+        {
+          "emitter": {
+            "fillCenter": true,
+            "name": "N3",
+            "point": {
+              "X": -252673,
+              "Y": 44212,
+              "Z": -6257
+            }
+          },
+          "name": "H7",
+          "phantom": true,
+          "points": [
+            {
+              "X": -253143,
+              "Y": 43639,
+              "Z": -6159.0
+            },
+            {
+              "X": -252366,
+              "Y": 44764,
+              "Z": -6257.0
+            }
+          ]
+        },
+        {
+          "emitter": {
+            "fillCenter": true,
+            "name": "N4",
+            "point": {
+              "X": -252714,
+              "Y": 49714,
+              "Z": -6260
+            }
+          },
+          "name": "H8",
+          "phantom": true,
+          "points": [
+            {
+              "X": -252468,
+              "Y": 49489,
+              "Z": -6260.0
+            },
+            {
+              "X": -252918,
+              "Y": 49898,
+              "Z": -6260.0
+            }
+          ]
+        },
+        {
+          "emitter": {
+            "fillCenter": true,
+            "name": "N1",
+            "point": {
+              "X": -261018,
+              "Y": 50348,
+              "Z": -4802
+            }
+          },
+          "name": "H10",
+          "phantom": true,
+          "points": [
+            {
+              "X": -261745,
+              "Y": 49389,
+              "Z": -4790
+            },
+            {
+              "X": -260221,
+              "Y": 51683,
+              "Z": -4206
+            }
+          ]
+        }
+      ],
+      "rotation": {
+        "Pitch": 0,
+        "Roll": 0,
+        "Yaw": 14.48
+      },
+      "spawnClearance": 1050,
+      "spawnPoints": [
+        {
+          "X": -254075.11,
+          "Y": 47752.46,
+          "Z": -6261.0
+        },
+        {
+          "X": -254351.3,
+          "Y": 47348.77,
+          "Z": -6251.0
+        },
+        {
+          "X": -251180,
+          "Y": 48020,
+          "Z": -6260.0
+        },
+        {
+          "X": -253540,
+          "Y": 44580,
+          "Z": -6246.0
+        },
+        {
+          "X": -254060,
+          "Y": 50420,
+          "Z": -6251.0
+        },
+        {
+          "X": -252420,
+          "Y": 46340,
+          "Z": -6256.0
+        }
+      ],
+      "spawnTrace": {
+        "bottom": -6502,
+        "localGround": true,
+        "top": -6071.0,
+        "worldStaticFallback": true
+      },
+      "storySpawners": [
+        "BP_AISpawner_C_UAID_60CF848099095FE502_1335467102",
+        "BP_AISpawner_C_UAID_60CF8480990982C702_1178641564",
+        "BP_AISpawner_C_UAID_60CF8480990982C702_1180893565",
+        "BP_AISpawner_C_UAID_60CF8480990982C702_1183164566",
+        "BP_AISpawner_C_UAID_60CF84809909ACCF02_1428350425",
+        "BP_AISpawner_C_UAID_60CF84809909ACCF02_1428352426",
+        "BP_AISpawner_C_UAID_BCFCE704F72580D202_1839378813",
+        "BP_AISpawner_C_UAID_EC9161CFEDC076B202_1423932328",
+        "BP_AISpawner_C_UAID_EC9161CFEDC07BB202_1489359126"
+      ],
+      "unloadedLayers": [],
+      "walkIn": true,
+      "guardTerrainDefeat": true
+    },
+    {
+      "additionalCombatFogs": [
+        "BP_FogDoor_C_UAID_E89C25A7512647AF02_1739512995"
+      ],
+      "allowSeparateBellFloor": true,
+      "anchor": {
+        "X": -269200,
+        "Y": 50220,
+        "Z": -3290
+      },
+      "arenaOnlyBell": true,
+      "bellGround": {
+        "X": -269111.8,
+        "Y": 50104.13,
+        "Z": -3416.65
+      },
+      "bellSaveId": "Bell_SZ_025",
+      "bossRecovery": true,
+      "bossSpawnIndex": {
+        "BP_Monster_LionDancer": 1,
+        "BP_Monster_LionDancer_P2": 2
+      },
+      "checkpointActors": {
+        "BP_AICombatTriggerVolume_C_UAID_60CF84809909C0E902_1705278478": true,
+        "BP_AISpawner_C_UAID_E89C25A7512642AF02_1937586477": true,
+        "BP_AISpawner_C_UAID_E89C25A7512642AF02_1937587478": true,
+        "BP_FogDoor_C_UAID_E89C25A7512647AF02_1739505991": true,
+        "BP_FogDoor_C_UAID_E89C25A7512647AF02_1739507992": true,
+        "BP_FogDoor_C_UAID_E89C25A7512647AF02_1739512995": true,
+        "BP_MelodiousBell_StoneCrane_C_UAID_60CF8480990947DB02_1116950296": true,
+        "BP_MobDomain_C_UAID_E89C25A7512642AF02_1937588480": true,
+        "BP_PBZAISpawnerTriggerVolume_C_UAID_E89C25A7512642AF02_1937590481": true
+      },
+      "checkpointBell": {
+        "classPath": "/Game/PBZContent/Blueprint/Item/BP_MelodiousBell.BP_MelodiousBell_C",
+        "id": "Bell_SZ_025",
+        "name": "BP_MelodiousBell_C_UAID_E89C25A751264AAF02_1377812575"
+      },
+      "chiLianUltimate": {
+        "center": {
+          "X": -273205.97,
+          "Y": 43835.31,
+          "Z": -3508.0
+        },
+        "snakes": [
+          {
+            "X": -271957.6,
+            "Y": 45731.62,
+            "Z": -3540.0
+          },
+          {
+            "X": -274800,
+            "Y": 46220,
+            "Z": -3468.0
+          },
+          {
+            "X": -272240,
+            "Y": 48100,
+            "Z": -3457.0
+          },
+          {
+            "X": -271200,
+            "Y": 42740,
+            "Z": -3446.0
+          }
+        ]
+      },
+      "combatBoundary": [
+        {
+          "X": -274999.04,
+          "Y": 45559.63,
+          "Z": 0
+        },
+        {
+          "X": -274693.42,
+          "Y": 44802.6,
+          "Z": 0
+        },
+        {
+          "X": -274219.79,
+          "Y": 44033.07,
+          "Z": 0
+        },
+        {
+          "X": -273660.97,
+          "Y": 43557.31,
+          "Z": 0
+        },
+        {
+          "X": -272566.64,
+          "Y": 42935.39,
+          "Z": 0
+        },
+        {
+          "X": -271319.2,
+          "Y": 42243.09,
+          "Z": 0
+        },
+        {
+          "X": -269921.51,
+          "Y": 47224.69,
+          "Z": 0
+        },
+        {
+          "X": -270982.78,
+          "Y": 48204.7,
+          "Z": 0
+        },
+        {
+          "X": -272206.06,
+          "Y": 48325.46,
+          "Z": 0
+        },
+        {
+          "X": -273489.54,
+          "Y": 47476.52,
+          "Z": 0
+        },
+        {
+          "X": -274681.56,
+          "Y": 46620.24,
+          "Z": 0
+        }
+      ],
+      "combatFog": "BP_FogDoor_C_UAID_E89C25A7512647AF02_1739505991",
+      "combatHeight": {
+        "max": -2078,
+        "min": -3685.0
+      },
+      "componentPointMask": true,
+      "entryGround": {
+        "X": -269200,
+        "Y": 50220,
+        "Z": -3410
+      },
+      "entryPathStart": {
+        "X": -269760,
+        "Y": 49700,
+        "Z": -3280
+      },
+      "id": "pangzhen_lion",
+      "lionArena": {
+        "center": {
+          "X": -273205.97,
+          "Y": 43835.31,
+          "Z": -2508.0
+        },
+        "exits": [
+          {
+            "X": -271957.6,
+            "Y": 45731.62,
+            "Z": -3540.0
+          },
+          {
+            "X": -274800,
+            "Y": 46220,
+            "Z": -3468.0
+          },
+          {
+            "X": -272240,
+            "Y": 48100,
+            "Z": -3457.0
+          },
+          {
+            "X": -271200,
+            "Y": 42740,
+            "Z": -3446.0
+          }
+        ],
+        "extent": {
+          "X": 3534.4599999999627,
+          "Y": 4740.1500000000015,
+          "Z": 1240
+        }
+      },
+      "loadedLayers": [],
+      "map": "PBZ_Houjie_WP",
+      "name": "庞镇·舞狮尊主战场",
+      "openStoryDoors": [
+        "BP_FogDoor_C_UAID_E89C25A7512647AF02_1739507992"
+      ],
+      "originalPath": "/Game/Maps/B09/PBZ_Houjie_WP",
+      "phaseReturnPoints": [
+        {
+          "X": -270816,
+          "Y": 47588,
+          "Z": -3428
+        }
+      ],
+      "phaseSpawnClearance": 800,
+      "requireRoads": true,
+      "retiredBell": "BP_MelodiousBell_StoneCrane_C_UAID_60CF8480990947DB02_1116950296",
+      "reviveClearance": 520,
+      "roadFogs": [
+        {
+          "emitter": {
+            "fillCenter": true,
+            "name": "N1",
+            "point": {
+              "X": -268024,
+              "Y": 49472,
+              "Z": -3461
+            }
+          },
+          "name": "H2",
+          "phantom": true,
+          "points": [
+            {
+              "X": -268290,
+              "Y": 49029,
+              "Z": -2577
+            },
+            {
+              "X": -267891,
+              "Y": 50048,
+              "Z": -3467.0
+            }
+          ]
+        },
+        {
+          "emitters": [
+            {
+              "fillCenter": true,
+              "name": "N5",
+              "point": {
+                "X": -275433,
+                "Y": 42439,
+                "Z": -2802
+              },
+              "points": [
+                {
+                  "X": -276112.1126549438,
+                  "Y": 42794.7929086192,
+                  "Z": -2802
+                },
+                {
+                  "X": -274753.8873450562,
+                  "Y": 42083.2070913808,
+                  "Z": -2802
+                }
+              ]
+            },
+            {
+              "fillCenter": true,
+              "name": "N6",
+              "point": {
+                "X": -274588,
+                "Y": 42016,
+                "Z": -2659.0
+              },
+              "points": [
+                {
+                  "X": -275006.4503433775,
+                  "Y": 42235.22970172791,
+                  "Z": -2659.0
+                },
+                {
+                  "X": -274169.5496566225,
+                  "Y": 41796.77029827209,
+                  "Z": -2659.0
+                }
+              ]
+            }
+          ],
+          "name": "H4",
+          "phantom": true,
+          "points": [
+            {
+              "X": -276090,
+              "Y": 42837,
+              "Z": -2832.0
+            },
+            {
+              "X": -274166,
+              "Y": 41829,
+              "Z": -2693.0
+            }
+          ]
+        }
+      ],
+      "rotation": {
+        "Pitch": 0,
+        "Roll": 0,
+        "Yaw": -52.72
+      },
+      "spawnClearance": 1050,
+      "spawnPoints": [
+        {
+          "X": -273205.97,
+          "Y": 43835.31,
+          "Z": -3508.0
+        },
+        {
+          "X": -271957.6,
+          "Y": 45731.62,
+          "Z": -3540.0
+        },
+        {
+          "X": -274800,
+          "Y": 46220,
+          "Z": -3468.0
+        },
+        {
+          "X": -272240,
+          "Y": 48100,
+          "Z": -3457.0
+        },
+        {
+          "X": -271200,
+          "Y": 42740,
+          "Z": -3446.0
+        },
+        {
+          "X": -270440,
+          "Y": 46820,
+          "Z": -3436.0
+        }
+      ],
+      "spawnTrace": {
+        "bottom": -3735.0,
+        "localGround": true,
+        "top": -3253,
+        "worldStaticFallback": true
+      },
+      "storySpawners": [
+        "BP_AISpawner_C_UAID_E89C25A7512642AF02_1937586477",
+        "BP_AISpawner_C_UAID_E89C25A7512642AF02_1937587478"
+      ],
+      "unloadedLayers": [],
+      "walkIn": true,
+      "guardTerrainDefeat": true
+    },
+    {
+      "additionalCombatFogs": [],
+      "allowSeparateBellFloor": true,
+      "anchor": {
+        "X": -169360,
+        "Y": 97300,
+        "Z": 2247
+      },
+      "arenaOnlyBell": true,
+      "bellGround": {
+        "X": -169228,
+        "Y": 97230,
+        "Z": 2131
+      },
+      "bellSaveId": "BrokenBell_TheEnd01",
+      "bossRecovery": true,
+      "bossSpawnIndex": {
+        "BP_Monster_GuiChai_Yellow_ShuangGou": 1
+      },
+      "checkpointActors": {
+        "BP_AICombatTriggerVolume_C_UAID_60CF848217CAB98302_2027699223": true,
+        "BP_AICombatTriggerVolume_C_UAID_60CF848217CAE5E702_1520706766": true,
+        "BP_AICombatTriggerVolume_C_UAID_BCFCE7058A8BAD8202_1213731138": true,
+        "BP_AICombatTriggerVolume_C_UAID_BCFCE7058A8BB48202_1563348969": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_BCFCE7078B5AC1B202_1867773556": true,
+        "BP_AISpawner_C_UAID_60CF848217CAE0E702_1427179938": true,
+        "BP_AISpawner_C_UAID_60CF848217CAE0E702_1427352939": true,
+        "BP_AISpawner_C_UAID_60CF848217CAE0E702_1427354940": true,
+        "BP_AISpawner_C_UAID_60CF848217CAEEE702_1829535522": true,
+        "BP_AISpawner_C_UAID_60CF848217CAEEE702_1829624523": true,
+        "BP_AISpawner_C_UAID_BCFCE7058A8B268002_1789936312": true,
+        "BP_AISpawner_C_UAID_BCFCE7058A8B268002_1830658313": true,
+        "BP_AISpawner_C_UAID_BCFCE7058A8B268002_1995955315": true,
+        "BP_AISpawner_C_UAID_BCFCE7058A8B268002_2031382316": true,
+        "BP_AISpawner_C_UAID_BCFCE7058A8B278002_1123519494": true,
+        "BP_AISpawner_C_UAID_BCFCE7058A8B278002_1148021495": true,
+        "BP_AISpawner_C_UAID_BCFCE7058A8B278002_1899506498": true,
+        "BP_AISpawner_C_UAID_BCFCE7058A8B9A7E02_1641499692": true,
+        "BP_AISpawner_C_UAID_BCFCE7058A8B9D7E02_1859096329": true,
+        "BP_AISpawner_C_UAID_BCFCE7058A8B9D7E02_1913055330": true,
+        "BP_FogDoor_C_UAID_60CF848217CA988002_2013731483": true,
+        "BP_MobDomain_C_UAID_BCFCE7058A8B268002_1593625311": true,
+        "BP_MobDomain_C_UAID_BCFCE7058A8B268002_1900889314": true,
+        "BP_MobDomain_C_UAID_BCFCE7058A8B268002_2121169317": true,
+        "BP_MobDomain_C_UAID_BCFCE7058A8B9D7E02_1719205328": true,
+        "BP_MobDomain_C_UAID_BCFCE7078B5AC1B202_1867721555": true
+      },
+      "checkpointCreatesBell": true,
+      "chiLianUltimate": {
+        "center": {
+          "X": -165826.98,
+          "Y": 98269.61,
+          "Z": 2089.0
+        },
+        "snakes": [
+          {
+            "X": -168680,
+            "Y": 97900,
+            "Z": 2109.0
+          },
+          {
+            "X": -167320,
+            "Y": 98700,
+            "Z": 2089.0
+          },
+          {
+            "X": -165440,
+            "Y": 99500,
+            "Z": 2097.0
+          },
+          {
+            "X": -164840,
+            "Y": 98660,
+            "Z": 2092.0
+          }
+        ]
+      },
+      "combatBoundary": [
+        {
+          "X": -165821.32,
+          "Y": 97650.81,
+          "Z": 0
+        },
+        {
+          "X": -165368.99,
+          "Y": 98103.74,
+          "Z": 0
+        },
+        {
+          "X": -164888.8,
+          "Y": 98549.05,
+          "Z": 0
+        },
+        {
+          "X": -164729.09,
+          "Y": 98907.19,
+          "Z": 0
+        },
+        {
+          "X": -165391.25,
+          "Y": 99556.91,
+          "Z": 0
+        },
+        {
+          "X": -165706.74,
+          "Y": 99463.88,
+          "Z": 0
+        },
+        {
+          "X": -166063.85,
+          "Y": 99046.44,
+          "Z": 0
+        },
+        {
+          "X": -166272.91,
+          "Y": 99522.95,
+          "Z": 0
+        },
+        {
+          "X": -166429.08,
+          "Y": 99743.16,
+          "Z": 0
+        },
+        {
+          "X": -166698.6,
+          "Y": 99798.23,
+          "Z": 0
+        },
+        {
+          "X": -167062.39,
+          "Y": 100008.89,
+          "Z": 0
+        },
+        {
+          "X": -168302.02,
+          "Y": 99437.78,
+          "Z": 0
+        },
+        {
+          "X": -168589.59,
+          "Y": 98276.75,
+          "Z": 0
+        },
+        {
+          "X": -168697.88,
+          "Y": 97889.6,
+          "Z": 0
+        },
+        {
+          "X": -168230.32,
+          "Y": 97486.95,
+          "Z": 0
+        },
+        {
+          "X": -167668.6,
+          "Y": 98046.25,
+          "Z": 0
+        },
+        {
+          "X": -167383.54,
+          "Y": 98172.32,
+          "Z": 0
+        },
+        {
+          "X": -166926.84,
+          "Y": 98022.03,
+          "Z": 0
+        },
+        {
+          "X": -166526.84,
+          "Y": 97827.03,
+          "Z": 0
+        },
+        {
+          "X": -166220.07,
+          "Y": 97744.11,
+          "Z": 0
+        }
+      ],
+      "combatFog": "BP_FogDoor_C_UAID_60CF848217CA988002_2013731483",
+      "combatHeight": {
+        "max": 3459.0,
+        "min": 1944.0
+      },
+      "componentPointMask": true,
+      "entryGround": {
+        "X": -169360,
+        "Y": 97300,
+        "Z": 2127
+      },
+      "id": "pangzhen_gouhun",
+      "lionArena": {
+        "center": {
+          "X": -165826.98,
+          "Y": 98269.61,
+          "Z": 3089.0
+        },
+        "exits": [
+          {
+            "X": -168680,
+            "Y": 97900,
+            "Z": 2109.0
+          },
+          {
+            "X": -167320,
+            "Y": 98700,
+            "Z": 2089.0
+          },
+          {
+            "X": -165440,
+            "Y": 99500,
+            "Z": 2097.0
+          },
+          {
+            "X": -164840,
+            "Y": 98660,
+            "Z": 2092.0
+          }
+        ],
+        "extent": {
+          "X": 3120.899999999994,
+          "Y": 1989.2799999999988,
+          "Z": 1240
+        }
+      },
+      "loadedLayers": [],
+      "map": "PBZ_Pangzhen_WP",
+      "name": "庞镇·码头货栈",
+      "openStoryDoors": [],
+      "originalPath": "/Game/Maps/B08_09_10/PBZ_Pangzhen_WP",
+      "phaseReturnPoints": [
+        {
+          "X": -168252,
+          "Y": 97887,
+          "Z": 2106
+        }
+      ],
+      "phaseSpawnClearance": 800,
+      "requireRoads": true,
+      "reviveClearance": 520,
+      "roadFogs": [
+        {
+          "emitter": {
+            "fillCenter": true,
+            "name": "N4",
+            "point": {
+              "X": -167499,
+              "Y": 99761,
+              "Z": 2080
+            }
+          },
+          "name": "H5",
+          "phantom": true,
+          "points": [
+            {
+              "X": -168001,
+              "Y": 99510,
+              "Z": 2607
+            },
+            {
+              "X": -167006,
+              "Y": 100031,
+              "Z": 2091.0
+            }
+          ]
+        },
+        {
+          "emitter": {
+            "fillCenter": true,
+            "name": "N1",
+            "point": {
+              "X": -169952,
+              "Y": 96969,
+              "Z": 2223
+            }
+          },
+          "name": "H6",
+          "phantom": true,
+          "points": [
+            {
+              "X": -169962,
+              "Y": 96593,
+              "Z": 2237.0
+            },
+            {
+              "X": -169981,
+              "Y": 97423,
+              "Z": 2157.0
+            }
+          ]
+        },
+        {
+          "emitter": {
+            "fillCenter": true,
+            "name": "N2",
+            "point": {
+              "X": -165007,
+              "Y": 98042,
+              "Z": 2084
+            }
+          },
+          "name": "H7",
+          "phantom": true,
+          "points": [
+            {
+              "X": -165355,
+              "Y": 97723,
+              "Z": 2083.0
+            },
+            {
+              "X": -164746,
+              "Y": 98322,
+              "Z": 2080.0
+            }
+          ]
+        },
+        {
+          "emitter": {
+            "fillCenter": true,
+            "name": "N3",
+            "point": {
+              "X": -164620,
+              "Y": 99317,
+              "Z": 2136
+            }
+          },
+          "name": "H8",
+          "phantom": true,
+          "points": [
+            {
+              "X": -164495,
+              "Y": 99191,
+              "Z": 2130.0
+            },
+            {
+              "X": -164727,
+              "Y": 99442,
+              "Z": 2142.0
+            }
+          ]
+        },
+        {
+          "collisionBottom": 2085,
+          "emitter": {
+            "fillCenter": true,
+            "name": "N9",
+            "point": {
+              "X": -165886,
+              "Y": 96284,
+              "Z": 2115
+            }
+          },
+          "name": "H10",
+          "phantom": true,
+          "points": [
+            {
+              "X": -166050,
+              "Y": 96139,
+              "Z": 2916
+            },
+            {
+              "X": -165780,
+              "Y": 96419,
+              "Z": 2754
+            }
+          ]
+        },
+        {
+          "collisionOnly": true,
+          "name": "H13",
+          "phantom": true,
+          "points": [
+            {
+              "X": -165770,
+              "Y": 96399,
+              "Z": 2769
+            },
+            {
+              "X": -165422,
+              "Y": 96747,
+              "Z": 2086.0
+            }
+          ]
+        },
+        {
+          "collisionOnly": true,
+          "name": "H14",
+          "phantom": true,
+          "points": [
+            {
+              "X": -165422,
+              "Y": 96738,
+              "Z": 2086.0
+            },
+            {
+              "X": -165992,
+              "Y": 97385,
+              "Z": 2089.0
+            }
+          ]
+        },
+        {
+          "collisionOnly": true,
+          "name": "H15",
+          "phantom": true,
+          "points": [
+            {
+              "X": -165818,
+              "Y": 97153,
+              "Z": 2079
+            },
+            {
+              "X": -165364,
+              "Y": 97684,
+              "Z": 2499
+            }
+          ]
+        }
+      ],
+      "rotation": {
+        "Pitch": 0,
+        "Roll": 0,
+        "Yaw": -27.94
+      },
+      "spawnClearance": 1050,
+      "spawnPoints": [
+        {
+          "X": -165826.98,
+          "Y": 98269.61,
+          "Z": 2089.0
+        },
+        {
+          "X": -166840,
+          "Y": 97980,
+          "Z": 2089
+        },
+        {
+          "X": -167320,
+          "Y": 98700,
+          "Z": 2089.0
+        },
+        {
+          "X": -165440,
+          "Y": 99500,
+          "Z": 2097.0
+        },
+        {
+          "X": -164840,
+          "Y": 98660,
+          "Z": 2092.0
+        },
+        {
+          "X": -166440,
+          "Y": 99260,
+          "Z": 2089.0
+        }
+      ],
+      "spawnTrace": {
+        "bottom": 1894.0,
+        "localGround": true,
+        "top": 2284.0,
+        "worldStaticFallback": true
+      },
+      "storySpawners": [
+        "BP_AISpawner_C_UAID_60CF848217CAE0E702_1427179938",
+        "BP_AISpawner_C_UAID_60CF848217CAE0E702_1427352939",
+        "BP_AISpawner_C_UAID_60CF848217CAE0E702_1427354940",
+        "BP_AISpawner_C_UAID_60CF848217CAEEE702_1829535522",
+        "BP_AISpawner_C_UAID_60CF848217CAEEE702_1829624523",
+        "BP_AISpawner_C_UAID_BCFCE7058A8B268002_1789936312",
+        "BP_AISpawner_C_UAID_BCFCE7058A8B268002_1830658313",
+        "BP_AISpawner_C_UAID_BCFCE7058A8B268002_1995955315",
+        "BP_AISpawner_C_UAID_BCFCE7058A8B268002_2031382316",
+        "BP_AISpawner_C_UAID_BCFCE7058A8B278002_1123519494",
+        "BP_AISpawner_C_UAID_BCFCE7058A8B278002_1148021495",
+        "BP_AISpawner_C_UAID_BCFCE7058A8B278002_1899506498",
+        "BP_AISpawner_C_UAID_BCFCE7058A8B9A7E02_1641499692",
+        "BP_AISpawner_C_UAID_BCFCE7058A8B9D7E02_1859096329",
+        "BP_AISpawner_C_UAID_BCFCE7058A8B9D7E02_1913055330"
+      ],
+      "unloadedLayers": [],
+      "walkIn": true,
+      "guardTerrainDefeat": true
+    },
+    {
+      "additionalCombatFogs": [],
+      "allowSeparateBellFloor": true,
+      "anchor": {
+        "X": -268910,
+        "Y": 87190,
+        "Z": 1992940.0
+      },
+      "arenaOnlyBell": true,
+      "bellGround": {
+        "X": -269031.25,
+        "Y": 87304.86,
+        "Z": 1992820.0
+      },
+      "bellSaveId": "BrokenBell_TheEnd01",
+      "bossRecovery": true,
+      "bossSpawnIndex": {
+        "BP_Monster_QiShu_Lei": 1
+      },
+      "checkpointActors": {
+        "BP_AISpawner_C_UAID_E89C25A750C89D6102_251741680d598c2a_1659446526": true,
+        "BP_BrokenBell_C_UAID_60CF848A6689C1D402_1232364407": true,
+        "BP_FogDoor_C_UAID_60CF84809909DE0903_251741680d598c2a_1953394503": true,
+        "BP_MobDomain_C_UAID_60CF84809909F9DC02_251741680d598c2a_1507168677": true,
+        "BP_PBZAISpawnerTriggerVolume_C_UAID_E89C25A750C89D6102_251741680d598c2a_1659453529": true
+      },
+      "checkpointCreatesBell": true,
+      "chiLianUltimate": {
+        "center": {
+          "X": -266396.9,
+          "Y": 87878.4,
+          "Z": 1992820.0
+        },
+        "snakes": [
+          {
+            "X": -268190,
+            "Y": 89870,
+            "Z": 1992833.0
+          },
+          {
+            "X": -265670,
+            "Y": 89910,
+            "Z": 1992820.0
+          },
+          {
+            "X": -268150,
+            "Y": 86630,
+            "Z": 1992830.0
+          },
+          {
+            "X": -268550,
+            "Y": 88230,
+            "Z": 1992822.0
+          }
+        ]
+      },
+      "combatBoundary": [
+        {
+          "X": -267218.66,
+          "Y": 89929.12,
+          "Z": 0
+        },
+        {
+          "X": -266641.34,
+          "Y": 89929.12,
+          "Z": 0
+        },
+        {
+          "X": -265671.02,
+          "Y": 89929.12,
+          "Z": 0
+        },
+        {
+          "X": -265396.95,
+          "Y": 88837.13,
+          "Z": 0
+        },
+        {
+          "X": -265367.66,
+          "Y": 88042.22,
+          "Z": 0
+        },
+        {
+          "X": -265332.17,
+          "Y": 87079.16,
+          "Z": 0
+        },
+        {
+          "X": -265783.99,
+          "Y": 86619.15,
+          "Z": 0
+        },
+        {
+          "X": -266703.07,
+          "Y": 86284.9,
+          "Z": 0
+        },
+        {
+          "X": -267216.56,
+          "Y": 86180.61,
+          "Z": 0
+        },
+        {
+          "X": -267721.8,
+          "Y": 86238.54,
+          "Z": 0
+        },
+        {
+          "X": -268179.63,
+          "Y": 86644.44,
+          "Z": 0
+        },
+        {
+          "X": -268437.68,
+          "Y": 87475.94,
+          "Z": 0
+        },
+        {
+          "X": -268580.19,
+          "Y": 88239.59,
+          "Z": 0
+        },
+        {
+          "X": -268662.54,
+          "Y": 89086.83,
+          "Z": 0
+        },
+        {
+          "X": -268213.02,
+          "Y": 89885.19,
+          "Z": 0
+        },
+        {
+          "X": -267193.97,
+          "Y": 89929.05,
+          "Z": 0
+        }
+      ],
+      "combatFog": "BP_FogDoor_C_UAID_60CF84809909DE0903_251741680d598c2a_1953394503",
+      "combatHeight": {
+        "max": 1994183.0,
+        "min": 1992675.0
+      },
+      "componentPointMask": true,
+      "entryGround": {
+        "X": -268910,
+        "Y": 87190,
+        "Z": 1992820.0
+      },
+      "id": "pangzhen_leiting",
+      "lionArena": {
+        "center": {
+          "X": -266396.9,
+          "Y": 87878.4,
+          "Z": 1993820.0
+        },
+        "exits": [
+          {
+            "X": -268190,
+            "Y": 89870,
+            "Z": 1992833.0
+          },
+          {
+            "X": -265670,
+            "Y": 89910,
+            "Z": 1992820.0
+          },
+          {
+            "X": -268150,
+            "Y": 86630,
+            "Z": 1992830.0
+          },
+          {
+            "X": -268550,
+            "Y": 88230,
+            "Z": 1992822.0
+          }
+        ],
+        "extent": {
+          "X": 2515.6399999999558,
+          "Y": 2300.720000000001,
+          "Z": 1240
+        }
+      },
+      "loadedLayers": [],
+      "map": "PBZ_Houjie_WP",
+      "name": "庞镇·稻草人秘境·雷婷战场",
+      "openStoryDoors": [],
+      "originalPath": "/Game/Maps/B09/PBZ_Houjie_WP",
+      "phaseReturnPoints": [
+        {
+          "X": -267720.0,
+          "Y": 87375.0,
+          "Z": 1992820.0
+        }
+      ],
+      "phaseSpawnClearance": 800,
+      "requireRoads": true,
+      "retiredBell": "BP_BrokenBell_C_UAID_60CF848A6689C1D402_1232364407",
+      "reviveClearance": 520,
+      "roadFogs": [],
+      "rotation": {
+        "Pitch": 0,
+        "Roll": 0,
+        "Yaw": 15.32
+      },
+      "spawnClearance": 1050,
+      "spawnPoints": [
+        {
+          "X": -266396.9,
+          "Y": 87878.4,
+          "Z": 1992820.0
+        },
+        {
+          "X": -268190,
+          "Y": 89870,
+          "Z": 1992833.0
+        },
+        {
+          "X": -265670,
+          "Y": 89910,
+          "Z": 1992820.0
+        },
+        {
+          "X": -268150,
+          "Y": 86630,
+          "Z": 1992830.0
+        },
+        {
+          "X": -268550,
+          "Y": 88230,
+          "Z": 1992822.0
+        },
+        {
+          "X": -266630,
+          "Y": 86350,
+          "Z": 1992824.0
+        }
+      ],
+      "spawnTrace": {
+        "bottom": 1992625.0,
+        "localGround": true,
+        "top": 1993008.0,
+        "worldStaticFallback": true
+      },
+      "storySpawners": [
+        "BP_AISpawner_C_UAID_E89C25A750C89D6102_251741680d598c2a_1659446526"
+      ],
+      "unloadedLayers": [],
+      "walkIn": true,
+      "guardTerrainDefeat": true
+    }
+  ],
+  "recommendedScenes": {
+    "BP_Monster_ChangHong_P2": "pangzhen_changhong",
+    "BP_Monster_ChangHong_Spear": "pangzhen_changhong",
+    "BP_Monster_GuWanYue": "pangzhen_guwanyue",
+    "BP_Monster_GuiChai_Red": "pangzhen_south_gate",
+    "BP_Monster_GuiChai_Red_P2": "pangzhen_south_gate",
+    "BP_Monster_GuiChai_Yellow_MoDao": "pangzhen_zhanqi",
+    "BP_Monster_GuiChai_Yellow_ShuangGou": "pangzhen_gouhun",
+    "BP_Monster_LionDancer": "pangzhen_lion",
+    "BP_Monster_LionDancer_P2": "pangzhen_lion",
+    "BP_Monster_QiShu_Lei": "pangzhen_leiting",
+    "BP_Monster_WuXuan": "pangzhen_wuxuan",
+    "BP_Monster_YouLong_SecondBrother": "pangzhen_youlong",
+    "gauntlet_changhong": "pangzhen_changhong",
+    "gauntlet_guichai_red": "pangzhen_south_gate",
+    "gauntlet_liondancer": "pangzhen_lion"
+  }
+}

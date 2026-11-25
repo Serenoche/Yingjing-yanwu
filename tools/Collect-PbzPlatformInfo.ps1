@@ -53,6 +53,12 @@ function Test-Within([string] $Path, [string] $Root) {
         $Path.StartsWith($rootPath + '\',[StringComparison]::OrdinalIgnoreCase)
 }
 
+function Get-StreamSha256([IO.Stream] $Stream) {
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { return [BitConverter]::ToString($sha.ComputeHash($Stream)).Replace('-','').ToLowerInvariant() }
+    finally { $sha.Dispose() }
+}
+
 function Get-BinaryFingerprint([string] $Path) {
     $item = Get-Item -LiteralPath $Path
     if ($item.Length -lt 64 -or $item.Length -gt 2147483648) { throw 'Unsupported binary size.' }
@@ -81,9 +87,7 @@ function Get-BinaryFingerprint([string] $Path) {
         $stream.Position = $offset + 24 + 56
         $imageSize = $reader.ReadUInt32()
         $stream.Position = 0
-        $sha = [Security.Cryptography.SHA256]::Create()
-        try { $hash = [BitConverter]::ToString($sha.ComputeHash($stream)).Replace('-','').ToLowerInvariant() }
-        finally { $sha.Dispose() }
+        $hash = Get-StreamSha256 $stream
         return [ordered]@{ sha256=$hash; fileBytes=[long]$item.Length;
             machine=('0x{0:x4}' -f $machine); peTimestamp=[long]$timestamp;
             imageBytes=[long]$imageSize; sections=[int]$sections; optionalMagic=('0x{0:x3}' -f $magic) }
@@ -182,7 +186,9 @@ function Write-PlatformReport {
         (Split-Path -Parent (Split-Path -Parent $binaryRoot)) -ieq $installRoot) {
         $launchShape = 'platform/<store>/PBZ.exe'
         $token = Split-Path -Leaf $binaryRoot
-        if (@('steam','epic','eos','wegame','tencent') -contains $token) { $observedToken=$token.ToLowerInvariant() }
+        if (@('steam','epic','epicgamestore','eos','wegame','tencent') -contains $token) {
+            $observedToken=$token.ToLowerInvariant()
+        }
     } elseif ($binaryRoot -ieq $installRoot) {
         $launchShape='PBZ.exe alongside ProjectPBZ'
     } elseif ((Split-Path -Parent $binaryRoot) -ieq (Join-Path $installRoot 'ProjectPBZ/Binaries')) {
@@ -200,6 +206,22 @@ function Write-PlatformReport {
         if (Test-Within $outputRoot $protected) { throw 'Place the report folder outside the game and save directories.' }
     }
     $binary = Get-BinaryFingerprint $game
+    $mapIndices = [ordered]@{}
+    $paks = Join-Path $installRoot 'ProjectPBZ/Content/Paks'
+    foreach ($name in @('global.utoc','ProjectPBZ-Windows.utoc')) {
+        try {
+            $path = Get-LocalPath (Join-Path $paks $name)
+            if (Test-Path -LiteralPath $path -PathType Leaf) {
+                $stream = [IO.File]::Open($path,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::ReadWrite)
+                try { $mapIndices[$name] = [ordered]@{status='collected'; sha256=(Get-StreamSha256 $stream)} }
+                finally { $stream.Dispose() }
+            } else {
+                $mapIndices[$name] = [ordered]@{status='missing'}
+            }
+        } catch {
+            $mapIndices[$name] = [ordered]@{status='unreadable-or-linked'}
+        }
+    }
     $loader = @()
     foreach ($relative in @('dwmapi.dll','UE4SS.dll','ue4ss/UE4SS.dll')) {
         $file = Join-Path $binaryRoot $relative
@@ -224,7 +246,7 @@ function Write-PlatformReport {
         layout=[ordered]@{launchShape=$launchShape; observedStoreDirectory=$observedToken;
             projectDirectoryPresent=(Test-Path -LiteralPath (Join-Path $installRoot 'ProjectPBZ') -PathType Container);
             paksDirectoryPresent=(Test-Path -LiteralPath (Join-Path $installRoot 'ProjectPBZ/Content/Paks') -PathType Container)};
-        loaderBinaries=$loader; saveDirectoryShapes=$saveShapes;
+        mapIndices=$mapIndices; loaderBinaries=$loader; saveDirectoryShapes=$saveShapes;
         privacy=[ordered]@{absolutePathsIncluded=$false; accountNamesIncluded=$false;
             accountHashesIncluded=$false; saveContentsRead=$false; saveHashesComputed=$false};
         actions=[ordered]@{gameLaunched=$false; gameAttached=$false; gameFilesWritten=$false;

@@ -1,4 +1,4 @@
-"""Enable equipment projection in the generated stock checkpoint reader."""
+"""Enable equipment and player settings in the generated stock checkpoint reader."""
 
 import shutil
 from pathlib import Path
@@ -14,17 +14,22 @@ def _edit(path, replacements):
 
 
 def stage(directory: Path):
-    _edit(directory / "stock_profiles.hpp", (
-        ('#include "vendor/json.hpp"', '#include "vendor/json.hpp"\n#include "checkpoint_loadout.hpp"', 1),
-        ('    std::wstring slot, text;', '    std::wstring slot, text;\n    bool loadout_projected = false;', 1),
-        ('    SelectedPreset& output, std::string& reason) {',
-         '    SelectedPreset& output, std::string& reason, std::string_view loadout = {}) {', 1),
-        ('        data[pbz_save::utf8(slot)] = compose(presets, slot, cycle);',
-         '''        auto record = compose(presets, slot, cycle);
+    profiles = directory / "stock_profiles.hpp"
+    # Older external builders may still provide their local unprojected header.
+    if '#include "custom_player.hpp"' not in profiles.read_text(encoding="utf-8"):
+        _edit(profiles, (
+            ('#include "vendor/json.hpp"',
+             '#include "vendor/json.hpp"\n#include "checkpoint_loadout.hpp"\n#include "custom_player.hpp"', 1),
+            ('    std::wstring slot, text;', '    std::wstring slot, text;\n    bool loadout_projected = false;', 1),
+            ('    SelectedPreset& output, std::string& reason) {',
+             '    SelectedPreset& output, std::string& reason, std::string_view loadout = {}) {', 1),
+            ('        data[pbz_save::utf8(slot)] = compose(presets, slot, cycle);',
+             '''        auto record = compose(presets, slot, cycle);
+        project_custom_player(record, loadout);
         const auto projected = !loadout.empty() && project_equipment(record, loadout);
         data[pbz_save::utf8(slot)] = std::move(record);''', 1),
-        ('        output = {slot, std::move(text)};', '        output = {slot, std::move(text), projected};', 1),
-    ))
+            ('        output = {slot, std::move(text)};', '        output = {slot, std::move(text), projected};', 1),
+        ))
     _edit(directory / "barrier.cpp", (
         ('int active_cycle = -2;', 'int active_cycle = -2;\nstd::string active_loadout;\nbool active_loadout_projected = false;', 1),
         ('    int cycle = -2;', '    int cycle = -2;\n    std::string loadout;', 1),
@@ -59,7 +64,8 @@ def stage(directory: Path):
     }''', 1),
         ('extern "C" __declspec(dllexport) int __cdecl PBZBarrierSelectCheckpoint(void*) { return operation(Operation::select); }',
          '''extern "C" __declspec(dllexport) int __cdecl PBZBarrierSelectCheckpoint(void*) { return operation(Operation::select); }
-extern "C" __declspec(dllexport) int __cdecl PBZBarrierCheckpointLoadoutV1(void*) { return 0; }''', 1),
+extern "C" __declspec(dllexport) int __cdecl PBZBarrierCheckpointLoadoutV1(void*) { return 0; }
+extern "C" __declspec(dllexport) int __cdecl PBZBarrierPlayerCustomV1(void*) { return 0; }''', 1),
     ))
 
 

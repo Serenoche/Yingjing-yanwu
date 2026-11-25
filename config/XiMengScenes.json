@@ -1,0 +1,613 @@
+{
+  "schemaVersion": 1,
+  "map": "PBZ_Ximeng_WP",
+  "originalPath": "/Game/Maps/B08_09_12_13/PBZ_Ximeng_WP",
+  "scenes": [
+    {
+      "id": "ximeng_qiufeng",
+      "name": "灵堂",
+      "bellSaveId": "Bell_XM_003",
+      "checkpointBell": {
+        "id": "Bell_XM_003",
+        "name": "BP_MelodiousBell_C_UAID_60CF848A91CA9B9E02_1410869015",
+        "classPath": "/Game/PBZContent/Blueprint/Item/BP_MelodiousBell.BP_MelodiousBell_C"
+      },
+      "anchor": {
+        "Z": 7414.08,
+        "Y": 78865,
+        "X": -213745
+      },
+      "rotation": {
+        "Pitch": 0,
+        "Roll": 0,
+        "Yaw": -140.3553
+      },
+      "reviveCameraYaw": -140.3553,
+      "reviveCameraRotation": {
+        "Pitch": 0,
+        "Roll": 0,
+        "Yaw": -140.3553
+      },
+      "loadedLayers": [],
+      "unloadedLayers": [
+        "/Game/DataLayers/T01_FirstStage_WP/202405DemoVersion/MainGameFlow/Main_XMSZ_SPpost.Main_XMSZ_SPpost"
+      ],
+      "entryGround": {
+        "Z": 7284.08,
+        "Y": 78865,
+        "X": -213745
+      },
+      "bellGround": {
+        "Z": 7284.08,
+        "Y": 78865,
+        "X": -213745
+      },
+      "entryPathStart": {
+        "Z": 7285.62,
+        "Y": 78050,
+        "X": -214450
+      },
+      "checkpointActors": {
+        "BP_FogDoor_C_UAID_74563C6BC2BD48CB02_1575414622": true,
+        "BP_FogDoor_C_UAID_74563C6BC2BDB4E502_1971806085": true,
+        "BP_FogDoor_C_UAID_74563C6BC2BD49CB02_1265628861": true,
+        "BP_FogDoor_C_UAID_74563C6BC2BD48CB02_1602332623": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_60CF848A91CA9B9E02_1410679882": true,
+        "BP_AISpawner_C_UAID_60CF848A91CA9B9E02_1410919045": true,
+        "BP_MobDomain_C_UAID_60CF848A91CA9B9E02_1410841999": true
+      },
+      "storySpawners": [
+        "BP_AISpawner_C_UAID_60CF848A91CA9B9E02_1410919045"
+      ],
+      "openStoryDoors": [],
+      "combatFog": "BP_FogDoor_C_UAID_74563C6BC2BD49CB02_1265628861",
+      "additionalCombatFogs": [
+        "BP_FogDoor_C_UAID_74563C6BC2BD48CB02_1575414622",
+        "BP_FogDoor_C_UAID_74563C6BC2BD48CB02_1602332623",
+        "BP_FogDoor_C_UAID_74563C6BC2BDB4E502_1971806085"
+      ],
+      "roadFogs": [
+        {
+          "emitters": [
+            {
+              "points": [
+                {
+                  "Z": 7276.0,
+                  "Y": 79146.20621745991,
+                  "X": -213825.0246751523
+                },
+                {
+                  "Z": 7276.0,
+                  "Y": 78994.70621745991,
+                  "X": -213465.0246751523
+                }
+              ],
+              "name": "N2",
+              "fillCenter": true,
+              "point": {
+                "Z": 7276,
+                "Y": 79042,
+                "X": -213657
+              }
+            },
+            {
+              "points": [
+                {
+                  "Z": 7276,
+                  "Y": 79219,
+                  "X": -213998
+                },
+                {
+                  "Z": 7276.0,
+                  "Y": 79070.45621745991,
+                  "X": -213645.0246751523
+                }
+              ],
+              "name": "N2-A",
+              "fillCenter": true,
+              "point": {
+                "Z": 7276,
+                "Y": 79116.27189127005,
+                "X": -213833.48766242384
+              }
+            },
+            {
+              "points": [
+                {
+                  "Z": 7276.0,
+                  "Y": 79070.45621745991,
+                  "X": -213645.0246751523
+                },
+                {
+                  "Z": 7276,
+                  "Y": 78916,
+                  "X": -213278
+                }
+              ],
+              "name": "N2-B",
+              "fillCenter": true,
+              "point": {
+                "Z": 7276,
+                "Y": 78964.77189127005,
+                "X": -213473.48766242384
+              }
+            }
+          ],
+          "name": "H3",
+          "collisionBottom": 6894,
+          "points": [
+            {
+              "Z": 7276,
+              "Y": 79219,
+              "X": -213998
+            },
+            {
+              "Z": 7276,
+              "Y": 78916,
+              "X": -213278
+            }
+          ],
+          "phantom": true
+        }
+      ],
+      "combatBoundary": [
+        {
+          "Z": 7702.3657,
+          "Y": 77789.75335790828,
+          "X": -211550.60564718122
+        },
+        {
+          "Z": 7702.3657,
+          "Y": 78501.93700637088,
+          "X": -213842.31433758317
+        },
+        {
+          "Z": 7702.3657,
+          "Y": 79527.44328195832,
+          "X": -215955.79288416135
+        },
+        {
+          "Z": 7702.3657,
+          "Y": 78096.4016760538,
+          "X": -216719.53855529445
+        },
+        {
+          "Z": 7702.3657,
+          "Y": 76061.3577867975,
+          "X": -212307.01655042532
+        },
+        {
+          "Z": 7702.3657,
+          "Y": 76790.97564390692,
+          "X": -212248.7048201823
+        }
+      ],
+      "combatHeight": {
+        "min": 7102.3657,
+        "max": 8302.3657
+      },
+      "phaseReturnPoints": [
+        {
+          "Z": 7287.69,
+          "Y": 78099,
+          "X": -214575
+        },
+        {
+          "Z": 7287.33,
+          "Y": 78250,
+          "X": -214600
+        },
+        {
+          "Z": 7289.07,
+          "Y": 77950,
+          "X": -214625
+        }
+      ],
+      "beginAtPhaseReturn": false,
+      "spawnPoints": [
+        {
+          "Z": 7303.49,
+          "Y": 77043,
+          "X": -212401
+        },
+        {
+          "Z": 7299.48,
+          "Y": 76875,
+          "X": -212525
+        },
+        {
+          "Z": 7292.79,
+          "Y": 77025,
+          "X": -212625
+        },
+        {
+          "Z": 7302.74,
+          "Y": 77225,
+          "X": -212425
+        },
+        {
+          "Z": 7284.08,
+          "Y": 76975,
+          "X": -213825
+        },
+        {
+          "Z": 7284.08,
+          "Y": 77000,
+          "X": -213650
+        }
+      ],
+      "spawnTrace": {
+        "worldStaticFallback": true,
+        "top": 7450,
+        "bottom": 7100,
+        "localGround": true
+      },
+      "spawnClearance": 1050,
+      "reviveClearance": 1200,
+      "phaseSpawnClearance": 1200,
+      "bossSpawnIndex": {
+        "BP_Monster_YingMei_RedShadowBoneBlade": 1
+      },
+      "recommendedEncounters": [
+        "BP_Monster_YingMei_RedShadowBoneBlade"
+      ],
+      "componentPointMask": true,
+      "arenaOnlyBell": true,
+      "walkIn": true,
+      "moveCheckpointBell": true
+    },
+    {
+      "id": "ximeng_yuding",
+      "name": "演武场",
+      "bellSaveId": "Bell_XM_012",
+      "checkpointBell": {
+        "id": "Bell_XM_012",
+        "name": "BP_MelodiousBell_C_UAID_60CF848A91CA9B9E02_1410911041",
+        "classPath": "/Game/PBZContent/Blueprint/Item/BP_MelodiousBell.BP_MelodiousBell_C"
+      },
+      "anchor": {
+        "Z": 3269.3738,
+        "Y": 98208.516,
+        "X": -184959.22
+      },
+      "entryGround": {
+        "Z": 3141.34,
+        "Y": 98208.516,
+        "X": -184959.22
+      },
+      "bellGround": {
+        "Z": 3139.0725,
+        "Y": 98092.11,
+        "X": -184997.52
+      },
+      "rotation": {
+        "Pitch": 0,
+        "Roll": 0,
+        "Yaw": -120.0
+      },
+      "reviveCameraYaw": 225.0,
+      "reviveCameraRotation": {
+        "Pitch": 0.0,
+        "Roll": 0.0,
+        "Yaw": 225.0
+      },
+      "loadedLayers": [],
+      "unloadedLayers": [
+        "/Game/DataLayers/T01_FirstStage_WP/202405DemoVersion/MainGameFlow/Main_XMSZ_SPpost.Main_XMSZ_SPpost"
+      ],
+      "openStoryDoors": [],
+      "checkpointActors": {
+        "BP_AISpawner_C_UAID_BCFCE704F725EDD502_2096038229": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725EDD502_1617714160": true,
+        "BP_AISpawner_C_UAID_60CF848A91CA9B9E02_1410718921": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725E0EC02_1521450151": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725EED502_1795580502": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725EDD502_1334183156": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725EED502_1817906503": true,
+        "BP_PBZAISpawnerTriggerVolume_C_UAID_60CF848A91CA9B9E02_1410661867": true,
+        "BP_MobDomain_C_UAID_60CF848A91CA9B9E02_1410993111": true,
+        "BP_AISpawner_C_UAID_60CF848A91CA9B9E02_1410725932": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725EDD502_1552549159": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725E0EC02_1485896150": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725EDD502_1626225161": true,
+        "BP_FogDoor_C_UAID_60CF848A91CA9B9E02_1410844001": true,
+        "BP_AISpawner_C_UAID_BCFCE704F725EED502_1084859407": true
+      },
+      "storySpawners": [
+        "BP_AISpawner_C_UAID_60CF848A91CA9B9E02_1410725932",
+        "BP_AISpawner_C_UAID_BCFCE704F725EDD502_1334183156",
+        "BP_AISpawner_C_UAID_60CF848A91CA9B9E02_1410718921",
+        "BP_AISpawner_C_UAID_BCFCE704F725EDD502_1552549159",
+        "BP_AISpawner_C_UAID_BCFCE704F725EDD502_1617714160",
+        "BP_AISpawner_C_UAID_BCFCE704F725EDD502_1626225161",
+        "BP_AISpawner_C_UAID_BCFCE704F725EDD502_2096038229",
+        "BP_AISpawner_C_UAID_BCFCE704F725EED502_1084859407",
+        "BP_AISpawner_C_UAID_BCFCE704F725EED502_1795580502",
+        "BP_AISpawner_C_UAID_BCFCE704F725EED502_1817906503",
+        "BP_AISpawner_C_UAID_BCFCE704F725E0EC02_1485896150",
+        "BP_AISpawner_C_UAID_BCFCE704F725E0EC02_1521450151"
+      ],
+      "combatFog": "BP_FogDoor_C_UAID_60CF848A91CA9B9E02_1410844001",
+      "roadFogs": [
+        {
+          "emitters": [
+            {
+              "points": [
+                {
+                  "Z": 3153.0,
+                  "Y": 99455.5304707604,
+                  "X": -184868.91766564894
+                },
+                {
+                  "Z": 3153.0,
+                  "Y": 98971.5304707604,
+                  "X": -184199.41766564894
+                }
+              ],
+              "name": "N1",
+              "fillCenter": true,
+              "point": {
+                "Z": 3118,
+                "Y": 99128,
+                "X": -184596
+              }
+            },
+            {
+              "points": [
+                {
+                  "Z": 3153,
+                  "Y": 99705,
+                  "X": -185214
+                },
+                {
+                  "Z": 3153.0,
+                  "Y": 99213.5304707604,
+                  "X": -184534.16766564894
+                }
+              ],
+              "name": "N1-A",
+              "fillCenter": true,
+              "point": {
+                "Z": 3118,
+                "Y": 99373.73476461982,
+                "X": -184935.91616717554
+              }
+            },
+            {
+              "points": [
+                {
+                  "Z": 3153.0,
+                  "Y": 99213.5304707604,
+                  "X": -184534.16766564894
+                },
+                {
+                  "Z": 3153,
+                  "Y": 98737,
+                  "X": -183875
+                }
+              ],
+              "name": "N1-B",
+              "fillCenter": true,
+              "point": {
+                "Z": 3118,
+                "Y": 98889.73476461982,
+                "X": -184266.41616717554
+              }
+            }
+          ],
+          "name": "H3",
+          "collisionBottom": 2539,
+          "points": [
+            {
+              "Z": 3153,
+              "Y": 99705,
+              "X": -185214
+            },
+            {
+              "Z": 3153,
+              "Y": 98737,
+              "X": -183875
+            }
+          ],
+          "phantom": true
+        },
+        {
+          "emitters": [
+            {
+              "points": [
+                {
+                  "Z": 4795.0,
+                  "Y": 87422.98393711631,
+                  "X": -188698.4878049065
+                },
+                {
+                  "Z": 4795.0,
+                  "Y": 87577.48393711631,
+                  "X": -188986.9878049065
+                }
+              ],
+              "name": "N2",
+              "fillCenter": true,
+              "point": {
+                "Z": 4340,
+                "Y": 87468,
+                "X": -188860
+              }
+            },
+            {
+              "points": [
+                {
+                  "Z": 4795,
+                  "Y": 87344,
+                  "X": -188551
+                },
+                {
+                  "Z": 4795.0,
+                  "Y": 87500.23393711631,
+                  "X": -188842.7378049065
+                }
+              ],
+              "name": "N2-A",
+              "fillCenter": true,
+              "point": {
+                "Z": 4340,
+                "Y": 87389.88303144186,
+                "X": -188714.13109754672
+              }
+            },
+            {
+              "points": [
+                {
+                  "Z": 4795.0,
+                  "Y": 87500.23393711631,
+                  "X": -188842.7378049065
+                },
+                {
+                  "Z": 4795,
+                  "Y": 87653,
+                  "X": -189128
+                }
+              ],
+              "name": "N2-B",
+              "fillCenter": true,
+              "point": {
+                "Z": 4340,
+                "Y": 87544.38303144186,
+                "X": -189002.63109754672
+              }
+            }
+          ],
+          "name": "H4",
+          "collisionBottom": 3984,
+          "points": [
+            {
+              "Z": 4795,
+              "Y": 87344,
+              "X": -188551
+            },
+            {
+              "Z": 4795,
+              "Y": 87653,
+              "X": -189128
+            }
+          ],
+          "phantom": true
+        }
+      ],
+      "combatBoundary": [
+        {
+          "Z": 4134.071,
+          "Y": 88713.18849443767,
+          "X": -188018.3659517255
+        },
+        {
+          "Z": 4134.071,
+          "Y": 92084.73511185088,
+          "X": -187289.23864187158
+        },
+        {
+          "Z": 4134.071,
+          "Y": 92472.22046199412,
+          "X": -187097.85115938078
+        },
+        {
+          "Z": 4134.071,
+          "Y": 92618.4804244844,
+          "X": -187777.29509584562
+        },
+        {
+          "Z": 4134.071,
+          "Y": 93326.69574511016,
+          "X": -189347.00635337597
+        },
+        {
+          "Z": 4134.071,
+          "Y": 93893.18401830585,
+          "X": -190078.62013343922
+        },
+        {
+          "Z": 4134.071,
+          "Y": 93501.39826678559,
+          "X": -190267.07388650154
+        },
+        {
+          "Z": 4134.071,
+          "Y": 90741.69523623135,
+          "X": -192451.0806122723
+        }
+      ],
+      "combatHeight": {
+        "min": 3534.071,
+        "max": 4734.071
+      },
+      "phaseReturnPoints": [
+        {
+          "Z": 3878.96,
+          "Y": 92989,
+          "X": -188819
+        },
+        {
+          "Z": 3875.3,
+          "Y": 92850,
+          "X": -188925
+        },
+        {
+          "Z": 3874.08,
+          "Y": 92825,
+          "X": -188675
+        }
+      ],
+      "beginAtPhaseReturn": false,
+      "spawnPoints": [
+        {
+          "Z": 3865.9692,
+          "Y": 91079.54,
+          "X": -189591.53
+        },
+        {
+          "Z": 3874.5,
+          "Y": 91175,
+          "X": -189775
+        },
+        {
+          "Z": 3878.68,
+          "Y": 90925,
+          "X": -189625
+        },
+        {
+          "Z": 3874.08,
+          "Y": 91225,
+          "X": -189900
+        },
+        {
+          "Z": 3880.77,
+          "Y": 90800,
+          "X": -189575
+        },
+        {
+          "Z": 3877.84,
+          "Y": 90975,
+          "X": -189775
+        }
+      ],
+      "spawnTrace": {
+        "worldStaticFallback": true,
+        "top": 4100,
+        "bottom": 3600,
+        "localGround": true
+      },
+      "spawnClearance": 1400,
+      "reviveClearance": 2100,
+      "phaseSpawnClearance": 1200,
+      "bossSpawnIndex": {
+        "BP_Monster_FemaleVessel_YuDing": 1
+      },
+      "recommendedEncounters": [
+        "BP_Monster_FemaleVessel_YuDing"
+      ],
+      "componentPointMask": true,
+      "arenaOnlyBell": true,
+      "walkIn": true
+    }
+  ]
+}

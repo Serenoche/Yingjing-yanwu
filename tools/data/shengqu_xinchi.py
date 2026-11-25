@@ -4,7 +4,10 @@ from copy import deepcopy
 import json
 from pathlib import Path
 
-from arena_scenes import _lua
+if __package__:
+    from .arena_scenes import _lua
+else:
+    from arena_scenes import _lua
 
 
 CONFIG = Path(__file__).resolve().parents[2] / "config/ShengQuXinChi.json"
@@ -45,7 +48,7 @@ def add_map(bundle, scene):
         RecentlyInteractedBellIDByMap={"XiMeng": bell_id}, RecentlyInteractedAtByMap={},
         NeedUnLockBigMapMaskWidgetNames=["XiMeng"])
     flow = preset["EventPipeline"]
-    flow["LoadedDataLayer"] = {map_id: []}
+    flow["LoadedDataLayer"] = {map_id: scene.get("loadedLayers", [])}
     flow["UnLoadedDataLayer"] = {map_id: scene["unloadedLayers"]}
     for field in ("ComponentInfoJson", "ComponentsOwnerActorInfo"):
         flow[field] = {name: value for name, value in flow[field].items() if name.startswith(map_id + "-")}

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sourceCatalog": "BossCatalog.json",
-  "sourceCatalogSha256": "3b75ecb3e17564b94ee432e39f4f46d8bc02233c4477b2a508f13b2910a51761",
+  "sourceCatalogSha256": "4f37f303742f5a9853b8dbaa4b377927f4594fcbc60d09f03c3d70528eb65a5f",
   "categories": [
     {
       "id": "duel",
@@ -45,6 +45,10 @@
     {
       "bossId": "BP_Monster_YuCong_HunDun",
       "reason": "混沌保留用于连战或群战，不单独列出。"
+    },
+    {
+      "bossId": "BP_Monster_EMei_Sword_JianZhen",
+      "reason": "剑阵版红衣女剑客随大师兄进入七星鸳鸯阵。"
     }
   ],
   "entries": [
@@ -1005,7 +1009,8 @@
             "BP_Monster_HookMan_P2"
           ]
         }
-      ]
+      ],
+      "defaultScene": "waterfall"
     },
     {
       "id": "gauntlet_chilian",
@@ -1024,7 +1029,8 @@
             "BP_Monster_ChiLian_P2"
           ]
         }
-      ]
+      ],
+      "defaultScene": "forest_silk_tree"
     },
     {
       "id": "gauntlet_yucong",
@@ -1035,17 +1041,26 @@
       "stages": [
         {
           "members": [
+            "BP_Monster_YuCong_FirstTime"
+          ],
+          "sceneId": "xigu"
+        },
+        {
+          "members": [
             "BP_Monster_YuCong_P1"
-          ]
+          ],
+          "sceneId": "forest_silk_tree_yucong"
         },
         {
           "members": [
             "BP_Monster_YuCong_WuLi",
             "BP_Monster_YuCong_Bing",
             "BP_Monster_YuCong_HunDun"
-          ]
+          ],
+          "sceneId": "forest_silk_tree_yucong"
         }
-      ]
+      ],
+      "defaultScene": "xigu"
     },
     {
       "id": "gauntlet_muxiaokui",
@@ -1068,16 +1083,18 @@
           "members": [
             "BP_Monster_Yuu",
             "BP_Monster_TieGui"
-          ]
+          ],
+          "cooperation": "tieyu"
         }
-      ]
+      ],
+      "defaultScene": "lake"
     },
     {
       "id": "gauntlet_huashan",
       "name": "绝命鸳鸯",
       "category": "gauntlet",
-      "enabled": true,
-      "status": "ready",
+      "enabled": false,
+      "status": "disabled",
       "stages": [
         {
           "members": [
@@ -1090,7 +1107,8 @@
             "BP_Monster_EMei_Sword_Top"
           ]
         }
-      ]
+      ],
+      "notes": "绝命鸳鸯已撤下，原版剑阵和鸳鸯队伍由七星鸳鸯阵使用。"
     },
     {
       "id": "gauntlet_guichai_red",
@@ -1109,7 +1127,8 @@
             "BP_Monster_GuiChai_Red_P2"
           ]
         }
-      ]
+      ],
+      "defaultScene": "pangzhen_south_gate"
     },
     {
       "id": "gauntlet_changhong",
@@ -1128,7 +1147,8 @@
             "BP_Monster_ChangHong_P2"
           ]
         }
-      ]
+      ],
+      "defaultScene": "pangzhen_changhong"
     },
     {
       "id": "gauntlet_liondancer",
@@ -1148,6 +1168,7 @@
           ]
         }
       ],
+      "defaultScene": "pangzhen_lion",
       "notes": "舞狮尊主相关战斗已恢复。"
     },
     {
@@ -1160,14 +1181,17 @@
         {
           "members": [
             "BP_Monster_MBoss"
-          ]
+          ],
+          "sceneId": "jialongshan_huangxingzi"
         },
         {
           "members": [
             "BP_Monster_MBossVariants"
-          ]
+          ],
+          "sceneId": "jialongshan_huangxingzi_p2"
         }
-      ]
+      ],
+      "defaultScene": "jialongshan_huangxingzi"
     },
     {
       "id": "gauntlet_leidang",
@@ -1186,7 +1210,8 @@
             "BP_Monster_LeiDang_P2"
           ]
         }
-      ]
+      ],
+      "defaultScene": "leidang"
     },
     {
       "id": "gauntlet_powerman",
@@ -1205,7 +1230,8 @@
             "BP_Monster_PowerMan_P2"
           ]
         }
-      ]
+      ],
+      "defaultScene": "duanhun_lizhe"
     },
     {
       "id": "gauntlet_lengtu",
@@ -1251,7 +1277,8 @@
             "BP_Monster_ZuoShang_P2"
           ]
         }
-      ]
+      ],
+      "defaultScene": "night"
     },
     {
       "id": "gauntlet_miefa",
@@ -1263,24 +1290,30 @@
         {
           "members": [
             "BP_Monster_QiShu_Huo"
-          ]
+          ],
+          "sceneId": "lujia_yanru"
         },
         {
           "members": [
             "BP_Monster_QiShu_Lei"
-          ]
+          ],
+          "sceneId": "pangzhen_leiting"
         },
         {
           "members": [
             "BP_Monster_QiShu_Du"
-          ]
+          ],
+          "sceneId": "meiguhu_guhe"
         },
         {
           "members": [
-            "BP_Monster_QiShu_Bing"
-          ]
+            "BP_Monster_QiShu_Bing",
+            "BP_Monster_Scavenger"
+          ],
+          "sceneId": "scavenger"
         }
-      ]
+      ],
+      "defaultScene": "lujia_yanru"
     },
     {
       "id": "gauntlet_guaimian",
@@ -1292,29 +1325,35 @@
         {
           "members": [
             "BP_Monster_HuaQianXIao"
-          ]
+          ],
+          "sceneId": "forest_bridge"
         },
         {
           "members": [
             "BP_Monster_LuanShi"
-          ]
+          ],
+          "sceneId": "forest_iron_fist"
         },
         {
           "members": [
             "BP_Monster_JingYe"
-          ]
+          ],
+          "sceneId": "forest_trap"
         },
         {
           "members": [
             "BP_Monster_ChiLian"
-          ]
+          ],
+          "sceneId": "forest_silk_tree"
         },
         {
           "members": [
             "BP_Monster_ChiLian_P2"
-          ]
+          ],
+          "sceneId": "forest_silk_tree"
         }
-      ]
+      ],
+      "defaultScene": "forest_bridge"
     },
     {
       "id": "gauntlet_rocksolid",
@@ -1326,14 +1365,38 @@
         {
           "members": [
             "BP_Monster_Zhuobi"
-          ]
+          ],
+          "sceneId": "lujia_zhuobi"
         },
         {
           "members": [
             "BP_Monster_WuXuan"
+          ],
+          "sceneId": "pangzhen_wuxuan"
+        }
+      ],
+      "defaultScene": "lujia_zhuobi"
+    },
+    {
+      "id": "gauntlet_sangaota",
+      "name": "七星鸳鸯阵",
+      "category": "gauntlet",
+      "enabled": true,
+      "status": "ready",
+      "stages": [
+        {
+          "members": [
+            "BP_Monster_HuaShan_Blue"
+          ]
+        },
+        {
+          "members": [
+            "BP_Monster_HuaShan_JianOu",
+            "BP_Monster_EMei_Sword_JianZhen"
           ]
         }
-      ]
+      ],
+      "defaultScene": "zhengdaodaying_sangaota"
     },
     {
       "id": "group_mob_rioters",
@@ -1440,6 +1503,22 @@
             "BP_Monster_ChangHong_P2",
             "BP_Monster_LeiDang_P2"
           ]
+        }
+      ]
+    },
+    {
+      "id": "group_forest_guardians",
+      "name": "少主护卫：铁鬼与玉妖",
+      "category": "group",
+      "enabled": true,
+      "status": "ready",
+      "stages": [
+        {
+          "members": [
+            "BP_Monster_TieGui",
+            "BP_Monster_Yuu"
+          ],
+          "cooperation": "tieyu"
         }
       ]
     }

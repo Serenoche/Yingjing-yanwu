@@ -37,11 +37,7 @@ $runtimeRoot = Join-Path $root 'NativeEnemyRuntime'
 $payload = Join-Path $runtimeRoot 'Payload'
 $manifestPath = Join-Path $runtimeRoot 'PayloadHashes.json'
 . (Join-Path $PSScriptRoot 'CheckpointPayload.ps1')
-$hasCheckpoint = (Test-Path -LiteralPath $checkpointManifestPath) -or (Test-Path -LiteralPath $checkpointPayloadRoot)
 . (Join-Path $PSScriptRoot 'PBZModLoaderBridges.ps1')
-$helper = Join-Path $integratedRoot 'Tools/PBZSaveTool.exe'
-$toolBuildPath = Join-Path $integratedRoot 'Tools/Build.json'
-$presets = Join-Path $integratedRoot 'PrivatePresets.pbzs'
 $legacyStatePath = Join-Path $integratedRoot 'InstallState.json'
 $legacyPrivatePath = Join-Path $integratedRoot 'PrivateSlots.json'
 $script:pbzInstallerStage = 'selection'
@@ -226,27 +222,16 @@ function Assert-Payload {
     foreach ($entry in $manifest.PSObject.Properties) {
         if ($entry.Name -notmatch '^[A-Za-z0-9_./-]+$' -or $entry.Name -match '(^|/)\.\.(/|$)' -or
             ($entry.Name -ne 'dwmapi.dll' -and !$entry.Name.StartsWith('ue4ss/'))) { throw 'Invalid payload manifest path.' }
+        if ($entry.Name -match '^ue4ss/Mods/PBZTestArena/Scripts/(?:[^/]+\.lua|PBZSaveBarrier\.dll)$') {
+            throw '演武 Lua 脚本及存档保护 DLL 必须由 52 图原版存点载荷提供。'
+        }
         if ($entry.Value -cnotmatch '^[a-f0-9]{64}$') { throw 'Invalid payload manifest hash.' }
         Assert-PbzPathLength ($payload + '\' + $entry.Name) 'PACKAGE_PATH_TOO_LONG'
         Assert-Hash (Join-Path $payload $entry.Name) $entry.Value
     }
-    if (!$manifest.'dwmapi.dll' -or !$manifest.'ue4ss/Mods/PBZTestArena/Scripts/PBZSaveBarrier.dll') {
-        throw 'The complete native save-isolation payload is required.'
+    if (!$manifest.'dwmapi.dll' -or !$manifest.'ue4ss/UE4SS.dll') {
+        throw 'The complete UE4SS loader payload is required.'
     }
-}
-
-function Assert-PortableTools {
-    Assert-OrdinaryPath $toolBuildPath
-    $script:toolBuild = Get-Content -LiteralPath $toolBuildPath -Raw -Encoding UTF8 | ConvertFrom-Json
-    if ($toolBuild.schemaVersion -ne 1 -or $toolBuild.privateSlotCount -ne 18 -or $toolBuild.file -cne 'PBZSaveTool.exe' -or
-        $toolBuild.gameSha256 -cne $expectedGameHash -or $toolBuild.sha256 -cnotmatch '^[a-f0-9]{64}$' -or
-        $toolBuild.presetsSha256 -cnotmatch '^[a-f0-9]{64}$' -or
-        $toolBuild.continueVerification -cne 'opaque-Advanced-block-identical' -or
-        $toolBuild.uninstallPolicy -cne 'retain-dedicated-save-blocks-and-reports') {
-        throw 'Unsupported portable save helper manifest.'
-    }
-    Assert-Hash $helper $toolBuild.sha256
-    Assert-Hash $presets $toolBuild.presetsSha256
 }
 
 function Lua-String([string] $Value) {
@@ -255,13 +240,11 @@ function Lua-String([string] $Value) {
 }
 
 function New-Config([string] $SavePath) {
-    $legacyMaps = if ($checkpointFlow -eq 'native-checkpoint' -or !$mapPayload.Count) { 'true' } else { 'false' }
     return @"
 return {
     version = 2,
     platform = $(Lua-String $layout.Store.ToLowerInvariant()),
-    mapFlow = $(Lua-String $checkpointFlow),
-    legacyMaps = $legacyMaps,
+    mapFlow = "native-checkpoint",
     owner = $(Lua-String $owner),
     profile = $(Lua-String $profile),
     savePath = $(Lua-String $SavePath),
@@ -301,11 +284,11 @@ function Get-PreviousState([switch] $ForInstall) {
     if ($state.privateManifestSha256) {
         $privateHash = if (Test-Path -LiteralPath $readPrivate -PathType Leaf) { Get-Hash $readPrivate }
         if ($privateHash -cne $state.privateManifestSha256) {
-            if ($ForInstall -and $checkpointFlow -eq 'native-checkpoint') { $state.privateManifestSha256 = $null }
+            if ($ForInstall) { $state.privateManifestSha256 = $null }
             else { Stop-PbzInstall 'RECEIPT_UNVERIFIED' '无法核对旧安装的演武槽位记录。请保留原存档和备份，并导出诊断。' $readPrivate }
         }
     } elseif ($state.installed -and $state.mapFlow -cne 'native-checkpoint') {
-        if ($ForInstall -and $checkpointFlow -eq 'native-checkpoint') { return $null }
+        if ($ForInstall) { return $null }
         Stop-PbzInstall 'RECEIPT_UNVERIFIED' '旧版演武槽位记录缺失。请保留存档和旧安装备份，点「导出诊断」核对。' $readState
     }
     $state | Add-Member -NotePropertyName verifiedPrivatePath -NotePropertyValue $readPrivate -Force
@@ -342,73 +325,6 @@ function Assert-PreviousRuntime($State, [switch] $AllowMissingMod, [switch] $Rep
         if ($State -and $State.installed) { $expected = $State.runtimeHashes.'dwmapi.dll' }
         Assert-Hash $proxy $expected
     }
-}
-
-function Invoke-SaveTool([string] $SavePath, [string] $Output, [string] $PriorManifest) {
-    Assert-Hash $game $actualGameHash
-    $arguments = @('stage','--game',$game,'--source',$SavePath,'--presets',$presets,'--output',$Output)
-    if ($PriorManifest) { $arguments += @('--prior',$PriorManifest) }
-    $json = & $helper @arguments
-    if ($LASTEXITCODE -ne 0) {
-        Stop-PbzInstall 'SAVE_UNVERIFIED' '无法为当前存档准备演武槽位。请从游戏平台正常继续游戏、保存一次并退出后重试。若仍失败，请保留原档并导出诊断。' $save
-    }
-    $text = $json -join [Environment]::NewLine
-    $result = $text | ConvertFrom-Json
-    if ($result.schemaVersion -ne 1 -or $result.owner -cne $saveOwner -or $result.operation -cne 'stage' -or
-        $result.sourceSha256 -cnotmatch '^[a-f0-9]{64}$' -or $result.outputSha256 -cnotmatch '^[a-f0-9]{64}$' -or
-        $result.gameSha256 -cne $actualGameHash -or $result.presetsSha256 -cne $toolBuild.presetsSha256 -or
-        $result.originalBlockIdentity -ne $true -or $result.continue.changed -ne $false -or
-        $result.continue.verification -cne 'opaque-Advanced-block-identical' -or
-        $result.advancedSha256Before -cnotmatch '^[a-f0-9]{64}$' -or $result.advancedSha256Before -cne $result.advancedSha256After) {
-        throw 'The staged opaque-block verification report is invalid.'
-    }
-    Assert-Hash $SavePath $result.sourceSha256
-    Assert-Hash $Output $result.outputSha256
-    $expectedSlots = @('PBZArenaIntegratedTraining') + @(0..6 | ForEach-Object { 'PBZArenaIntegratedCycle' + $_ }) + @('PBZArenaIntegratedLao','PBZArenaIntegratedLakeTraining') + @(0..6 | ForEach-Object { 'PBZArenaIntegratedLakeCycle' + $_ }) + @('PBZArenaIntegratedLakeLao')
-    $names = @($result.privateSlots.PSObject.Properties.Name)
-    if ($names.Count -ne 18 -or @(Compare-Object ($expectedSlots | Sort-Object) ($names | Sort-Object)).Count) {
-        throw 'The staged private slot namespace is incomplete.'
-    }
-    $ordinary = @($result.originalSlots.PSObject.Properties.Name | Where-Object { $_ -cmatch '^(?:AutoSave|ManualSave)\d+$' })
-    if (!$ordinary.Count) { Stop-PbzInstall 'ACCOUNT_REQUIRED' '请先在游戏中创建一次正常存档，退出后重新检查安装。' }
-    $verificationArguments = @('verify','--game',$game,'--before',$SavePath,'--after',$Output,'--presets',$presets)
-    if ($PriorManifest) { $verificationArguments += @('--prior',$PriorManifest) }
-    $verificationJson = & $helper @verificationArguments
-    if ($LASTEXITCODE -ne 0) { throw 'The portable save tool rejected the candidate during independent verification.' }
-    $verification = ($verificationJson -join [Environment]::NewLine) | ConvertFrom-Json
-    if ($verification.operation -cne 'verify' -or $verification.gameSha256 -cne $actualGameHash -or $verification.sourceSha256 -cne $result.sourceSha256 -or
-        $verification.outputSha256 -cne $result.outputSha256 -or $verification.originalBlockIdentity -ne $true -or
-        $verification.advancedSha256Before -cne $result.advancedSha256Before -or
-        $verification.advancedSha256After -cne $result.advancedSha256After -or
-        $verification.continue.verification -cne 'opaque-Advanced-block-identical' -or $verification.continue.changed -ne $false) {
-        throw 'The independent candidate verification differs from staging.'
-    }
-    Assert-Hash $SavePath $result.sourceSha256
-    Assert-Hash $Output $result.outputSha256
-    Assert-Hash $game $actualGameHash
-    return @{ report = $result; json = $text }
-}
-
-function Replace-Save([string] $Source, [string] $Destination, [string] $BeforeHash,
-    [string] $AfterHash, [string] $Rollback) {
-    Assert-NotRunning
-    Assert-Hash $Destination $BeforeHash
-    if ($BeforeHash -ceq $AfterHash) { return $false }
-    $folder = Split-Path -Parent $Source
-    $pending = Join-Path $folder ('Swap-' + [Guid]::NewGuid().ToString('N').Substring(0,8) + '.tmp')
-    Assert-Contained $pending $folder
-    Copy-NewFile $Source $pending
-    try {
-        Assert-Hash $pending $AfterHash
-        Assert-Hash $Destination $BeforeHash
-        [IO.File]::Replace($pending,$Destination,$Rollback)
-        $replacedHash = Get-Hash $Rollback
-        if ($replacedHash -cne $BeforeHash) {
-            throw '安装期间存档发生变化。请等游戏平台完成同步后再试。'
-        }
-        Assert-Hash $Destination $AfterHash
-    } finally { if (Test-Path -LiteralPath $pending) { Remove-Item -LiteralPath $pending } }
-    return $true
 }
 
 function Copy-LegacyUserFile([string] $Source, [string] $Destination, [string] $Relative) {
@@ -533,21 +449,40 @@ if (!$Uninstall -and !$Recover) {
 $script:pbzInstallerStage = 'package'
 $mapPayload = [ordered]@{}
 $loaderBridgePayload = [ordered]@{}
-$checkpointFlow = 'compatibility'
+$checkpointFlow = ''
 if (!$Uninstall -and !$Recover) {
+    $checkpoint = Get-PbzCheckpointManifest
+    $checkpointAdmission = $checkpoint.nativeCheckpointAdmission
     $stockSteam = !$epic -and $actualGameHash -ceq $expectedGameHash
     $stockEpic = $epic -and $actualGameHash -ceq $epicGameHash -and (Test-PbzArenaMapBase)
-    if ($hasCheckpoint -and ($stockSteam -or ($stockEpic -and (Test-PbzEpicCheckpointInterface)))) {
-        Select-PbzCheckpointPayload
-        $loaderBridgePayload = Get-PbzLoaderBridgePayload
-        $mapPayload = Get-PbzSettlementAudioPayload
-        $checkpointFlow = 'native-checkpoint'
-    } elseif (!$hasCheckpoint -and ($stockSteam -or $stockEpic)) {
-        $mapPayload = Get-PbzMapPayload
+    $stockLegacySteam = $false
+    if ($checkpointAdmission.legacySteamAllowed -and !$epic -and $actualGameHash -ceq $legacyGameHash) {
+        $script:pbzInstallerStage = 'game_version'
+        if (!(Test-PbzLegacySteamArenaMapBase)) {
+            Stop-PbzInstall 'UNSUPPORTED_BUILD' '旧版 Steam 的原版存点场地索引缺失。请在 Steam 验证游戏文件，再检查安装。' $game
+        }
+        $interfaceCheck = Join-Path $PSScriptRoot 'EpicNativeCheck.ps1'
+        $script:pbzInstallerStage = 'package'
+        Assert-OrdinaryPath $interfaceCheck
+        . $interfaceCheck
+        $script:pbzInstallerStage = 'game_version'
+        if (@(Check-NativeFile $game @($checkpointAdmission.legacySteamParser)).Count) {
+            Stop-PbzInstall 'UNSUPPORTED_BUILD' '旧版 Steam 的存点接口未通过 52 图检查。请验证游戏文件，仍失败时请导出诊断。' $game
+        }
+        $stockLegacySteam = $true
+        $script:pbzInstallerStage = 'package'
     }
-    Assert-PortableTools
+    if (!($stockSteam -or $stockLegacySteam -or ($stockEpic -and (Test-PbzEpicCheckpointInterface $checkpoint.referenceParser)))) {
+        $script:pbzInstallerStage = 'game_version'
+        Stop-PbzInstall 'UNSUPPORTED_BUILD' '这个游戏版本未通过 52 图原版存点检查。请验证游戏文件，仍失败时请导出诊断。' $game
+    }
+    Select-PbzCheckpointPayload $checkpoint
+    $loaderBridgePayload = Get-PbzLoaderBridgePayload
+    $mapPayload = Get-PbzSettlementAudioPayload
+    $checkpointFlow = 'native-checkpoint'
 }
 if ($Uninstall -and (Test-Path -LiteralPath $pendingReceipt -PathType Leaf)) {
+    $checkpointFlow = 'compatibility'
     if ($Preflight) { return New-PbzPreflight 'pending_internal' 'Uninstall' '可以卸载上次的兼容内测，保留其他 MOD 和存档。' }
     . (Join-Path $PSScriptRoot 'CompatibilityInstall.ps1')
     Remove-PbzPendingInstall
@@ -555,6 +490,7 @@ if ($Uninstall -and (Test-Path -LiteralPath $pendingReceipt -PathType Leaf)) {
 }
 $script:pbzInstallerStage = 'receipt'
 $prior = Get-PreviousState -ForInstall:(!$Uninstall -and !$Repair)
+if ($Uninstall -and $prior.installed) { $checkpointFlow = $prior.mapFlow }
 $script:pbzInstallerStage = 'loader'
 $shared = Test-PbzSharedRuntime $prior
 if ($KeepExistingLoader -and !$shared -and !$Uninstall) {
@@ -586,9 +522,9 @@ if ($shared) {
 } else {
     Assert-PreviousRuntime $prior -AllowMissingMod:$missing -ReplaceMod:(!$Uninstall)
 }
-if ($runtimeOnly -and !$Uninstall -and $checkpointFlow -eq 'native-checkpoint') {
+if ($runtimeOnly -and !$Uninstall) {
     if ($Preflight) {
-        $accessNote = Test-PbzPreflightAccess $true $null $null -RuntimeOnly
+        $accessNote = Test-PbzPreflightAccess $true $null $null
         return New-PbzPreflight 'runtime_missing' 'Repair' ('已核对原账号的安装登记。可修复演武目录，也可清理残留并保留进度。' + $accessNote)
     }
     if ($Repair -or $Install) { Invoke-PbzRuntimeRepair $prior $shared; return }
@@ -627,8 +563,6 @@ $proxyStage = $null
 $movedActive = $null
 $movedProxy = $null
 $migrationNotes = New-Object 'System.Collections.Generic.List[string]'
-$report = $null
-$rollback = $null
 try {
     try { $held = $mutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $held = $true }
     if (!$held) { Stop-PbzInstall 'INSTALLER_BUSY' '另一个演武安装器或内测启动器正在运行。请先关闭它，再重试。' }
@@ -651,33 +585,15 @@ try {
     $operationName = if ($Install) { 'Install' } else { 'Uninstall' }
     if (Test-Path -LiteralPath $dataRoot) { Assert-OrdinaryPath $dataRoot }
     $run = New-PbzBackupRun $stamp
-    $rollback = Join-Path $run 'Replaced.sav'
     $script:pbzInstallerStage = 'stage'
     Start-PbzTransaction $run $operationName
-    if ($Install -and $checkpointFlow -eq 'compatibility') {
-        $sourceHelper,$sourcePresets = $helper,$presets
-        # Keep native staging paths short, including the tool's .manifest.json output.
-        $transaction = Initialize-PbzToolWork
-        $staging = Join-Path $transaction 'Staging'
-        Ensure-Directory $staging
-        $helper = Join-Path $transaction 'Tools/PBZSaveTool.exe'
-        $presets = Join-Path $transaction 'PrivatePresets.pbzs'
-        Copy-NewFile $sourceHelper $helper
-        Copy-NewFile $sourcePresets $presets
-        Assert-Hash $helper $toolBuild.sha256
-        Assert-Hash $presets $toolBuild.presetsSha256
-    }
     $beforeHash = Get-Hash $save
     Copy-NewFile $save (Join-Path $run 'Before.sav')
     Assert-Hash (Join-Path $run 'Before.sav') $beforeHash
     foreach ($file in @($statePath,$privatePath)) {
         if (Test-Path -LiteralPath $file -PathType Leaf) { Copy-NewFile $file (Join-Path $run ([IO.Path]::GetFileName($file))) }
     }
-    $pendingSave = if ($Install -and $checkpointFlow -eq 'compatibility') { Join-Path $staging 'Pending.sav' } else { $null }
-    $priorManifest = if ($prior -and $prior.privateManifestSha256) { $prior.verifiedPrivatePath } else { '' }
-    if ($epic) { $priorManifest = '' }
-    if ($pendingSave) { $prepared = Invoke-SaveTool (Join-Path $run 'Before.sav') $pendingSave $priorManifest }
-    elseif ($Install) { $prepared = New-PbzUnchangedSaveReport $beforeHash }
+    if ($Install) { $prepared = New-PbzUnchangedSaveReport $beforeHash }
     else {
         $retained = [ordered]@{schemaVersion=1;owner=$saveOwner;operation='uninstall-retain';sourceSha256=$beforeHash;
             outputSha256=$beforeHash;dedicatedSaveBlocksRetained=$true;reportsRetained=$true;
@@ -685,7 +601,6 @@ try {
         $prepared = @{report=($retained | ConvertTo-Json -Depth 6 | ConvertFrom-Json);json=($retained | ConvertTo-Json -Depth 6)}
     }
     $report = $prepared.report
-    if ($report.sourceSha256 -cne $beforeHash) { throw 'The formal save changed during preparation.' }
     Write-NewText (Join-Path $run 'SaveChange.json') $prepared.json
     if ($Install) {
         Initialize-PbzOwnedProfile
@@ -711,15 +626,12 @@ try {
 
     Assert-NotRunning
     Assert-Hash $game $actualGameHash
+    Assert-Hash $save $beforeHash
     Assert-PreviousRuntime $prior -AllowMissingMod:$missing -ReplaceMod:$Install
     $script:pbzInstallerStage = 'commit'
     Set-PbzMapTransaction $maps $run
     Set-PbzLoaderBridgeTransaction $loaderBridges $run
-    if ($pendingSave) {
-        Add-PbzFileChange $save $report.sourceSha256 $report.outputSha256
-        [void](Replace-Save $pendingSave $save $report.sourceSha256 $report.outputSha256 $rollback)
-    }
-    else { Assert-Hash $save $beforeHash }
+    Assert-Hash $save $beforeHash
     if (Test-Path -LiteralPath $active) {
         Assert-OwnedRuntime $active
         $movedActive = Join-Path $platform ('.PBZIntegrated-runtime-backup-' + $stamp)
@@ -748,7 +660,7 @@ try {
             $initialActive = $prior.previousActiveBackup; $initialProxy = $prior.previousProxyBackup
             $initialProxyHash = $prior.previousProxySha256
         }
-        $privateReceipt = Set-PbzPrivateSaveReceipt $prepared $prior
+        $privateReceipt = Set-PbzPrivateSaveReceipt $prior
         $state = [ordered]@{ version=2; owner=$owner; installed=$true; installedAt=(Get-Date).ToUniversalTime().ToString('o');
             launcherRoot=$root; gameExe=[IO.Path]::GetFullPath($game); savePath=[IO.Path]::GetFullPath($save);
             profile=[IO.Path]::GetFullPath($profile); userSid=$UserSid; privateManifestSha256=$privateReceipt;mapFlow=$checkpointFlow;
@@ -773,12 +685,10 @@ try {
         Write-PbzTransactionText $statePath ($state | ConvertTo-Json -Depth 4)
     }
     Assert-Hash $save $report.outputSha256
-    if (Test-Path -LiteralPath $rollback) { Assert-Hash $rollback $report.sourceSha256 }
     Write-NewText (Join-Path $run 'Result.json') (([ordered]@{operation=$operationName;success=$true;
         sourceSha256=$report.sourceSha256;outputSha256=$report.outputSha256;runtimeBackup=$movedActive;proxyBackup=$movedProxy;
         gameStarted=$false}) | ConvertTo-Json -Depth 5)
     Complete-PbzTransaction 'TransactionComplete.json'
-    if (Test-Path -LiteralPath $rollback) { Remove-Item -LiteralPath $rollback -ErrorAction SilentlyContinue }
     if ($Uninstall) { Write-Output "Uninstall completed; dedicated saves and reports were retained. PBZ was not started. Backup: $run" }
     else { Write-Output "Install completed. PBZ was not started. Backup: $run" }
 } catch {

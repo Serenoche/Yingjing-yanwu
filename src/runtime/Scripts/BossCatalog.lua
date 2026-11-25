@@ -73,4 +73,5 @@ return {
     ["BP_Monster_ZuoShang_Ending"] = { id = "BP_Monster_ZuoShang_Ending", name = "组织冥主：左殇（银发）", classPath = "/PBZCombatAsset/ActorData/Mobs/054_ZuoShang/BP_Monster_ZuoShang_Ending.BP_Monster_ZuoShang_Ending_C", order = 72, trainingNote = "独立练习银发左殇。龙体阶段可从挑战列表另选。", capsuleHalfHeight = 100.0 },
     ["BP_Monster_ZuoShang_P2"] = { id = "BP_Monster_ZuoShang_P2", name = "龙体左殇", classPath = "/PBZCombatAsset/ActorData/Mobs/076_ZuoShang_P2/BP_Monster_ZuoShang_P2.BP_Monster_ZuoShang_P2_C", order = 73, trainingNote = "独立练习龙体阶段。原战场过场由场景剧情控制。", capsuleHalfHeight = 130.0 },
     ["BP_Monster_FengXueDaoKe"] = { id = "BP_Monster_FengXueDaoKe", name = "风雪刀客", classPath = "/PBZCombatAsset/ActorData/Mobs/FengXueDaoKe/BP_Monster_FengXueDaoKe.BP_Monster_FengXueDaoKe_C", order = 74, capsuleHalfHeight = 160.0 },
+    ["BP_Monster_EMei_Sword_JianZhen"] = { id = "BP_Monster_EMei_Sword_JianZhen", name = "红衣女剑客", classPath = "/PBZCombatAsset/ActorData/Mobs/034_EMei/BP_Monster_EMei_Sword_JianZhen.BP_Monster_EMei_Sword_JianZhen_C", order = 75 },
 }

@@ -1,0 +1,128 @@
+[
+  {
+    "name": "JsonSaveToDisk",
+    "rva": 112652624,
+    "bytes": 512,
+    "kind": "code",
+    "sha256": "b5d91851eea83d559dc3c67c7c9291be1e7c6f021becab89ccc8a3def36639f5"
+  },
+  {
+    "name": "SyncAdvancedToMaster",
+    "rva": 112660656,
+    "bytes": 512,
+    "kind": "code",
+    "sha256": "915ed78587a33fb1085e7b5dd9787761d13f3aea8f739845c99d3652aac8d2d6"
+  },
+  {
+    "name": "WriteMasterToDisk",
+    "rva": 112668848,
+    "bytes": 512,
+    "kind": "code",
+    "sha256": "3c8baabf49f2c04a41c1701fdee1bc4918e71dbbe309cdfec2bfa0b271ea711c"
+  },
+  {
+    "name": "NativeFree",
+    "rva": 19794672,
+    "bytes": 256,
+    "kind": "code",
+    "sha256": "68a70c13d43daecccc9e9e9ff2e115e6e4b1e4e6718f75a13e3213e2b33be2d6"
+  },
+  {
+    "name": "LoadAdvanced",
+    "rva": 112617312,
+    "bytes": 512,
+    "kind": "code",
+    "sha256": "fe8266ab324d544d1e0a1b0539ddfd63af18f1f08a0a9bd8989dd979c79ed831"
+  },
+  {
+    "name": "WrapperConstructor",
+    "rva": 38611616,
+    "bytes": 256,
+    "kind": "code",
+    "sha256": "7ee6bbf164dc1673d7df16e7eac3552505a933539458ff5cae119c3b9b10b379"
+  },
+  {
+    "name": "CopyJson",
+    "rva": 112584224,
+    "bytes": 512,
+    "kind": "code",
+    "sha256": "fc6a6813a89ebfdd84be893fe5c8890de9ed78aa6100afdebc13702d1e6fe564"
+  },
+  {
+    "name": "ReleaseShared",
+    "rva": 19328128,
+    "bytes": 256,
+    "kind": "code",
+    "sha256": "84b2939371a49e1cf458e257a45e5a43b2c179b25af2e49608b76409d4b6a1a5"
+  },
+  {
+    "name": "RemoveSummary",
+    "rva": 112642752,
+    "bytes": 512,
+    "kind": "code",
+    "sha256": "3f68d343609e90b7ccfa39b87e277c94b23ec47291673c5ff6ea3ae83cccc986"
+  },
+  {
+    "name": "ProviderGetterThunk",
+    "rva": 75829712,
+    "bytes": 8,
+    "kind": "code",
+    "sha256": "013eddd068ed9f714df2a0529b26e4da995f05627b1e1cad05195b34cc3eb769"
+  },
+  {
+    "name": "ProviderStaticObjectThunk",
+    "rva": 75802416,
+    "bytes": 8,
+    "kind": "code",
+    "sha256": "8c6ba686d196624519770f3d1507970be99ae129d5b7fd7040b049f4262312cb"
+  },
+  {
+    "name": "ProviderCacheGetter",
+    "rva": 75828000,
+    "bytes": 512,
+    "kind": "code",
+    "sha256": "3b434e2b427d93dc83df347db950e56c7db77cc55534eeaca35bc60d08950e74"
+  },
+  {
+    "name": "ProviderGetPath",
+    "rva": 75804784,
+    "bytes": 512,
+    "kind": "code",
+    "sha256": "1a78b54fea1933aadabefdf673e6324660a5b80beb36e0a21397451230825ab2"
+  },
+  {
+    "name": "ProviderEffectiveDirectory",
+    "rva": 75823456,
+    "bytes": 512,
+    "kind": "code",
+    "sha256": "066f5a561c9adb4a986275e7797a1a90540b500b7ac69949dfe445d793f1655c"
+  },
+  {
+    "name": "WindowsProviderGetter",
+    "rva": 75199632,
+    "bytes": 256,
+    "kind": "code",
+    "sha256": "2f54f4f994ea1208861dbf6a9533c0b6f199f52993c72d66be56d4a248491517"
+  },
+  {
+    "name": "ProviderDirectGetterSlot",
+    "rva": 190128320,
+    "bytes": 8,
+    "kind": "constant_data",
+    "sha256": "099e3ed63aa16946210414f543999f84c0ca722f3f12643293ab16fa2a4fb816"
+  },
+  {
+    "name": "ProviderWindowsGetterSlot",
+    "rva": 189726688,
+    "bytes": 8,
+    "kind": "constant_data",
+    "sha256": "9ae75f0f162d56a541a187c9ee23359501c57782da4286f95c3c196ff7824b68"
+  },
+  {
+    "name": "ProviderSavePathSlot",
+    "rva": 190118904,
+    "bytes": 8,
+    "kind": "constant_data",
+    "sha256": "f2bb9e0f1d87cbd46262ef36a067ff0d826efc3956750e7f68f85738cee9a4bd"
+  }
+]

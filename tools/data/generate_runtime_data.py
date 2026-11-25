@@ -25,8 +25,8 @@ TRAINING_MOB_FIELDS = {"id", "name", "classPath", "rank", "role", "family"}
 def boss_catalog_lua() -> bytes:
     source = json.loads(DEFAULT_BOSSES.read_text(encoding="utf-8-sig"))
     entries = source["bosses"]
-    if len(entries) != 74:
-        raise ValueError("The supported interoperability manifest must contain 74 ordered actors")
+    if len(entries) != 75:
+        raise ValueError("The supported interoperability manifest must contain 75 ordered actors")
     used, lines = set(), ["return {"]
     for index, entry in enumerate(entries, 1):
         if set(entry) - BOSS_FIELDS:

@@ -518,9 +518,9 @@ local function attach(session, controller, state, onAction)
                 openHistory(session, record, restore)
             end) end),
         }
-        if state.requireBellOwner then rows[#rows + 1] = row("重试", function() onAction("retry") end) end
+        if state.requireBellOwner or state.recoveryMessage then rows[#rows + 1] = row("重试", function() onAction("retry") end) end
         rows[#rows + 1] = row("返回", ChallengeMenu.close)
-        show(state.sceneName or "故屋幻景", rows)
+        show(state.sceneName or "故屋幻景", rows, state.recoveryMessage)
     end
     menu()
 end

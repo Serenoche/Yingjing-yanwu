@@ -82,6 +82,23 @@ class PlatformInfoTests(unittest.TestCase):
         self.assertTrue(any(r["primarySavePresent"] for r in rows))
         self.assertTrue(any(r["name"] == "redacted" and r["nameShape"] == {"kind": "digits", "length": 17} for r in rows))
 
+    def test_epic_layout_reports_only_stock_map_index_hashes(self):
+        epic = self.install / "platform/epicgamestore/PBZ.exe"
+        epic.parent.mkdir()
+        epic.write_bytes(synthetic_pe())
+        paks = self.install / "ProjectPBZ/Content/Paks"
+        index = b"synthetic map index"
+        (paks / "global.utoc").write_bytes(index)
+        (paks / "unrelated.utoc").write_bytes(b"not part of the stock checkpoint check")
+
+        report = self.run_probe("-Platform", "Epic", exe=epic)
+
+        self.assertEqual(report["layout"]["observedStoreDirectory"], "epicgamestore")
+        self.assertEqual(report["mapIndices"], {
+            "global.utoc": {"status": "collected", "sha256": hashlib.sha256(index).hexdigest()},
+            "ProjectPBZ-Windows.utoc": {"status": "missing"},
+        })
+
     def test_save_content_does_not_need_read_access(self):
         kernel = ctypes.WinDLL("kernel32", use_last_error=True)
         kernel.CreateFileW.argtypes = [ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32,

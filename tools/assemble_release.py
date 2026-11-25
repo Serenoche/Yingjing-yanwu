@@ -446,6 +446,8 @@ def assemble(args: argparse.Namespace) -> dict:
     files["NativeEnemyRuntime/PayloadHashes.json"] = json_bytes(payload_hashes)
     installer = build / "installer"
     installer_build = read_json(installer / "InstallerBuild.json")
+    require(installer_build.get("runtimeProfile") != "checkpoint-210",
+            "Use assemble_checkpoint_210.py to assemble the 2.1.0 checkpoint runtime")
     host_name = "影境演武安装器.exe"
     host = read(installer / host_name)
     require(installer_build.get("component") == "installer-host" and installer_build.get("file") == host_name

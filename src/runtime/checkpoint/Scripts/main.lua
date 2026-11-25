@@ -443,7 +443,7 @@ local function prepareSession(system)
             {loadoutMemoryPath=loadoutMemoryPath,onBeforeLoad=checkpointArenaServices,onBellSave=rememberBellLoadout})
     end
     if installedConfig then
-        log("版本 2.0.3；平台=" .. (installedConfig.platform or "steam")
+        log("版本 2.0.2；平台=" .. (installedConfig.platform or "steam")
             .. "; 地图=单存点套用轮回; 测试场=" .. #ArenaScenes.list() .. "图自选杂兵; 主轮询=100ms; 双钺脱战保留煞气")
         local palacePath, palaceLoadoutPath = require("BloodyPalaceProgress").paths(profile, loadoutMemoryPath)
         local options = {

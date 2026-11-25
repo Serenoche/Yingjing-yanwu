@@ -5,6 +5,11 @@
 #include "summary_cache.hpp"
 #include "provider_identity.hpp"
 #include "native_binding_profiles.hpp"
+#if defined(PBZ_STOCK_CHECKPOINT)
+#include "stock_preset_import.hpp"
+#include "checkpoint_build_config.hpp"
+#include "checkpoint_parser_profiles.hpp"
+#endif
 #include <mutex>
 
 #if !defined(_WIN64)
@@ -27,6 +32,15 @@ NativeLoadAdvanced load_advanced = nullptr;
 pbz_barrier::EngineClone clone_engine;
 pbz_barrier::RemoveSummary remove_summary = nullptr;
 pbz_barrier::SharedJson original_master;
+#if defined(PBZ_STOCK_CHECKPOINT)
+pbz_dropin::ParseObject preset_parser = nullptr;
+constexpr const char* stock_presets_sha = pbz_checkpoint_build::preset_sha256;
+pbz_dropin::PreparedPresets active_presets;
+std::wstring active_slot;
+int active_cycle = -2;
+std::string active_loadout;
+bool active_loadout_projected = false;
+#endif
 struct Scalar { std::size_t offset; std::size_t length; unsigned char bytes[8]; };
 std::vector<Scalar> saved_scalars;
 pbz_compat::VerifiedIdentity verified_native_identity;
@@ -63,16 +77,31 @@ std::wstring module_path() {
     return std::wstring(buffer.data(), length);
 }
 
+#if defined(PBZ_STOCK_CHECKPOINT)
+struct Selection {
+    std::wstring slot;
+    int cycle = -2;
+    std::string loadout;
+};
+
+bool read_request(const std::wstring& path, std::string& nonce, void*& manager, Selection* selection = nullptr) {
+#else
 bool read_request(const std::wstring& path, std::string& nonce, void*& manager) {
+#endif
     HANDLE file = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OPEN_REPARSE_POINT, nullptr);
     if (file == INVALID_HANDLE_VALUE) return false;
     LARGE_INTEGER size{};
     BY_HANDLE_FILE_INFORMATION information{};
-    bool ok = GetFileSizeEx(file, &size) && size.QuadPart > 0 && size.QuadPart <= 113
+#if defined(PBZ_STOCK_CHECKPOINT)
+    constexpr int max_request_bytes = 2176;
+#else
+    constexpr int max_request_bytes = 113;
+#endif
+    bool ok = GetFileSizeEx(file, &size) && size.QuadPart > 0 && size.QuadPart <= max_request_bytes
         && GetFileInformationByHandle(file, &information)
         && !(information.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT);
-    char bytes[113]{};
+    char bytes[max_request_bytes]{};
     DWORD amount = 0;
     if (ok) ok = ReadFile(file, bytes, static_cast<DWORD>(size.QuadPart), &amount, nullptr)
         && amount == size.QuadPart;
@@ -86,7 +115,26 @@ bool read_request(const std::wstring& path, std::string& nonce, void*& manager) 
         if (!((value >= 'A' && value <= 'Z') || (value >= 'a' && value <= 'z')
             || (value >= '0' && value <= '9') || value == '_' || value == '-')) return false;
     }
+#if defined(PBZ_STOCK_CHECKPOINT)
+    const auto address_end = request.find('\t', separator + 1);
+    if ((address_end != std::string::npos) != (selection != nullptr)) return false;
+    const auto address_text = request.substr(separator + 1, address_end - separator - 1);
+    if (selection) {
+        const auto slot_end = request.find('\t', address_end + 1);
+        if (slot_end == std::string::npos) return false;
+        const auto slot = request.substr(address_end + 1, slot_end - address_end - 1);
+        selection->slot.assign(slot.begin(), slot.end());
+        const auto cycle_end = request.find('\t', slot_end + 1);
+        const auto cycle = request.substr(slot_end + 1, cycle_end - slot_end - 1);
+        if (cycle_end != std::string::npos) selection->loadout = request.substr(cycle_end + 1);
+        if (!pbz_dropin::is_checkpoint_slot(selection->slot)) return false;
+        if (cycle == "-1") selection->cycle = -1;
+        else if (cycle.size() == 1 && cycle[0] >= '0' && cycle[0] <= '6') selection->cycle = cycle[0] - '0';
+        else return false;
+    }
+#else
     const auto address_text = request.substr(separator + 1);
+#endif
     if (address_text.empty() || address_text.size() > 16) return false;
     std::uintptr_t address = 0;
     for (const unsigned char value : address_text) {
@@ -288,6 +336,20 @@ bool host_targets(std::vector<pbz_barrier::Patch>& patches, std::string& reason)
     clone_engine.deep_copy = reinterpret_cast<pbz_barrier::CopyJson>(base + profile.copy_rva);
     clone_engine.release = reinterpret_cast<pbz_barrier::ReleaseShared>(base + profile.release_rva);
     remove_summary = reinterpret_cast<pbz_barrier::RemoveSummary>(base + profile.remove_rva);
+#if defined(PBZ_STOCK_CHECKPOINT)
+    preset_parser = nullptr;
+    if (profile.reference_eligibility) {
+        pbz_compat::Image image;
+        const auto& parser = pbz_checkpoint_parsers::reference;
+        if (!pbz_compat::image_headers(reinterpret_cast<std::uintptr_t>(base), read_native_image, image)
+            || !pbz_compat::verify(image, &parser, 1, nullptr, 0, read_native_image, query_native_image, reason)) {
+            reason = "native-runtime-incompatible:ReferenceCheckpointParser"; return false;
+        }
+        preset_parser = reinterpret_cast<pbz_dropin::ParseObject>(base + parser.rva);
+    } else if (&profile != &pbz_bindings::legacy || !clone_engine.initialize_json || clone_engine.construct) {
+        reason = "native-runtime-incompatible:Legacy301524CheckpointProfile"; return false;
+    }
+#endif
     std::string allocation_failure;
     if (!json_relay) json_relay = pbz_barrier::allocate_near_relay(base + profile.json_rva,
         reinterpret_cast<void*>(&json_failure), nullptr, &allocation_failure);
@@ -329,14 +391,32 @@ bool confirm_entries_unchanged(const std::vector<EntryState>& states) {
     return true;
 }
 
+#if defined(PBZ_STOCK_CHECKPOINT)
+bool build_private_master(void* manager, const pbz_barrier::SharedJson& source,
+    const pbz_dropin::SelectedPreset& preset, pbz_barrier::SharedJson& destination, std::string& reason) {
+    return clone_engine.clone(manager, source, destination, reason)
+        && pbz_dropin::import_into_clone(manager, destination, preset, clone_engine, preset_parser, reason)
+        && pbz_dropin::invalidate_private_summaries(
+            static_cast<unsigned char*>(manager) + 0x350, remove_summary, reason);
+}
+
+enum class Operation { arm, select, prepare, disarm };
+#else
 enum class Operation { arm, prepare, disarm };
+#endif
 int operation(Operation action) {
     std::lock_guard<std::mutex> lock(operation_mutex);
     const auto path = module_path();
     if (path.empty()) return 0;
     std::string nonce;
     void* manager = nullptr;
+#if defined(PBZ_STOCK_CHECKPOINT)
+    Selection selection;
+    const bool selects_checkpoint = action == Operation::arm || action == Operation::select;
+    if (!read_request(path + L".request", nonce, manager, selects_checkpoint ? &selection : nullptr)) {
+#else
     if (!read_request(path + L".request", nonce, manager)) {
+#endif
         write_status(path + L".status", "invalid\terror\tinvalid request nonce or manager address\n");
         return 0;
     }
@@ -346,12 +426,26 @@ int operation(Operation action) {
     bool refused = action == Operation::arm && !armed;
     if (action == Operation::arm) {
         if (armed) {
+#if defined(PBZ_STOCK_CHECKPOINT)
+            ok = !prepared && !master_restored && manager == protected_manager
+                && selection.slot == active_slot && selection.cycle == active_cycle && selection.loadout == active_loadout
+                && pbz_barrier::preflight(pbz_barrier::reversed(installed), reason);
+#else
             ok = manager == protected_manager && pbz_barrier::preflight(pbz_barrier::reversed(installed), reason);
+#endif
             if (!ok && reason.empty()) reason = "protected manager identity mismatch";
         } else {
             std::vector<pbz_barrier::Patch> candidates;
             std::vector<EntryState> initial_entries;
+#if defined(PBZ_STOCK_CHECKPOINT)
+            pbz_dropin::PreparedPresets presets;
+            pbz_dropin::SelectedPreset preset;
+#endif
             ok = host_targets(candidates, reason) && manager_ready(manager, reason, busy, true)
+#if defined(PBZ_STOCK_CHECKPOINT)
+                && pbz_dropin::prepare_file(path, stock_presets_sha, presets, reason)
+                && pbz_dropin::select_preset(presets, selection.slot, selection.cycle, preset, reason, selection.loadout)
+#endif
                 && capture_scalars(manager, reason) && capture_entry_states(candidates, initial_entries, reason);
             if (ok) last_entry_states = initial_entries;
             HMODULE pinned_module = nullptr;
@@ -367,13 +461,25 @@ int operation(Operation action) {
             if (ok) {
                 const auto master = reinterpret_cast<pbz_barrier::SharedJson*>(static_cast<unsigned char*>(manager) + 0xD8);
                 pbz_barrier::SharedJson private_master;
+#if defined(PBZ_STOCK_CHECKPOINT)
+                ok = build_private_master(manager, *master, preset, private_master, reason);
+#else
                 ok = clone_engine.clone(manager, *master, private_master, reason);
+#endif
                 if (ok) {
                     original_master = *master; // Move the original owner out of the subsystem.
                     *master = private_master; // Move the clone owner into the subsystem.
+#if defined(PBZ_STOCK_CHECKPOINT)
+                    active_presets = std::move(presets);
+                    active_slot = std::move(selection.slot); active_cycle = selection.cycle;
+                    active_loadout = std::move(selection.loadout); active_loadout_projected = preset.loadout_projected;
+#endif
                     installed = std::move(candidates); protected_manager = manager;
                     armed = true; prepared = false; master_restored = false;
                 } else {
+#if defined(PBZ_STOCK_CHECKPOINT)
+                    clone_engine.drop(private_master);
+#endif
                     std::string rollback_reason;
                     const bool restored = pbz_barrier::transact(pbz_barrier::reversed(candidates), rollback_reason);
                     refused = restored && confirm_entries_unchanged(initial_entries);
@@ -382,6 +488,28 @@ int operation(Operation action) {
                 }
             }
         }
+#if defined(PBZ_STOCK_CHECKPOINT)
+    } else if (action == Operation::select) {
+        ok = armed && !prepared && !master_restored && manager == protected_manager
+            && manager_ready(manager, reason, busy, false);
+        if (!ok && reason.empty()) reason = "no active checkpoint transaction for this manager";
+        if (ok && (selection.slot != active_slot || selection.cycle != active_cycle || selection.loadout != active_loadout)) {
+            pbz_dropin::SelectedPreset preset;
+            pbz_barrier::SharedJson replacement;
+            ok = pbz_dropin::select_preset(active_presets, selection.slot, selection.cycle, preset, reason, selection.loadout)
+                && build_private_master(manager, original_master, preset, replacement, reason);
+            if (ok) {
+                const auto master = reinterpret_cast<pbz_barrier::SharedJson*>(static_cast<unsigned char*>(manager) + 0xD8);
+                auto previous = *master;
+                *master = replacement;
+                active_slot = std::move(selection.slot); active_cycle = selection.cycle;
+                active_loadout = std::move(selection.loadout); active_loadout_projected = preset.loadout_projected;
+                clone_engine.drop(previous);
+            } else {
+                clone_engine.drop(replacement);
+            }
+        }
+#endif
     } else if (!armed && action == Operation::disarm) {
         ok = true;
     } else {
@@ -412,11 +540,27 @@ int operation(Operation action) {
                 if (ok && !confirm_entries_unchanged(last_entry_states)) {
                     ok = false; reason = "native entries or protections differ after Disarm";
                 }
-                if (ok) { armed = false; prepared = false; master_restored = false;
-                    installed.clear(); protected_manager = nullptr; saved_scalars.clear(); }
+                if (ok) {
+                    armed = false; prepared = false; master_restored = false;
+                    installed.clear(); protected_manager = nullptr; saved_scalars.clear();
+#if defined(PBZ_STOCK_CHECKPOINT)
+                    active_presets = {}; active_slot.clear(); active_cycle = -2;
+                    active_loadout.clear(); active_loadout_projected = false;
+#endif
+                }
             }
         }
     }
+#if defined(PBZ_STOCK_CHECKPOINT)
+    if (ok && action == Operation::select) {
+        write_status(path + L".status", nonce + (active_loadout_projected ? "\tselected\tprojected\n" : "\tselected\n"));
+        return 0;
+    }
+    if (ok && action == Operation::arm && active_loadout_projected) {
+        write_status(path + L".status", nonce + "\tarmed\tprojected\n");
+        return 0;
+    }
+#endif
     if (ok) write_status(path + L".status", nonce + (prepared ? "\tprepared\n" : armed ? "\tarmed\n" : "\tidle\n"));
     else if (busy) write_status(path + L".status", nonce + "\tbusy\n");
     else if (refused) write_status(path + L".status", nonce + "\trefused\t" + reason + "\n");
@@ -641,6 +785,11 @@ int inspect_operation(bool include_eligibility) {
 // Lua C function ABI. No Lua APIs or UE4SS C++ ABI are imported; both exports
 // take an opaque lua_State*, ignore it, and return zero Lua results.
 extern "C" __declspec(dllexport) int __cdecl PBZBarrierArm(void*) { return operation(Operation::arm); }
+#if defined(PBZ_STOCK_CHECKPOINT)
+extern "C" __declspec(dllexport) int __cdecl PBZBarrierSelectCheckpoint(void*) { return operation(Operation::select); }
+extern "C" __declspec(dllexport) int __cdecl PBZBarrierCheckpointLoadoutV1(void*) { return 0; }
+extern "C" __declspec(dllexport) int __cdecl PBZBarrierPlayerCustomV1(void*) { return 0; }
+#endif
 extern "C" __declspec(dllexport) int __cdecl PBZBarrierPrepareRestore(void*) { return operation(Operation::prepare); }
 extern "C" __declspec(dllexport) int __cdecl PBZBarrierDisarm(void*) { return operation(Operation::disarm); }
 extern "C" __declspec(dllexport) int __cdecl PBZBarrierInspect(void*) { return inspect_operation(false); }

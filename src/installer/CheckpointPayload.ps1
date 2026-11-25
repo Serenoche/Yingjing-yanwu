@@ -10,16 +10,35 @@ function Get-PbzRuntimePayloadFile([string] $Relative) {
 function Get-PbzCheckpointManifest {
     Assert-OrdinaryPath $checkpointManifestPath
     $data = Get-Content -LiteralPath $checkpointManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $admission = $data.nativeCheckpointAdmission
     if ($data.schemaVersion -ne 2 -or $data.slotCount -ne 60 -or
-        $data.playableSlotCount -ne 4 -or $data.reservedSlotCount -ne 56) {
-        throw '原版地图内测的存点清单无效。'
+        $data.playableSlotCount -ne 52 -or $data.reservedSlotCount -ne 8 -or
+        $admission.schemaVersion -ne 1 -or $admission.nativeOnly -isnot [bool] -or
+        !$admission.nativeOnly -or $admission.legacySteamAllowed -isnot [bool]) {
+        throw '52 图原版存点的安装准入清单无效。'
+    }
+    if ($admission.legacySteamAllowed) {
+        $parser = $admission.legacySteamParser
+        if ($parser.name -cne 'JsonObjectFromString' -or $parser.kind -cne 'code' -or
+            $parser.rva -ne 0x024D8550 -or $parser.bytes -ne 195 -or
+            $parser.sha256 -cne '74d3e71e1c3731a79456a430268d49e383a4c7c630b7e056833116af19bb5dbc') {
+            throw '52 图原版存点的旧 Steam 接口清单无效。'
+        }
     }
     return $data
 }
 
-function Test-PbzEpicCheckpointInterface {
-    $data = Get-PbzCheckpointManifest
-    $parser = $data.referenceParser
+function Test-PbzLegacySteamArenaMapBase {
+    foreach ($name in @('global.utoc', 'ProjectPBZ-Windows.utoc')) {
+        $path = Join-Path $installRoot ('ProjectPBZ/Content/Paks/' + $name)
+        if (!(Test-Path -LiteralPath $path -PathType Leaf)) { return $false }
+        Assert-OrdinaryPath $path
+        if ((Get-Item -LiteralPath $path).Length -eq 0) { return $false }
+    }
+    return $true
+}
+
+function Test-PbzEpicCheckpointInterface($Parser) {
     if ($parser.rva -ne 0x024D7DF0 -or $parser.bytes -ne 32 -or $parser.kind -cne 'code' -or
         $parser.sha256 -cnotmatch '^[a-f0-9]{64}$') {
         throw '原版地图内测的 Epic 接口清单无效。'
@@ -27,8 +46,7 @@ function Test-PbzEpicCheckpointInterface {
     return @(Check-NativeFile $game @($parser)).Count -eq 0
 }
 
-function Select-PbzCheckpointPayload {
-    $data = Get-PbzCheckpointManifest
+function Select-PbzCheckpointPayload($Data) {
     $required = @('main.lua','ArenaScenes.lua','PlayerProfile.lua','TitleSession.lua','Challenge.lua',
         'StockCheckpoint.lua','SaveBarrier.lua','MeiGuHuOriginalEvents.lua','PBZSaveBarrier.dll','StockArenaPresets.json')
     $prefix = 'ue4ss/Mods/PBZTestArena/Scripts/'
@@ -53,12 +71,8 @@ function New-PbzUnchangedSaveReport([string] $Hash) {
     return @{report=[pscustomobject]$data; json=($data | ConvertTo-Json -Depth 5)}
 }
 
-function Set-PbzPrivateSaveReceipt($Prepared, $Prior) {
-    if ($checkpointFlow -eq 'compatibility') {
-        Write-PbzTransactionText $privatePath $Prepared.json
-        return (Get-Hash $privatePath)
-    }
-    # Keep any prior compatibility ownership record for a later downgrade.
+function Set-PbzPrivateSaveReceipt($Prior) {
+    # Preserve the ownership record of any dedicated slots created by an older installer.
     if ($Prior -and $Prior.privateManifestSha256) {
         if ($Prior.verifiedPrivatePath -ine $privatePath -and !(Test-Path -LiteralPath $privatePath)) {
             Add-PbzFileChange $privatePath '' $Prior.privateManifestSha256

@@ -94,7 +94,18 @@ def load_and_validate(encounter_path=None, boss_path=None):
             _require(all(isinstance(member, str) and member in boss_ids for member in members),
                      f'Unknown stage member: {identity}/{index}')
             _require(len(set(members)) == len(members), f'Duplicate stage member: {identity}/{index}')
-            stages.append({'members': members[:]})
+            normalized_stage = {'members': members[:]}
+            if 'sceneId' in stage:
+                _require(category == 'gauntlet' and isinstance(stage['sceneId'], str)
+                         and re.fullmatch(r'[a-z][a-z0-9_]*', stage['sceneId']),
+                         f'Invalid gauntlet stage scene: {identity}/{index}')
+                normalized_stage['sceneId'] = stage['sceneId']
+            if 'cooperation' in stage:
+                _require(category != 'duel' and stage['cooperation'] == 'tieyu'
+                         and set(members) == {'BP_Monster_TieGui', 'BP_Monster_Yuu'},
+                         f'Invalid stage cooperation: {identity}/{index}')
+                normalized_stage['cooperation'] = stage['cooperation']
+            stages.append(normalized_stage)
         if enabled:
             _require(bool(stages), f'Enabled encounter has no stages: {identity}')
             _require(identity != 'gauntlet_lengtu' and all('BP_Monster_LengTu' not in stage['members'] for stage in stages),
@@ -116,6 +127,13 @@ def load_and_validate(encounter_path=None, boss_path=None):
                      f'Group requires one simultaneous multi-member stage: {identity}')
         normalized = {'id': identity, 'name': name, 'category': category, 'enabled': enabled,
                       'status': status, 'order': order, 'stages': stages}
+        if 'defaultScene' in entry:
+            default_scene = entry['defaultScene']
+            _require(category == 'gauntlet' and isinstance(default_scene, str)
+                     and re.fullmatch(r'[a-z][a-z0-9_]*', default_scene), f'Invalid gauntlet default scene: {identity}')
+            if stages and 'sceneId' in stages[0]:
+                _require(stages[0]['sceneId'] == default_scene, f'Gauntlet opening scene differs from default: {identity}')
+            normalized['defaultScene'] = default_scene
         if entry.get('adapter') is not None:
             _require(entry['adapter'] == 'lengtu' and identity == 'gauntlet_lengtu', 'Unknown encounter adapter')
             normalized['adapter'] = entry['adapter']

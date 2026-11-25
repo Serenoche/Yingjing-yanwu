@@ -5,6 +5,7 @@
 -- The caller chooses ground-checked locations; this module cannot prove navmesh
 -- coverage or the authored encounter's behavior in a different level.
 local SpawnClass = require("SpawnClass")
+local SceneArena = require("SceneArena")
 local LengTuArena = {}
 local BASE = "/PBZCombatAsset/ActorData/Mobs/077_LengTu/"
 local MAP = "/Game/Maps/B08_09_12_13/PBZ_Duanhun_WP"
@@ -34,6 +35,7 @@ end
 local function same(a, b)
     return valid(a) and valid(b) and a:GetAddress() == b:GetAddress()
 end
+local inWorld = SceneArena.actorIsInWorld
 
 local function finite(value)
     return type(value) == "number" and value == value and math.abs(value) < math.huge
@@ -81,9 +83,9 @@ end
 
 local function identity(self, entry)
     local actor = entry.actor
-    if not valid(actor) or actor:IsActorBeingDestroyed() or not same(actor:GetWorld(), self.world) or not actor:IsA(entry.class) then return false end
+    if not inWorld(actor, self.world) or actor:IsActorBeingDestroyed() or not actor:IsA(entry.class) then return false end
     if entry.borrowed then
-        return originalIdentity(actor, entry.definition) and actor:GetFullName() == entry.originalFullName
+        return originalIdentity(actor, entry.definition)
             and address(actor:GetOwner()) == entry.ownerAddress
     end
     return same(actor:GetOwner(), self.pawn)
@@ -120,13 +122,9 @@ local function point(value, key)
 end
 
 local function foreignMarker(self)
-    for _, definition in ipairs(DEFINITIONS) do
-        for _, actor in ipairs(FindAllOf(definition.name .. "_C") or {}) do
-            if valid(actor) and same(actor:GetWorld(), self.world) and not actor:IsActorBeingDestroyed() then
-                if not self.owned[actor:GetAddress()] then
-                    return "场地已有非本场冷荼定位点：" .. definition.key
-                end
-            end
+    for _, entry in ipairs(self.entries) do
+        for _, actor in ipairs(SceneArena.actorsOfClass(self.gameplay, self.pawn, self.world, entry.class)) do
+            if not self.owned[actor:GetAddress()] then return "场地已有非本场冷荼定位点：" .. entry.key end
         end
     end
 end
@@ -135,7 +133,7 @@ local Session = {}
 Session.__index = Session
 
 function Session:ownsMarker(actor)
-    if not valid(actor) or actor:IsActorBeingDestroyed() or not same(actor:GetWorld(), self.world) then return false end
+    if not inWorld(actor, self.world) or actor:IsActorBeingDestroyed() then return false end
     if not self.owned[actor:GetAddress()] then return false end
     for _, entry in ipairs(self.entries) do
         if same(actor, entry.actor) then return identity(self, entry) end
@@ -154,7 +152,7 @@ end
 
 function Session:update(pawn, running)
     assert(not self.closed, "冷荼场地适配已关闭")
-    assert(same(pawn, self.pawn) and same(pawn:GetWorld(), self.world), "冷荼场地角色或世界已切换")
+    assert(same(pawn, self.pawn) and inWorld(pawn, self.world), "冷荼场地角色或世界已切换")
     for _, entry in ipairs(self.entries) do
         assert(identity(self, entry), "冷荼本场定位点已失效：" .. entry.key)
         if entry.borrowed then
@@ -184,7 +182,7 @@ function Session:close()
                     assert(identity(self, entry), "冷荼原定位点恢复身份不匹配")
                     move(self, actor, entry.originalTransform)
                 else
-                    assert(same(actor:GetWorld(), self.world) and actor:IsA(entry.class), "冷荼定位点清理身份不匹配")
+                    assert(inWorld(actor, self.world) and actor:IsA(entry.class), "冷荼定位点清理身份不匹配")
                     actor:K2_DestroyActor()
                 end
             end)
@@ -200,8 +198,9 @@ end
 
 function LengTuArena.new(gameplay, pawn, points, options)
     assert(valid(gameplay) and valid(pawn) and not pawn:IsActorBeingDestroyed(), "冷荼场地上下文不可用")
-    local world = pawn:GetWorld()
-    assert(valid(world) and type(points) == "table", "冷荼场地或定位点不可用")
+    local world = SceneArena.runtimeWorld(pawn)
+    if not valid(world) then return nil, "等待冷荼场地所属关卡" end
+    assert(type(points) == "table", "冷荼定位点不可用")
     local prepared = {}
     -- Prepare everything before creating any actors. A package still loading
     -- returns a retryable reason and leaves the world completely unchanged.
@@ -217,24 +216,22 @@ function LengTuArena.new(gameplay, pawn, points, options)
     end
     local mathLibrary = StaticFindObject("/Script/Engine.Default__KismetMathLibrary")
     assert(valid(mathLibrary), "冷荼定位点变换接口不可用")
-    local self = setmetatable({ pawn = pawn, world = world, mathLibrary = mathLibrary,
+    local self = setmetatable({ pawn = pawn, world = world, gameplay = gameplay, mathLibrary = mathLibrary,
         entries = {}, owned = {}, closed = false }, Session)
     -- Complete every identity/transform check before moving an original or
     -- creating a replacement. GetActorOfClass must have exactly one candidate.
     for _, entry in ipairs(prepared) do
-        local found = {}
-        for _, actor in ipairs(FindAllOf(entry.name .. "_C") or {}) do
-            if valid(actor) and same(actor:GetWorld(), world) and not actor:IsActorBeingDestroyed() then found[#found + 1] = actor end
-        end
+        local found = SceneArena.actorsOfClass(gameplay, pawn, world, entry.class)
         assert(#found <= 1, "场地存在重复冷荼定位点：" .. entry.key)
         if #found == 1 then
             local actor = found[1]
+            if not inWorld(actor, world) then return nil, "等待冷荼定位点所属关卡：" .. entry.key end
             assert(actor:IsA(entry.class) and originalIdentity(actor, entry.definition), "场地已有非本场冷荼定位点：" .. entry.key)
             local captured, original = transformSnapshot(actor), entry.definition.original
             local expected = { location = original.location, rotation = { Pitch = 0, Yaw = original.yaw, Roll = 0 } }
             assert(matches(captured, expected), "冷荼原定位点已被修改，拒绝借用：" .. entry.key)
             entry.actor, entry.borrowed, entry.originalTransform = actor, true, captured
-            entry.originalFullName, entry.ownerAddress = actor:GetFullName(), address(actor:GetOwner())
+            entry.ownerAddress = address(actor:GetOwner())
         end
     end
     local ok, reason = pcall(function()
@@ -254,7 +251,7 @@ function LengTuArena.new(gameplay, pawn, points, options)
             self.owned[actor:GetAddress()] = true
             local finished = gameplay:FinishSpawningActor(actor, transform, 1)
             assert(same(finished, actor), "冷荼定位点初始化失败：" .. entry.key)
-            assert(same(actor:GetOwner(), pawn) and same(actor:GetWorld(), world) and actor:IsA(entry.class),
+            assert(same(actor:GetOwner(), pawn) and inWorld(actor, world) and actor:IsA(entry.class),
                 "冷荼定位点归属回读失败：" .. entry.key)
             end
             verifyArrow(entry)

@@ -419,7 +419,7 @@ end
 
 function Challenge:canUseBell()
     if self.palace then return self.status ~= "error" and self.palace:canUseBell() end
-    return self.status ~= "won" and self.status ~= "error" and self.view ~= "victory"
+    return self.status ~= "won" and self.view ~= "victory"
         and not self.startedAt and not self.reloadAt and not self.reloadRequested
 end
 
@@ -427,6 +427,7 @@ function Challenge:menuState(available)
     local arena = self.scene.runtimeModule and require(self.scene.runtimeModule)
     return {
         available = available, bossId = self.entry.id, bossName = self.entry.name,
+        recoveryMessage = self.status == "error" and self.message or nil,
         playerCycle = self.playerCycle or 0, enemyCycle = self.enemyCycle, skillLevel = self.skillLevel or 0,
         history = self.history, profilePath = self.profilePath, category = self.entry.category, mode = self.mode,
         difficultyMode = self.difficultyMode, customPressure = self.customPressure,
@@ -576,7 +577,8 @@ function Challenge:command(gameplay, system, pawn, realNow, command)
         self.difficultyMode, self.customPressure = difficulty, customPressure
         self.musicId = Music.normalize(settings.musicId or self.musicId)
         self.entry, self.playerCycle, self.enemyCycle = entry, playerCycle, enemyCycle
-    elseif action ~= "retry" or (not victory and (not self.scene.runtimeModule or not self:canUseBell())) then return end
+    elseif action ~= "retry" or (not victory and (not self:canUseBell()
+        or (not self.scene.runtimeModule and self.status ~= "error"))) then return end
     self:checkpointLoadout(pawn,self.slot)
     if victory then Victory.close() else Menu.close() end
     self.view, self.bellOpen = nil, false
@@ -1089,7 +1091,9 @@ function Challenge:fail(message)
     self:clearStage()
     self.observer, self.boss = nil, nil
     self.status, self.message = "error", message
-    if self.palace and self.view == "ability" then pcall(self.ability.close) end
+    self.action, self.bellOpen = nil, false
+    if not self.palace then self.startedAt, self.reloadAt = nil, nil end
+    if self.view == "ability" and self.ability then pcall(self.ability.close) end
     pcall(Menu.close)
     releaseBellData(self)
     pcall(Victory.close)
@@ -1516,7 +1520,11 @@ function Challenge:updateMenuOnly(gameplay, system, pawn, now)
 end
 
 function Challenge:tick(gameplay, system, pawn, now)
-    if self.reloadRequested or self.status == "error" then return end
+    if self.reloadRequested then return end
+    if self.status == "error" then
+        if not self.palace then self:updateMenuOnly(gameplay, system, pawn, now) end
+        return
+    end
     local realNow = gameplay:GetRealTimeSeconds(pawn)
     if self.palace then
         self.lastPalaceTime = now

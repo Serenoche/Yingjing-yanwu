@@ -193,7 +193,6 @@ function Assert-PbzSharedMod($Prior, [string] $ModDirectory, [switch] $ReplaceMo
 function Invoke-PbzSharedRuntime($Prior) {
     $mutex = New-Object Threading.Mutex($false,'Local\PBZTestArenaNativeSession')
     $held=$false; $run=$null
-    $rollback = $null
     $loaderBridges = $null
     try {
         try { $held = $mutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $held=$true }
@@ -221,7 +220,6 @@ function Invoke-PbzSharedRuntime($Prior) {
         $run = New-PbzBackupRun $stamp
         $script:pbzInstallerStage = 'stage'
         Start-PbzTransaction $run $operationName
-        $rollback=Join-Path $run 'Replaced.sav'
         foreach($file in @($statePath,$privatePath)) {
             if(Test-Path -LiteralPath $file){Copy-NewFile $file (Join-Path $run ([IO.Path]::GetFileName($file)))}
         }
@@ -229,36 +227,14 @@ function Invoke-PbzSharedRuntime($Prior) {
         Copy-NewFile $save (Join-Path $run 'Before.sav')
         Assert-Hash (Join-Path $run 'Before.sav') $beforeHash
         if ($Install) {
-            if ($checkpointFlow -eq 'compatibility') {
-                $sourceHelper,$sourcePresets=$helper,$presets
-                $transaction=Initialize-PbzToolWork
-                $staging=Join-Path $transaction 'Staging';Ensure-Directory $staging
-                $helper=Join-Path $transaction 'Tools/PBZSaveTool.exe'
-                $presets=Join-Path $transaction 'PrivatePresets.pbzs'
-                Copy-NewFile $sourceHelper $helper
-                Copy-NewFile $sourcePresets $presets
-                Assert-Hash $helper $toolBuild.sha256;Assert-Hash $presets $toolBuild.presetsSha256
-                $pending=Join-Path $staging 'Pending.sav'
-                $priorManifest=if($prior -and $prior.privateManifestSha256){$prior.verifiedPrivatePath}else{''}
-                if ($epic) { $priorManifest = '' }
-                $prepared=Invoke-SaveTool (Join-Path $run 'Before.sav') $pending $priorManifest
-            } else { $prepared = New-PbzUnchangedSaveReport $beforeHash }
-            $report=$prepared.report
             Initialize-PbzOwnedProfile
             $stage=Join-Path (Get-PbzTransactionWork) 'Mod'
             $hashes=New-PbzModStage $stage $true
             Assert-PbzSharedSnapshots $dependencies
-            Assert-NotRunning
-            if ($checkpointFlow -eq 'compatibility') {
-                Add-PbzFileChange $save $report.sourceSha256 $report.outputSha256
-                [void](Replace-Save $pending $save $report.sourceSha256 $report.outputSha256 $rollback)
-            } else { Assert-Hash $save $beforeHash }
-        }else{
-            $report=[pscustomobject]@{sourceSha256=$beforeHash;outputSha256=$beforeHash}
-            Assert-Hash $save $beforeHash
         }
         Assert-NotRunning
         Assert-Hash $game $actualGameHash
+        Assert-Hash $save $beforeHash
         $script:pbzInstallerStage = 'commit'
         Set-PbzMapTransaction $maps $run
         Set-PbzLoaderBridgeTransaction $loaderBridges $run
@@ -272,7 +248,7 @@ function Invoke-PbzSharedRuntime($Prior) {
             Move-PbzTransactionPath $stage $modDirectory
             foreach($entry in $hashes.GetEnumerator()){Assert-Hash (Join-Path $platform $entry.Key) $entry.Value}
             Assert-PbzSharedSnapshots $dependencies
-            $privateReceipt = Set-PbzPrivateSaveReceipt $prepared $prior
+            $privateReceipt = Set-PbzPrivateSaveReceipt $prior
             $state=[ordered]@{version=3;owner=$owner;installKind='shared-v1';installed=$true;
                 installedAt=(Get-Date).ToUniversalTime().ToString('o');launcherRoot=$root;gameExe=$game;savePath=$save;
                 profile=$profile;userSid=$UserSid;privateManifestSha256=$privateReceipt;mapFlow=$checkpointFlow;runtimeHashes=$hashes;
@@ -283,12 +259,10 @@ function Invoke-PbzSharedRuntime($Prior) {
                 savePath=$save;dedicatedSaveBlocksRetained=$true;reportsRetained=$true;loaderRetained=$true;otherModsRetained=$true;backup=$run}
         }
         Write-PbzTransactionText $statePath ($state | ConvertTo-Json -Depth 8)
-        Assert-Hash $save $report.outputSha256
-        if(Test-Path -LiteralPath $rollback){Assert-Hash $rollback $report.sourceSha256}
+        Assert-Hash $save $beforeHash
         Write-NewText (Join-Path $run 'Result.json') (([ordered]@{success=$true;operation=$operationName;installKind='shared-v1';
-            sourceSha256=$report.sourceSha256;outputSha256=$report.outputSha256;loaderRetained=$true;otherModsRetained=$true;gameStarted=$false}) | ConvertTo-Json)
+            sourceSha256=$beforeHash;outputSha256=$beforeHash;loaderRetained=$true;otherModsRetained=$true;gameStarted=$false}) | ConvertTo-Json)
         Complete-PbzTransaction 'TransactionComplete.json'
-        if (Test-Path -LiteralPath $rollback) { Remove-Item -LiteralPath $rollback -ErrorAction SilentlyContinue }
         Write-Output ($operationName+' completed. Existing UE4SS, configuration and other MODs retained. No game started.')
     } catch {
         $failure = $_

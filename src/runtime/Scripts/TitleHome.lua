@@ -5,6 +5,7 @@ local Scenes = require("ArenaScenes")
 local Screen = require("NativeScreen")
 local Art = require("ArtAssets")
 local Feedback = require("ParameterFeedback")
+local FirstEntry = require("FirstEntryPrompts")
 local Home = {}
 
 local DESCRIPTORS = "/Script/CommonGame.Default__CommonGameDialogDescriptor"
@@ -14,6 +15,7 @@ local CLICK = "/Script/UMG.Widget:ForceLayoutPrepass"
 local TITLE_LEVEL = "PBZ_StartMenu_CE_WP"
 local RESULTS = { 0, 1, 2 }
 local current
+local showParody
 local feedbackWarnings = {}
 
 local function valid(object)
@@ -36,6 +38,12 @@ end
 
 local function required(path)
     return checked(StaticFindObject(path), "缺少原版 MOD 菜单接口：" .. path)
+end
+
+local function confirmHeld(router)
+    return valid(router) and (router:IsUIKeyHeld({ KeyName = FName("Enter") })
+        or router:IsUIKeyHeld({ KeyName = FName("SpaceBar") })
+        or router:IsUIKeyHeld({ KeyName = FName("Gamepad_FaceButton_Bottom") }))
 end
 
 local function feedback(kind, ...)
@@ -90,6 +98,7 @@ local function number(value, maximum, fallback)
 end
 
 local function settingsCopy(settings, mode)
+    mode = mode or settings.mode or "training"
     local cycle = Profile.valid(settings.playerCycle) and settings.playerCycle or 6
     local selectedId = settings.encounterId or settings.bossId
     local entry = Catalog.resolve(selectedId)
@@ -97,13 +106,19 @@ local function settingsCopy(settings, mode)
         entry = Catalog.list(Catalog.retiredCategory(selectedId) or settings.category or "duel")[1] or Catalog.list("duel")[1]
     end
     assert(entry, "MOD 挑战名单为空")
+    local sceneId = Scenes.normalize(settings.sceneId)
+    if not Scenes.available(sceneId, mode) or (mode == "training" and sceneId == "meiguhu") then
+        sceneId = Scenes.available("lake", mode) and "lake" or "night"
+    end
     return {
-        mode = mode or settings.mode or "training", bossId = entry.id, encounterId = entry.id,
+        mode = mode, bossId = entry.id, encounterId = entry.id,
         category = entry.category, playerCycle = cycle,
         enemyCycle = number(settings.enemyCycle, 6, 0),
         skillLevel = Profile.normalizeSkillLevel(cycle, number(settings.skillLevel, Profile.skillCap(cycle), Profile.skillCap(cycle))),
-        difficultyMode = number(settings.difficultyMode, 3, 3) >= 1 and number(settings.difficultyMode, 3, 3) or 3,
-        sceneId = Scenes.normalize(settings.sceneId),
+        difficultyMode = require("GameplayDifficulty").valid(settings.difficultyMode) and settings.difficultyMode or 3,
+        customPressure = (mode == "practice" or mode == "challenge")
+            and require("GameplayDifficulty").copyPressure(settings.customPressure) or nil,
+        sceneId = sceneId, musicId = settings.musicId,
     }
 end
 
@@ -126,10 +141,11 @@ local function applyPage(session)
     if not page or not valid(session.modal) or not session.modal:IsActivated() or #session.buttons ~= 3 then return end
     if session.form then session.form:close(); session.form = nil end
     restoreHomeSound(session)
-    session.homeCards, session.homeInput = nil, nil
+    session.homeCards, session.homeInput, session.homeRouter = nil, nil, nil
     if session.screen then session.screen:close(); session.screen = nil end
     session.title:SetText(FText(page.title))
     session.description:SetText(FText(page.body))
+    session.firstEntryRelease = page.firstEntry and confirmHeld(session.firstEntryRouter)
     for index, button in ipairs(session.buttons) do
         button:SetButtonText(FText(page.labels[index]))
         button:SetVisibility(page.actions[index] and 0 or 1)
@@ -150,6 +166,12 @@ local function applyPage(session)
         session.homeCards, session.homeSound, session.homeLastFocused = {}, {}, page.focus or 1
         session.homeInput = checked(required("/Script/Engine.Default__SubsystemBlueprintLibrary"):
             GetLocalPlayerSubsystem(session.modal, required("/Script/CommonInput.CommonInputSubsystem")), "首页输入模式不可用")
+        local routed, router = pcall(function()
+            return required("/Script/Engine.Default__SubsystemBlueprintLibrary"):
+                GetLocalPlayerSubsystem(session.modal, required("/Script/ProjectPBZ.PBZUIActionRouterBase"))
+        end)
+        session.homeRouter = routed and valid(router) and router or nil
+        session.parodyShortcutDown = true
         for index, id in ipairs({ "test", "practice", "challenge" }) do
             local x = 80 + (index - 1) * 590
             local texture, meta = Art.home(session.modal, id)
@@ -177,22 +199,56 @@ local function applyPage(session)
             feedback("configureArrow", native)
         end
         skin:button("返回", 820, 950, 280, 70, Home.close)
+        skin:button("影之氪零 · 恶搞演示", 1310, 950, 520, 70, function() showParody(session) end)
+        skin:text("F8 / Y", 1500, 1028, 220, 34, false)
         updateHomeSelection(session)
     elseif page.formRows then
         session.screen = Screen.open(session.modal, session.controller, { title = page.title })
-        local placeholder, box = session.screen:placeholder()
-        session.screen:place(box, 540, 300, 840, 400)
-        -- The test field keeps one native form, including the shared scene row;
-        -- it is not part of the player/enemy staged selector.
-        session.form = require("ParameterForm").open(session.modal, placeholder,
-            session.controller, session.buttons[1], page.formRows)
-        session.screen:setFooter(page.actions[1], page.actions[2], "进入")
+        local screen = session.screen
+        local singleColumn = page.targetOnly
+        local targetX = singleColumn and 585 or 1035
+        if not singleColumn then screen:text("演武设置", 130, 193, 740, 58, true, nil, 38) end
+        screen:text("测试对象", targetX, 193, 750, 58, true, nil, 38)
+        local note = screen:text("", targetX + 30, 600, 694, 38, false, nil, 24)
+        screen:setFooter(page.actions[1], page.actions[2], page.labels[1])
+        local position, canEnter, needsNext
+        session.form = require("ParameterForm").open(session.modal, session.description,
+            session.controller, session.buttons[1], page.formRows, {
+                host = screen.canvas, flat = true, keyboardSelection = true,
+                groups = not singleColumn and { { 1, 2, 3, 4 }, { 5, 6, 7, 8 } } or nil,
+                groupsGamepadOnly = true,
+                navigationButtons = { screen.enterButton, screen.backButton },
+                mountRow = function(index, widget)
+                    local left = not singleColumn and index <= 4
+                    local row = (left or singleColumn) and index or index - 4
+                    screen:place(widget, left and 130 or targetX, 270 + (row - 1) * 80, 750, 76)
+                end,
+                onRefresh = function(form)
+                    local nextPosition = page.trainingTarget.position()
+                    if position ~= nextPosition then
+                        note:SetText(FText(nextPosition))
+                        position = nextPosition
+                    end
+                    local nextColumn = not singleColumn and form.gamepadMode == true and form.region == 1
+                    if needsNext ~= nextColumn then
+                        screen.enterCaption:SetText(FText(nextColumn and "下一步" or page.labels[1]))
+                        needsNext = nextColumn
+                    end
+                    local available = nextColumn or page.trainingTarget.available()
+                    if canEnter ~= available then
+                        screen.enterButton:SetIsEnabled(available)
+                        canEnter = available
+                    end
+                end,
+            })
     end
 end
 
-local function page(session, title, body, labels, actions, back, focus, formRows, model, home)
+local function page(session, title, body, labels, actions, back, focus, options)
+    options = options or {}
     session.page = { title = title, body = body, labels = labels, actions = actions, back = back,
-        focus = focus, formRows = formRows, model = model, home = home }
+        focus = focus, formRows = options.formRows, model = options.model, home = options.home,
+        trainingTarget = options.trainingTarget, targetOnly = options.targetOnly, firstEntry = options.firstEntry }
     applyPage(session)
 end
 
@@ -200,7 +256,8 @@ local function detach(session)
     if session.form then session.form:close(); session.form = nil end
     if session.screen then session.screen:close(); session.screen = nil end
     restoreHomeSound(session)
-    session.homeCards, session.homeInput = nil, nil
+    session.homeCards, session.homeInput, session.homeRouter = nil, nil, nil
+    session.firstEntryRouter, session.firstEntryRelease = nil, nil
     local active = valid(session.modal) and session.modal:IsActivated()
     for index, button in ipairs(session.buttons) do
         if active and valid(button) then
@@ -236,6 +293,13 @@ end
 
 local function attach(session, modal)
     session.modal = modal
+    if session.page.firstEntry then
+        local ok, router = pcall(function()
+            return required("/Script/Engine.Default__SubsystemBlueprintLibrary"):
+                GetLocalPlayerSubsystem(modal, required("/Script/ProjectPBZ.PBZUIActionRouterBase"))
+        end)
+        session.firstEntryRouter = ok and unwrap(router) or nil
+    end
     local tree = checked(modal.WidgetTree, "原版 MOD 弹窗缺少控件树")
     local root = checked(tree.RootWidget, "原版 MOD 弹窗缺少根控件")
     session.title = checked(modal.Text_Title, "原版 MOD 弹窗缺少标题")
@@ -291,21 +355,36 @@ function Home.isOpen()
     return current ~= nil
 end
 
-local function start(session, settings, mode)
-    local chosen = settingsCopy(settings, mode)
-    if mode == "training" then chosen.bossId, chosen.encounterId, chosen.category = nil, nil, nil end
-    session.starting = chosen
+local function finish(session, settings)
+    session.starting = settings
     session.pending = nil
-    -- The title caller must not load a map while CommonUI still owns this modal.
+    -- The caller must wait for CommonUI to release this modal.
     checked(session.modal, "原版 MOD 弹窗已关闭"):CloseWindowByCancel()
 end
 
+local function start(session, settings, mode)
+    local chosen = settingsCopy(settings, mode)
+    if mode == "training" then
+        chosen.bossId, chosen.encounterId, chosen.category = nil, nil, nil
+        chosen.trainingMobId = session.training.trainingMobId
+    end
+    finish(session, chosen)
+end
+
 local showHome
+showParody = function(session)
+    local model = require("KryptonDemo").new()
+    page(session, "影之氪零", "", { "继续", "返回演武", "运营公告" }, {
+        function() if session.form then session.form:confirm() end end,
+        function() showHome(session) end,
+        function() if session.form then session.form:secondary() end end,
+    }, function() showHome(session) end, 1, { model = model })
+end
 local function showSettings(session, mode)
     local settings = session.settings
     settings.mode = mode
     local rows = {}
-    local model
+    local model, trainingTarget
     if mode == "challenge" or mode == "practice" then
         model = require("ChallengeTarget").form(settings, session.initial)
         settings = model.settings
@@ -313,6 +392,7 @@ local function showSettings(session, mode)
         session.settings = settings
         rows = model.rows
     else
+        if settings.sceneId == "meiguhu" then settings.sceneId = "lake" end
         rows[#rows + 1] = {
             label = "玩家轮回", value = function() return Profile.rank(settings.playerCycle) end,
             change = function(delta)
@@ -339,21 +419,29 @@ local function showSettings(session, mode)
         }
         rows[#rows + 1] = {
             label = "场景", value = function() return Scenes.get(settings.sceneId).name end,
-            enabled = function() return #Scenes.list() > 1 end,
+            enabled = function() return #Scenes.list(false) > 1 end,
             change = function(delta)
-                local choices, selected = Scenes.list(), 1
+                local choices, selected = Scenes.list(false), 1
                 for index, scene in ipairs(choices) do if scene.id == settings.sceneId then selected = index end end
                 settings.sceneId = choices[(selected - 1 + delta) % #choices + 1].id
             end,
         }
+        trainingTarget = require("TrainingTarget").form(session.training)
+        for _, row in ipairs(trainingTarget.rows) do rows[#rows + 1] = row end
     end
     page(session, mode == "challenge" and "挑战模式" or mode == "practice" and "练习模式" or "测试场", "",
         { "进入", "返回", "" }, {
             function()
-                if session.form and (model and session.form:confirm() or not model and session.form:canConfirm()) then start(session, settings, mode) end
+                if not session.form then return end
+                if model and session.form:confirm()
+                    or not model and session.form:advanceConfirm() and trainingTarget.available() then
+                    start(session, settings, mode)
+                end
             end,
             function() showHome(session) end,
-        }, function() showHome(session) end, 1, model and nil or rows, model)
+        }, function() showHome(session) end, 1, {
+            formRows = trainingTarget and rows or nil, model = model, trainingTarget = trainingTarget,
+        })
 end
 
 showHome = function(session)
@@ -361,11 +449,28 @@ showHome = function(session)
         function() showSettings(session, "training") end,
         function() showSettings(session, "practice") end,
         function() showSettings(session, "challenge") end,
-    }, Home.close, 1, nil, nil, true)
+    }, Home.close, 1, { home = true })
 end
 
-function Home.open(menu, controller, defaults, onStart)
+local function openPage(session, show)
     Home.close()
+    current = session
+    local ok, failure = pcall(function()
+        local pre, post = RegisterHook(CLICK, function(context)
+            if current ~= session or session.pending or session.starting or session.firstEntryRelease then return end
+            local pulse = unwrap(context:get())
+            if valid(pulse) then session.pending = session.actions[pulse:GetAddress()] end
+        end)
+        session.hook = { pre, post }
+        show(session)
+        requestModal(session)
+        attachIfReady(session)
+    end)
+    if not ok then Home.close(); error(failure, 0) end
+    return true
+end
+
+function Home.open(menu, controller, defaults, onStart, preferences)
     checked(menu, "找不到原版标题菜单")
     checked(controller, "找不到标题菜单的本地控制器")
     assert(type(onStart) == "function", "缺少 MOD 开始回调")
@@ -377,32 +482,54 @@ function Home.open(menu, controller, defaults, onStart)
     local initial = settingsCopy(restored)
     local session = {
         menu = menu, controller = controller, onStart = onStart, settings = settingsCopy(initial), initial = initial,
+        training = { trainingMobId = restored.trainingMobId },
         buttons = {}, pulses = {}, actions = {}, bindings = {},
     }
-    current = session
-    local ok, failure = pcall(function()
-        local pre, post = RegisterHook(CLICK, function(context)
-            if current ~= session or session.pending or session.starting then return end
-            local pulse = unwrap(context:get())
-            if valid(pulse) then session.pending = session.actions[pulse:GetAddress()] end
-        end)
-        session.hook = { pre, post }
-        showHome(session)
-        requestModal(session)
-        attachIfReady(session)
+    return openPage(session, function()
+        local messages = FirstEntry.pending(preferences, "arena")
+        if not messages then showHome(session); return end
+        local function show(index)
+            local function confirm()
+                if index < #messages then show(index + 1); return end
+                local saved = FirstEntry.acknowledge(preferences, "arena")
+                print("[PBZTestArenaNative] first entry confirmed group=arena saved=" .. tostring(saved) .. "\n")
+                showHome(session)
+            end
+            page(session, "", messages[index], { "确定", "", "" }, { confirm }, Home.close, 1, { firstEntry = true })
+        end
+        show(1)
     end)
-    if not ok then Home.close(); error(failure, 0) end
-    return true
+end
+
+function Home.openTrainingTarget(pawn, controller, mobId, onChange)
+    local world = checked(require("SceneArena").runtimeWorld(pawn), "测试场目标界面场景未就绪")
+    local settings = { trainingMobId = mobId }
+    local target = require("TrainingTarget").form(settings)
+    local session = { menu = pawn, controller = controller, arenaWorld = world:GetAddress(), onStart = onChange,
+        buttons = {}, pulses = {}, actions = {}, bindings = {} }
+    return openPage(session, function()
+        local function apply()
+            if session.form and session.form:canConfirm() and target.available() then finish(session, settings) end
+        end
+        page(session, "重选目标", "", { "确定", "返回", "" }, { apply, Home.close }, Home.close, 1,
+            { formRows = target.rows, trainingTarget = target, targetOnly = true })
+    end)
 end
 
 function Home.update(gameplay)
     local session = current
     if not session then return false end
     local ok, failure = pcall(function()
-        if not valid(session.menu) or not valid(session.controller)
-            or (gameplay and text(gameplay:GetCurrentLevelName(session.menu, true)) ~= TITLE_LEVEL) then
+        if not valid(session.menu) or not valid(session.controller) then
             Home.close(); return
         end
+        if session.arenaWorld then
+            local world = require("SceneArena").runtimeWorld(session.menu)
+            if not valid(world) or world:GetAddress() ~= session.arenaWorld then Home.close(); return end
+        elseif gameplay and text(gameplay:GetCurrentLevelName(session.menu, true)) ~= TITLE_LEVEL then
+            Home.close(); return
+        end
+        if session.firstEntryRelease and not confirmHeld(session.firstEntryRouter) then session.firstEntryRelease = nil end
         if session.starting then
             if valid(session.modal) and session.modal:IsActivated() then return end
             local chosen, callback = session.starting, session.onStart
@@ -430,7 +557,16 @@ function Home.update(gameplay)
         if current == session and session.form and not session.starting then session.form:update(gameplay) end
         if current == session and session.screen and not session.starting then
             session.screen:update()
-            if session.page and session.page.home then updateHomeSelection(session) end
+            if session.page and session.page.home then
+                updateHomeSelection(session)
+                if valid(session.homeRouter) and (session.modal:HasUserFocus(session.controller)
+                    or session.modal:HasUserFocusedDescendants(session.controller)) then
+                    local down = session.homeRouter:IsUIKeyHeld({ KeyName = FName("F8") })
+                        or session.homeRouter:IsUIKeyHeld({ KeyName = FName("Gamepad_FaceButton_Top") })
+                    if down and not session.parodyShortcutDown then showParody(session) end
+                    session.parodyShortcutDown = down
+                else session.parodyShortcutDown = true end
+            end
         end
     end)
     if not ok then Home.close(); error(failure, 0) end

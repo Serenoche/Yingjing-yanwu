@@ -15,7 +15,7 @@ decrypt a package, or extract media.
 
 The JSON files under `config/` are curated functional MOD configuration:
 
-- `BossCatalog.json`: 74 ordered actor identifiers, short names, class references,
+- `BossCatalog.json`: 75 ordered actor identifiers, short names, class references,
   capsule dimensions and short compatibility notes written for the MOD. It is
   not a full cooked data-table export.
 - `EncounterCatalog.json`: the MOD's encounter groups, stage order, names and

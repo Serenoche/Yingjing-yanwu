@@ -14,8 +14,8 @@ class PublicDataTests(unittest.TestCase):
     def test_minimal_actor_manifest_keeps_order_without_full_cooked_tables(self):
         data = json.loads(DEFAULT_BOSSES.read_text(encoding="utf-8-sig"))
         self.assertEqual(set(data), {"bosses"})
-        self.assertEqual(len(data["bosses"]), 74)
-        self.assertEqual(len({entry["id"] for entry in data["bosses"]}), 74)
+        self.assertEqual(len(data["bosses"]), 75)
+        self.assertEqual(len({entry["id"] for entry in data["bosses"]}), 75)
         self.assertTrue(all(set(entry) <= BOSS_FIELDS for entry in data["bosses"]))
         self.assertTrue(all(len(entry["name"]) < 80 for entry in data["bosses"]))
 
@@ -26,10 +26,10 @@ class PublicDataTests(unittest.TestCase):
     def test_current_catalog_restores_verified_lions_and_preserves_other_combinations(self):
         data = load_and_validate()
         enabled = [entry for entry in data["entries"] if entry["enabled"]]
-        self.assertEqual(len(data["entries"]), 90)
-        self.assertEqual(len(enabled), 88)
+        self.assertEqual(len(data["entries"]), 92)
+        self.assertEqual(len(enabled), 89)
         self.assertEqual([sum(entry["category"] == kind for entry in enabled)
-                          for kind in ("duel", "gauntlet", "group")], [67, 15, 6])
+                          for kind in ("duel", "gauntlet", "group")], [67, 15, 7])
         entries = {entry["id"]: entry for entry in data["entries"]}
         for identity in ("BP_Monster_LionDancer", "BP_Monster_LionDancer_P2", "gauntlet_liondancer"):
             self.assertTrue(entries[identity]["enabled"])
@@ -37,8 +37,21 @@ class PublicDataTests(unittest.TestCase):
             self.assertTrue(entries[identity]["stages"])
         self.assertEqual(entries["group_last_will"]["stages"][0]["members"],
                          ["BP_Monster_WuLengShuang", "BP_Monster_YuBi"])
+        self.assertEqual([(entry["id"], index) for entry in enabled for index, stage in enumerate(entry["stages"], 1)
+                          if stage.get("cooperation") == "tieyu"],
+                         [("gauntlet_muxiaokui", 3), ("group_forest_guardians", 1)])
         self.assertEqual(entries["gauntlet_huashan"]["stages"][1]["members"],
                          ["BP_Monster_HuaShan_JianOu", "BP_Monster_EMei_Sword_Top"])
+        self.assertFalse(entries["gauntlet_huashan"]["enabled"])
+        self.assertEqual(entries["gauntlet_sangaota"]["name"], "七星鸳鸯阵")
+        self.assertEqual([stage["members"] for stage in entries["gauntlet_sangaota"]["stages"]],
+                         [["BP_Monster_HuaShan_Blue"], ["BP_Monster_HuaShan_JianOu", "BP_Monster_EMei_Sword_JianZhen"]])
+        self.assertEqual(entries["gauntlet_sangaota"]["defaultScene"], "zhengdaodaying_sangaota")
+        self.assertEqual([stage["members"] for stage in entries["gauntlet_yucong"]["stages"][:2]],
+                         [["BP_Monster_YuCong_FirstTime"], ["BP_Monster_YuCong_P1"]])
+        self.assertEqual(entries["gauntlet_miefa"]["stages"][-1],
+                         {"sceneId": "scavenger", "members": ["BP_Monster_QiShu_Bing", "BP_Monster_Scavenger"]})
+        self.assertNotIn("BP_Monster_EMei_Sword_JianZhen", entries)
 
     def test_two_scenes_use_only_confirmed_runtime_routes(self):
         scenes = load_scenes()["scenes"]

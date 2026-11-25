@@ -2,6 +2,7 @@
 -- then uses its world position as SnapCenter at t=2.20045. Supply the ORIGINAL
 -- targeting actors before this boss's BeginPlay; keep its ability/warp intact.
 local SpawnClass=require('SpawnClass')
+local SceneArena=require('SceneArena')
 local Arena={}
 local Session={};Session.__index=Session
 local ROOT='/PBZCombatAsset/ActorData/Mobs/065_ChiLian_P2/'
@@ -19,6 +20,7 @@ local OFFSETS={
 }
 local function valid(v)return v~=nil and v:IsValid()end
 local function same(a,b)return valid(a)and valid(b)and a:GetAddress()==b:GetAddress()end
+local inWorld=SceneArena.actorIsInWorld
 local function copy(v)return{X=v.X,Y=v.Y,Z=v.Z}end
 local function distance(a,b)return(a.X-b.X)^2+(a.Y-b.Y)^2+(a.Z-b.Z)^2 end
 local function required(path)local v=StaticFindObject(path);assert(valid(v),'白赤练场地接口未就绪：'..path);return v end
@@ -176,6 +178,17 @@ local function layout(pawn,system,ground,yaw,scene,mathLibrary)
  return points,scale,ground
 end
 
+local function markerConflict(self)
+ -- The stock skill looks up the center in the entire running world.
+ for _,class in ipairs(self.markerClasses)do
+  for _,actor in ipairs(SceneArena.actorsOfClass(self.gameplay,self.pawn,self.world,class))do
+   if not same(self.owned[actor:GetAddress()],actor)then
+    return '本场已有其他白赤练中心点或召蛇点'
+   end
+  end
+ end
+end
+
 function Arena.new(pawn,gameplay,system,ground,rotation,scene)
  assert(scene and(scene.id=='night'or scene.id=='lake'or scene.chiLianUltimate),'白赤练场地不受支持')
  local classes={}
@@ -184,27 +197,26 @@ function Arena.new(pawn,gameplay,system,ground,rotation,scene)
   if not valid(cls)then return nil,reason end
   classes[path]=cls
  end
- local world=pawn:GetWorld()
- -- GetActorOfClass must resolve our one center. Never relocate/delete a native
- -- scene marker or another mod's same-class actor to force that result.
- for _,cls in ipairs({'BP_ChiLian_P2_Center_C','BP_ChiLian_CA_SnakeSpawner_C'})do
-  for _,actor in ipairs(FindAllOf(cls)or{})do
-   if valid(actor)and same(actor:GetWorld(),world)then return nil,'当前场景已有其他白赤练定位对象，拒绝混用' end
-  end
- end
+ local world=SceneArena.runtimeWorld(pawn)
+ if not valid(world)then return nil,'等待白赤练场地所属关卡' end
+ local self=setmetatable({pawn=pawn,gameplay=gameplay,world=world,actors={},owned={},spawners={},snakes={},
+   markerClasses={classes[CENTER],classes[SPAWNER]},snakeClass=classes[SNAKE],closed=false,nextAt=0},Session)
+ local conflict=markerConflict(self)
+ if conflict then return nil,conflict end
  local mathLibrary=required('/Script/Engine.Default__KismetMathLibrary')
  local points,scale,home,bounds,scaleY=layout(pawn,system,ground,rotation.Yaw,scene,mathLibrary)
  if not points then return nil,scale end
- local self=setmetatable({pawn=pawn,world=world,actors={},spawners={},snakes={},snakeClass=classes[SNAKE],
-   centerPosition={X=home.X,Y=home.Y,Z=home.Z+2},bounds=bounds,closed=false,nextAt=0},Session)
+ self.centerPosition,self.bounds={X=home.X,Y=home.Y,Z=home.Z+2},bounds
  local spawnLibrary=required('/Script/SGameAI.Default__SGameAIFunctionLibrary')
  local function spawn(cls,position,yaw)
   local transform=mathLibrary:MakeTransform(position,{Pitch=0,Yaw=yaw,Roll=0},{X=1,Y=1,Z=1})
   local actor=spawnLibrary:SpawnActorDeferred(pawn,cls,transform,1)
   assert(valid(actor),'白赤练定位对象创建失败')
   self.actors[#self.actors+1]=actor -- record before construction/BeginPlay
+  self.owned[actor:GetAddress()]=actor
   actor:SetOwner(pawn)
   gameplay:FinishSpawningActor(actor,transform,1) -- original BP registers targeting interface itself
+  assert(inWorld(actor,world)and same(actor:GetOwner(),pawn),'白赤练定位点归属校验失败')
   actor:SetActorEnableCollision(false);actor:SetActorHiddenInGame(true)
   local placed=copy(actor.Arrow:K2_GetComponentLocation())
   assert(distance(placed,position)<4,'白赤练原版定位组件位置不一致')
@@ -217,6 +229,8 @@ function Arena.new(pawn,gameplay,system,ground,rotation,scene)
   self.center=spawn(classes[CENTER],self.centerPosition,rotation.Yaw)
   local resolved=gameplay:GetActorOfClass(pawn,classes[CENTER])
   assert(same(resolved,self.center),'原版查找中心点未指向本场白赤练')
+  local conflict=markerConflict(self)
+  assert(not conflict,conflict)
  end)
  if not ok then self:close();error(failure,0)end
  log(('original center+4 snake markers ready at %.1f %.1f %.1f; layout scale=%.2f')
@@ -234,16 +248,20 @@ function Arena.new(pawn,gameplay,system,ground,rotation,scene)
 end
 
 function Session:bind(actor)
- assert(not self.closed and valid(actor)and same(actor:GetWorld(),self.world),'白赤练本场角色身份不匹配')
+ assert(not self.closed and inWorld(actor,self.world),'白赤练本场角色身份不匹配')
  self.boss=actor
 end
 
 function Session:update(pawn,now)
- assert(not self.closed and same(pawn,self.pawn)and same(pawn:GetWorld(),self.world),'白赤练场景已切换')
+ assert(not self.closed and same(pawn,self.pawn)and inWorld(pawn,self.world),'白赤练场景已切换')
  if now<self.nextAt then return end
  self.nextAt=now+.5
- assert(valid(self.center)and same(self.center:GetOwner(),self.pawn),'白赤练原版中心点已失效')
- for _,actor in ipairs(self.spawners)do assert(valid(actor),'白赤练原版召蛇定位点已失效')end
+ assert(inWorld(self.center,self.world)and same(self.center:GetOwner(),self.pawn),'白赤练原版中心点已失效')
+ for _,actor in ipairs(self.spawners)do
+  assert(inWorld(actor,self.world)and same(actor:GetOwner(),self.pawn),'白赤练原版召蛇定位点已失效')
+ end
+ local conflict=markerConflict(self)
+ assert(not conflict,conflict)
  if valid(self.boss)and valid(self.boss.Mesh)then
   local anim=self.boss.Mesh:GetAnimInstance()
   local montage=valid(anim)and anim:GetCurrentActiveMontage()or nil
@@ -258,9 +276,9 @@ function Session:update(pawn,now)
 end
 
 function Session:owns(actor)
- if not valid(actor)or not same(actor:GetWorld(),self.world)then return false end
- for _,owned in ipairs(self.actors)do if same(actor,owned)then return true end end
- return same(self.snakes[actor:GetAddress()],actor)
+ if not inWorld(actor,self.world)then return false end
+ local address=actor:GetAddress()
+ return same(self.owned[address],actor)or same(self.snakes[address],actor)
 end
 
 function Session:close()
@@ -268,9 +286,9 @@ function Session:close()
  -- Native SnakeActor has no owner link. Collect from ONLY our original helper
  -- properties before despawn/destruction; no class-wide or proximity deletion.
  for _,spawner in ipairs(self.spawners)do
-  if valid(spawner)and same(spawner:GetWorld(),self.world)then
+  if inWorld(spawner,self.world)then
    local snake=spawner.SnakeActor
-   if valid(snake)and snake:IsA(self.snakeClass)and same(snake:GetWorld(),self.world)then self.snakes[snake:GetAddress()]=snake end
+   if valid(snake)and snake:IsA(self.snakeClass)and inWorld(snake,self.world)then self.snakes[snake:GetAddress()]=snake end
   end
  end
  local failures={}
@@ -281,13 +299,13 @@ function Session:close()
  -- Collect ALL children first, then attempt every cleanup even if one native
  -- callback fails. A first-helper error must not orphan the other three snakes.
  for _,spawner in ipairs(self.spawners)do
-  if valid(spawner)and same(spawner:GetWorld(),self.world)then attempt(function()spawner:DespawnSnake()end)end
+  if inWorld(spawner,self.world)then attempt(function()spawner:DespawnSnake()end)end
  end
- if valid(self.boss)then attempt(function()self.boss:DeactivateWires()end)end
- for _,snake in pairs(self.snakes)do if valid(snake)then attempt(function()snake:K2_DestroyActor()end)end end
+ if inWorld(self.boss,self.world)then attempt(function()self.boss:DeactivateWires()end)end
+ for _,snake in pairs(self.snakes)do if inWorld(snake,self.world)then attempt(function()snake:K2_DestroyActor()end)end end
  -- Reverse creation order so the native center unregisters first.
  for i=#self.actors,1,-1 do local actor=self.actors[i]
-  if valid(actor)and same(actor:GetWorld(),self.world)then attempt(function()actor:K2_DestroyActor()end)end
+  if inWorld(actor,self.world)then attempt(function()actor:K2_DestroyActor()end)end
  end
  assert(#failures==0,table.concat(failures,'; ')) -- caller retains this session for retry
  self.closed=true

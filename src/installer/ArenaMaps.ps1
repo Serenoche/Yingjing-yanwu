@@ -31,25 +31,6 @@ function Test-PbzArenaMapBase {
     return $true
 }
 
-function Get-PbzMapPayload {
-    $files = [ordered]@{}
-    $path = Join-Path $runtimeRoot 'ArenaMaps.json'
-    if (!(Test-Path -LiteralPath $path -PathType Leaf)) { return $files }
-    Assert-OrdinaryPath $path
-    $data = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
-    $names = @(Get-PbzMapNames)
-    if ($data.schemaVersion -ne 1 -or @($data.files.PSObject.Properties).Count -ne $names.Count) {
-        throw '独立地图文件清单不完整，请重新解压安装包。'
-    }
-    foreach ($name in $names) {
-        $expected = $data.files.$name
-        if ($expected -cnotmatch '^[a-f0-9]{64}$') { throw "独立地图校验值无效：$name" }
-        Assert-Hash (Join-Path $runtimeRoot ('ArenaMaps/' + $name)) $expected
-        $files[$name] = $expected
-    }
-    return $files
-}
-
 function New-PbzMapTransaction($Prior, $Next) {
     $before = [ordered]@{}
     $folder = Join-Path $installRoot 'ProjectPBZ/Content/Paks/~mods'

@@ -12,15 +12,6 @@ function Get-PbzToolWork {
     return Join-Path $dataRoot ('T/' + $script:pbzTransaction.id.Substring(16) + '/IntegratedMenu')
 }
 
-function Initialize-PbzToolWork {
-    $path = Get-PbzToolWork
-    if (Test-Path -LiteralPath (Split-Path -Parent $path)) { throw 'Installer tool workspace already exists.' }
-    $script:pbzTransaction.toolWork = $true
-    Write-PbzJournal
-    Ensure-Directory $path
-    return $path
-}
-
 function Clear-PbzTransactionWork {
     if ($script:pbzTransaction.version -ne 2) { return }
     $workspaces = @(Get-PbzTransactionWork)
@@ -278,8 +269,7 @@ function Restore-PbzJournalFile($Step) {
     $restoreHash = $Step.before
     $restoreDisplaced = Join-Path $journalRun ('Displaced-' + [Guid]::NewGuid().ToString('N') + '.tmp')
     if ($target -ieq $save) {
-        # Replace-Save's atomic swap can displace a cloud update before its
-        # post-swap check ran. That file is newer than the preparation backup.
+        # An older installer may have displaced a cloud update during a save swap.
         $displacedSave = Join-Path $journalRun 'Replaced.sav'
         if (Test-Path -LiteralPath $displacedSave) {
             $restoreHash = Get-Hash $displacedSave

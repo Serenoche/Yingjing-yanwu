@@ -16,12 +16,13 @@ DUEL_EXCLUSIONS = {
     'BP_Monster_YuCong_WuLi': '钢刃保留用于连战或群战，不单独列出。',
     'BP_Monster_YuCong_Bing': '寒冰保留用于连战或群战，不单独列出。',
     'BP_Monster_YuCong_HunDun': '混沌保留用于连战或群战，不单独列出。',
+    'BP_Monster_EMei_Sword_JianZhen': '剑阵版红衣女剑客随大师兄进入七星鸳鸯阵。',
 }
 
 GAUNTLETS = [
     ('hookman', '穷途末路', [['HookMan'], ['HookMan_P2']]),
     ('chilian', '镜中蛇', [['ChiLian'], ['ChiLian_P2']]),
-    ('yucong', '三位一体', [['YuCong_P1'], ['YuCong_WuLi', 'YuCong_Bing', 'YuCong_HunDun']]),
+    ('yucong', '三位一体', [['YuCong_FirstTime'], ['YuCong_P1'], ['YuCong_WuLi', 'YuCong_Bing', 'YuCong_HunDun']]),
     ('muxiaokui', '少主的决意', [['MuXiaoKui'], ['MuXiaoKui_P2'], ['Yuu', 'TieGui']]),
     ('huashan', '绝命鸳鸯', [['HuaShan_Blue'], ['HuaShan_JianOu', 'EMei_Sword_Top']]),
     ('guichai_red', '身不由己', [['GuiChai_Red'], ['GuiChai_Red_P2']]),
@@ -32,10 +33,29 @@ GAUNTLETS = [
     ('powerman', '伽刚特尔', [['PowerMan'], ['PowerMan_P2']]),
     ('lengtu', '梦差：冷荼', [['LengTu']]),
     ('zuoshang', '宿命对决', [['ZuoShang_Ending'], ['ZuoShang_P2']]),
-    ('miefa', '灭法之法', [['QiShu_Huo'], ['QiShu_Lei'], ['QiShu_Du'], ['QiShu_Bing']]),
+    ('miefa', '灭法之法', [['QiShu_Huo'], ['QiShu_Lei'], ['QiShu_Du'], ['QiShu_Bing', 'Scavenger']]),
     ('guaimian', '怪面之乱', [['HuaQianXIao'], ['LuanShi'], ['JingYe'], ['ChiLian'], ['ChiLian_P2']]),
     ('rocksolid', '坚如磐石', [['Zhuobi'], ['WuXuan']]),
+    ('sangaota', '七星鸳鸯阵', [['HuaShan_Blue'], ['HuaShan_JianOu', 'EMei_Sword_JianZhen']]),
 ]
+
+GAUNTLET_SCENES = {
+    'hookman': ('waterfall',),
+    'chilian': ('forest_silk_tree',),
+    'yucong': ('xigu', 'forest_silk_tree_yucong', 'forest_silk_tree_yucong'),
+    'muxiaokui': ('lake',),
+    'guichai_red': ('pangzhen_south_gate',),
+    'changhong': ('pangzhen_changhong',),
+    'liondancer': ('pangzhen_lion',),
+    'mboss': ('jialongshan_huangxingzi', 'jialongshan_huangxingzi_p2'),
+    'leidang': ('leidang',),
+    'powerman': ('duanhun_lizhe',),
+    'zuoshang': ('night',),
+    'miefa': ('lujia_yanru', 'pangzhen_leiting', 'meiguhu_guhe', 'scavenger'),
+    'guaimian': ('forest_bridge', 'forest_iron_fist', 'forest_trap', 'forest_silk_tree', 'forest_silk_tree'),
+    'rocksolid': ('lujia_zhuobi', 'pangzhen_wuxuan'),
+    'sangaota': ('zhengdaodaying_sangaota',),
+}
 
 GROUPS = [
     ('mob_rioters', '痴狂暴徒', [['MobMan_Elite_Sword', 'MobMan_Elite']]),
@@ -45,7 +65,10 @@ GROUPS = [
     ('yucong', '玉琮', [['YuCong_WuLi', 'YuCong_Bing', 'YuCong_HunDun']]),
     ('last_will', '最后的意志', [['WuLengShuang', 'YuBi']]),
     ('thunder_tiger', '雷鸣虎啸', [['ChangHong_P2', 'LeiDang_P2']]),
+    ('forest_guardians', '少主护卫：铁鬼与玉妖', [['TieGui', 'Yuu']]),
 ]
+
+STAGE_COOPERATION = {('gauntlet_muxiaokui', 3): 'tieyu', ('group_forest_guardians', 1): 'tieyu'}
 
 DUEL_NAMES = {'BP_Monster_ZuoShang_Ending': '组织冥主：左殇'}
 ENTRY_METADATA = {
@@ -60,6 +83,10 @@ ENTRY_METADATA = {
     'gauntlet_liondancer': {
         'enabled': True, 'status': 'ready',
         'notes': '舞狮尊主相关战斗已恢复。',
+    },
+    'gauntlet_huashan': {
+        'enabled': False, 'status': 'disabled',
+        'notes': '绝命鸳鸯已撤下，原版剑阵和鸳鸯队伍由七星鸳鸯阵使用。',
     },
     'gauntlet_lengtu': {
         'enabled': False, 'status': 'disabled',
@@ -79,8 +106,8 @@ ENTRY_METADATA = {
 def make_catalog(source_bytes):
     bosses = json.loads(source_bytes)['bosses']
     known = {boss['id']: boss for boss in bosses}
-    if len(known) != 74 or not DUEL_EXCLUSIONS.keys() <= known.keys():
-        raise ValueError('The expected 74-boss source or a filtered ID changed')
+    if len(known) != 75 or not DUEL_EXCLUSIONS.keys() <= known.keys():
+        raise ValueError('The expected 75-boss source or a filtered ID changed')
     entries = [{'id': boss['id'], 'name': DUEL_NAMES.get(boss['id'], boss['name']), 'category': 'duel',
                 'enabled': True, 'status': 'ready', 'stages': [{'members': [boss['id']]}]}
                for boss in bosses if boss['id'] not in DUEL_EXCLUSIONS]
@@ -89,12 +116,21 @@ def make_catalog(source_bytes):
             entry = {'id': category + '_' + suffix, 'name': name, 'category': category,
                      'enabled': True, 'status': 'ready',
                      'stages': [{'members': ['BP_Monster_' + member for member in members]} for members in stages]}
+            route = GAUNTLET_SCENES.get(suffix) if category == 'gauntlet' else None
+            if route:
+                entry['defaultScene'] = route[0]
+                if len(route) > 1:
+                    for stage, scene in zip(entry['stages'], route, strict=True):
+                        stage['sceneId'] = scene
             entries.append(entry)
     for entry in entries:
         entry.update(deepcopy(ENTRY_METADATA.get(entry['id'], {})))
-        for stage in entry['stages']:
+        for index, stage in enumerate(entry['stages'], 1):
             if not stage['members'] or len(stage['members']) != len(set(stage['members'])) or any(member not in known for member in stage['members']):
                 raise ValueError('Invalid encounter stage: ' + entry['id'])
+            cooperation = STAGE_COOPERATION.get((entry['id'], index))
+            if cooperation:
+                stage['cooperation'] = cooperation
         if entry['enabled'] and not entry['stages']:
             raise ValueError('An enabled encounter must have at least one stage')
     if len({entry['id'] for entry in entries}) != len(entries):

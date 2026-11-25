@@ -2,6 +2,7 @@
 -- The native blueprint supplies pole planning/links, Jump input and the temporary
 -- GA_StandingOnPole grant. No global class, player skill, map or save is patched.
 local SpawnClass = require("SpawnClass")
+local SceneArena = require("SceneArena")
 local Arena = {}
 local Session = {}
 Session.__index = Session
@@ -14,6 +15,7 @@ local ZERO, ONE = {Pitch=0,Yaw=0,Roll=0}, {X=1,Y=1,Z=1}
 local COLOR = {R=0,G=0,B=0,A=0}
 local function valid(x) return x ~= nil and x:IsValid() end
 local function same(a,b) return valid(a) and valid(b) and a:GetAddress()==b:GetAddress() end
+local inWorld = SceneArena.actorIsInWorld
 local function required(path)
     local x=StaticFindObject(path); assert(valid(x),"舞狮场地接口不可用："..path); return x
 end
@@ -25,7 +27,26 @@ local function each(array, action)
     for i=1,#array do action(unwrap(array[i])) end
 end
 local function copy(v) return {X=v.X,Y=v.Y,Z=v.Z} end
+local function vectorReady(v) return type(v.X)=="number" and type(v.Y)=="number" and type(v.Z)=="number" end
 local function log(s) print("[PBZLionArena] "..s.."\n") end
+
+local function overlappingArea(gameplay,pawn,world,class,center,extent,owned)
+    -- The stock boss uses GetOverlappingActors to find its pole area. An
+    -- unrelated region in another part of the same map cannot intercept it.
+    for _,actor in ipairs(SceneArena.actorsOfClass(gameplay,pawn,world,class)) do
+        if not same(actor,owned) then
+            local origin,bounds={},{}
+            actor:GetActorBounds(true,origin,bounds,false)
+            if not vectorReady(origin) or not vectorReady(bounds) then return "等待已有舞狮区域的碰撞范围" end
+            if bounds.X+bounds.Y+bounds.Z>0
+                and math.abs(origin.X-center.X)<=bounds.X+extent.X
+                and math.abs(origin.Y-center.Y)<=bounds.Y+extent.Y
+                and math.abs(origin.Z-center.Z)<=bounds.Z+extent.Z then
+                return "本场战斗范围与已有舞狮区域重叠"
+            end
+        end
+    end
+end
 
 local function scaledNativeVolume(area,origin,extent)
     -- BaseSplineTriggerVolume.CheckIfPointLiesInsideArea first tests the COOKED
@@ -77,7 +98,7 @@ end
 
 function Session:identity()
     return valid(self.area) and same(self.area:GetOwner(),self.pawn)
-        and same(self.area:GetWorld(),self.world) and same(self.pawn:GetWorld(),self.world)
+        and inWorld(self.area,self.world) and inWorld(self.pawn,self.world)
 end
 
 function Session:collect()
@@ -87,12 +108,12 @@ function Session:collect()
     for _,field in ipairs({"ActivatedPoles","DeactivatedPoles","PolesPlayerCanJump","CabbagePoles"}) do
         each(self.area[field],function(actor)
             if valid(actor) and actor:IsA(self.poleClass) and same(actor.Area,self.area)
-                and same(actor:GetWorld(),self.world) then self.poles[actor:GetAddress()]=actor end
+                and inWorld(actor,self.world) then self.poles[actor:GetAddress()]=actor end
         end)
     end
     for _,field in ipairs({"ActivatedLinks","DeactivatedLinks"}) do
         each(self.area[field],function(actor)
-            if valid(actor) and same(actor:GetWorld(),self.world) then
+            if inWorld(actor,self.world) then
                 local a,b=actor.LinkedPoleA,actor.LinkedPoleB
                 if valid(a) and valid(b) and same(a.Area,self.area) and same(b.Area,self.area) then
                     self.links[actor:GetAddress()]=actor
@@ -106,6 +127,11 @@ function Session:update(pawn,now)
     assert(not self.closed and same(pawn,self.pawn) and self:identity(),"舞狮机制区域已切换或失效")
     if now < (self.nextAt or 0) then return true end
     self.nextAt=now+0.25
+    if now>=self.nextAreaCheck then
+        self.nextAreaCheck=now+1
+        local reason=overlappingArea(self.gameplay,pawn,self.world,self.areaClass,self.center,self.extent,self.area)
+        assert(not reason,reason)
+    end
     local inside=self.area:CheckIfPointLiesInsideArea(copy(pawn:K2_GetActorLocation()))
     -- Native tracked entry/exit is idempotent. It invokes the ORIGINAL callbacks
     -- once per transition; never call GiveAbility/EnableInput ourselves or fire
@@ -130,13 +156,13 @@ function Session:close()
         self.area:SetEnabled(false)
         self.box:SetCollisionEnabled(0)
         for _,actor in pairs(self.links) do
-            if valid(actor) and same(actor:GetWorld(),self.world) then
+            if inWorld(actor,self.world) then
                 local a,b=actor.LinkedPoleA,actor.LinkedPoleB
                 if valid(a) and valid(b) and same(a.Area,self.area) and same(b.Area,self.area) then actor:K2_DestroyActor() end
             end
         end
         for _,actor in pairs(self.poles) do
-            if valid(actor) and same(actor:GetWorld(),self.world) and same(actor.Area,self.area) then actor:K2_DestroyActor() end
+            if inWorld(actor,self.world) and same(actor.Area,self.area) then actor:K2_DestroyActor() end
         end
         self.area:K2_DestroyActor()
         log("owned pole area and temporary player interaction released")
@@ -146,18 +172,13 @@ end
 
 function Arena.new(pawn,scene,gameplay,system)
     assert(scene and (scene.id=="night" or scene.id=="lake" or scene.runtimeModule),"舞狮机制仅用于独立演武场")
-    local world=pawn:GetWorld()
+    local world=SceneArena.runtimeWorld(pawn)
+    if not valid(world) then return nil,"等待舞狮区域所在关卡" end
     local classes={}
     for _,path in ipairs({AREA,POLE,EXIT,STANDING}) do
         local class,reason=SpawnClass.resolve(path)
         if not valid(class) then return nil,reason end
         classes[path]=class
-    end
-    -- Never borrow or modify a story area's input/grants/pools.
-    for _,actor in ipairs(FindAllOf("BP_LionDance_Area_C") or {}) do
-        if valid(actor) and same(actor:GetWorld(),world) and not actor:IsActorBeingDestroyed() then
-            return nil,"已有非本场舞狮区域；为避免冲突未接管"
-        end
     end
     local math=required("/Script/Engine.Default__KismetMathLibrary")
     local minX,maxX,minY,maxY=scene.anchor.X,scene.anchor.X,scene.anchor.Y,scene.anchor.Y
@@ -167,14 +188,16 @@ function Arena.new(pawn,scene,gameplay,system)
     end
     local center={X=(minX+maxX)/2,Y=(minY+maxY)/2,Z=scene.anchor.Z+1500}
     local extent={X=(maxX-minX)/2+1800,Y=(maxY-minY)/2+1800,Z=3000}
+    local conflict=overlappingArea(gameplay,pawn,world,classes[AREA],center,extent)
+    if conflict then return nil,conflict end
     local transform=math:MakeTransform(center,ZERO,ONE)
     local deferred=required("/Script/SGameAI.Default__SGameAIFunctionLibrary"):SpawnActorDeferred(pawn,classes[AREA],transform,3)
     assert(valid(deferred),"无法生成舞狮原版机制区域")
-    local session=setmetatable({pawn=pawn,world=world,area=deferred,poleClass=classes[POLE],
-        poles={},links={},createdExits={}},Session)
+    local session=setmetatable({pawn=pawn,world=world,gameplay=gameplay,area=deferred,areaClass=classes[AREA],
+        poleClass=classes[POLE],center=center,extent=extent,nextAreaCheck=1,poles={},links={},createdExits={}},Session)
     local ok,reason=pcall(function()
         deferred:SetOwner(pawn)
-        session.area=gameplay:FinishSpawningActor(deferred,transform,1)
+        assert(same(gameplay:FinishSpawningActor(deferred,transform,1),deferred),"舞狮机制区域初始化失败")
         assert(session:identity(),"舞狮机制区域归属校验失败")
         local area=session.area
         assert(valid(area.Spline),"舞狮区域缺少原版样条")
@@ -238,12 +261,12 @@ function Arena.new(pawn,scene,gameplay,system)
     end)
     if not ok then
         -- Construction may have failed before a complete area/box existed.
-        if valid(session.area) and same(session.area:GetOwner(),pawn) and same(session.area:GetWorld(),world) then
+        if inWorld(session.area,world) then
             pcall(session.collect,session)
             pcall(function() session.area:TryUpdateActorInTriggerState(pawn,false) end)
             pcall(function() session.area:SetEnabled(false) end)
             for _,actor in pairs(session.links) do
-                if valid(actor) and same(actor:GetWorld(),world) then
+                if inWorld(actor,world) then
                     local a,b=actor.LinkedPoleA,actor.LinkedPoleB
                     if valid(a) and valid(b) and same(a.Area,session.area) and same(b.Area,session.area) then
                         pcall(function() actor:K2_DestroyActor() end)
@@ -251,10 +274,10 @@ function Arena.new(pawn,scene,gameplay,system)
                 end
             end
             for _,actor in pairs(session.poles) do
-                if valid(actor) and same(actor.Area,session.area) then pcall(function() actor:K2_DestroyActor() end) end
+                if inWorld(actor,world) and same(actor.Area,session.area) then pcall(function() actor:K2_DestroyActor() end) end
             end
             for _,actor in pairs(session.createdExits) do
-                if valid(actor) and same(actor:GetOwner(),session.area) and same(actor:GetWorld(),world) then
+                if inWorld(actor,world) and same(actor:GetOwner(),session.area) then
                     pcall(function() actor:K2_DestroyActor() end)
                 end
             end

@@ -38,6 +38,26 @@ local function assign(candidates, rearSlots, rear, front)
     if nextFront > #front then return slots end
 end
 
+local function assignMarkedPoints(candidates, rear, front)
+    local ordered = {}
+    for slot in pairs(candidates) do ordered[#ordered + 1] = slot end
+    if #ordered < #rear + #front then return end
+
+    -- The marked points can swap distance order across player landings.
+    -- Keep the rows ordered along the opening direction.
+    table.sort(ordered, function(a, b)
+        local aDepth, bDepth = candidates[a].depth, candidates[b].depth
+        if aDepth == bDepth then return a < b end
+        return aDepth > bDepth
+    end)
+    if candidates[ordered[#rear]].depth <= 0 then return end
+
+    local slots = {}
+    for index, member in ipairs(rear) do slots[member] = ordered[index] end
+    for index, member in ipairs(front) do slots[member] = ordered[#ordered - index + 1] end
+    return slots
+end
+
 function Formation.prepare(challenge, stage, pawn)
     if not challenge.palace or challenge.sceneId ~= "xigu" or not stage.regularMobs then return end
 
@@ -48,15 +68,20 @@ function Formation.prepare(challenge, stage, pawn)
     end
     if #rear == 0 then return end
 
-    local layouts = #front >= 4 and #rear == 1 and REAR_WITH_FOUR_FRONT or REAR_LAYOUTS[#rear]
-    if not layouts then return nil, "浊梦远程杂兵超过后排点位数量" end
+    local placement = challenge.scene.palacePlacement
+    local layouts
+    if not placement then
+        layouts = #front >= 4 and #rear == 1 and REAR_WITH_FOUR_FRONT or REAR_LAYOUTS[#rear]
+        if not layouts then return nil, "浊梦远程杂兵超过后排点位数量" end
+    end
 
     local retry = challenge.palaceFormationRetry
     local rejected = retry and retry.stage == stage and retry.slots or {}
     local location = pawn:K2_GetActorLocation()
     local playerX, playerY = location.X, location.Y
-    local points = challenge.scene.spawnPoints
-    local forwardX, forwardY = points[1].X - playerX, points[1].Y - playerY
+    local points = placement and placement.mobs or challenge.scene.spawnPoints
+    local facing = placement and placement.bosses[1] or points[1]
+    local forwardX, forwardY = facing.X - playerX, facing.Y - playerY
     local candidates = {}
     for slot, point in ipairs(points) do
         if not rejected[slot] then
@@ -65,9 +90,14 @@ function Formation.prepare(challenge, stage, pawn)
         end
     end
 
-    for _, rearSlots in ipairs(layouts) do
-        local slots = assign(candidates, rearSlots, rear, front)
+    if placement then
+        local slots = assignMarkedPoints(candidates, rear, front)
         if slots then return slots end
+    else
+        for _, rearSlots in ipairs(layouts) do
+            local slots = assign(candidates, rearSlots, rear, front)
+            if slots then return slots end
+        end
     end
 
     -- Let the next spawn retry recheck all points if the arena was temporarily blocked.

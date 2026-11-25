@@ -263,7 +263,7 @@ function Assert-PbzOtherTransactions {
     }
 }
 
-function Assert-PbzInstallAccess([bool] $Shared, $Maps, $Bridges, [switch] $RuntimeOnly) {
+function Assert-PbzInstallAccess([bool] $Shared, $Maps, $Bridges) {
     $script:pbzInstallerStage = 'permissions'
     $sampleRun = Join-Path $stateRoot 'Backups/20000101-000000-00000000'
     Assert-PbzPathLength ($sampleRun + '\Work\00000000000000000000000000000000.tmp')
@@ -290,10 +290,6 @@ function Assert-PbzInstallAccess([bool] $Shared, $Maps, $Bridges, [switch] $Runt
         Assert-PbzMoveReady $proxy
         Assert-PbzWriteReady $platform
     }
-    if (!$Uninstall -and !$Repair -and !$RuntimeOnly -and $checkpointFlow -eq 'compatibility') {
-        Assert-PbzMoveReady $save
-        Assert-PbzWriteReady (Split-Path -Parent $save)
-    }
     if ($Maps -and ($Maps.Before.Count -or $Maps.Next.Count)) {
         Assert-PbzWriteReady $Maps.Folder
         foreach ($name in $Maps.Before.Keys) { Assert-PbzMoveReady (Join-Path $Maps.Folder $name) }
@@ -307,9 +303,9 @@ function Assert-PbzInstallAccess([bool] $Shared, $Maps, $Bridges, [switch] $Runt
     }
 }
 
-function Test-PbzPreflightAccess([bool] $Shared, $Maps, $Bridges, [switch] $RuntimeOnly) {
+function Test-PbzPreflightAccess([bool] $Shared, $Maps, $Bridges) {
     try {
-        Assert-PbzInstallAccess $Shared $Maps $Bridges -RuntimeOnly:$RuntimeOnly
+        Assert-PbzInstallAccess $Shared $Maps $Bridges
         return ''
     } catch {
         $issue = Get-PbzInstallError $_

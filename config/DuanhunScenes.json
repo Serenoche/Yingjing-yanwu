@@ -1,0 +1,373 @@
+{
+  "schemaVersion": 1,
+  "map": "PBZ_Duanhun_WP",
+  "originalPath": "/Game/Maps/B08_09_12_13/PBZ_Duanhun_WP",
+  "scenes": [
+    {
+      "id": "duanhun_lizhe",
+      "name": "巨物盘踞处",
+      "presetSceneId": "night",
+      "loadedLayers": [],
+      "unloadedLayers": [],
+      "anchor": {
+        "X": -196383.29,
+        "Y": -100077.404,
+        "Z": 33342.738
+      },
+      "entryGround": {
+        "X": -196383.29,
+        "Y": -100077.404,
+        "Z": 33212.435
+      },
+      "rotation": {
+        "Pitch": 0,
+        "Yaw": 45.0,
+        "Roll": 0
+      },
+      "bellGround": {
+        "X": -196345,
+        "Y": -99961,
+        "Z": 33213.047
+      },
+      "bellSaveId": "Bell_DH_003",
+      "relocateCheckpointBell": true,
+      "checkpointBell": {
+        "id": "Bell_DH_003",
+        "name": "BP_MelodiousBell_C_UAID_74563C6BC2BD4B6302_1499841643",
+        "classPath": "/Game/PBZContent/Blueprint/Item/BP_MelodiousBell.BP_MelodiousBell_C"
+      },
+      "arenaOnlyBell": true,
+      "walkIn": true,
+      "openStoryDoors": [],
+      "blockedTraversal": {
+        "BP_SpecialMove_UpRunning_C_UAID_BCFCE788D4498A7302_1767290691": true,
+        "BP_SpecialMove_ClimLadder_C_UAID_E89C25A7512001E202_1420428366": true,
+        "BP_SpecialMove_UpRunning_C_UAID_74563CC7972467E502_1590159461": true
+      },
+      "traversalInteractionOnly": true,
+      "roadFogs": [
+        {
+          "name": "H1",
+          "phantom": true,
+          "points": [
+            {
+              "X": -196354,
+              "Y": -101856,
+              "Z": 33287
+            },
+            {
+              "X": -198304,
+              "Y": -100570,
+              "Z": 33679
+            }
+          ],
+          "emitter": {
+            "name": "N2",
+            "point": {
+              "X": -197308,
+              "Y": -101234,
+              "Z": 33246
+            },
+            "fillCenter": true
+          }
+        }
+      ],
+      "requireRoads": true,
+      "combatFog": "BP_FogDoor_C_UAID_74563C6BC2BDFF5C02_1144987088",
+      "additionalCombatFogs": [
+        "BP_FogDoor_C_UAID_74563C6BC2BDFF5C02_1144984087",
+        "BP_FogDoor_C_UAID_74563C6BC2BDFF5C02_1144990089"
+      ],
+      "storySpawners": [
+        "BP_AISpawner_C_UAID_74563C6BC2BDFF5C02_1144974083",
+        "BP_AISpawner_C_UAID_74563C6BC2BD3AD802_1349435823"
+      ],
+      "checkpointActors": {
+        "BP_AISpawner_C_UAID_74563C6BC2BDFF5C02_1144974083": true,
+        "BP_AISpawner_C_UAID_74563C6BC2BD3AD802_1349435823": true,
+        "BP_MobDomain_C_UAID_74563C6BC2BDFF5C02_1144976084": true,
+        "BP_AICombatTriggerVolume_C_UAID_E89C25A751209B0C03_1261570794": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_74563C6BC2BDFF5C02_1144979085": true,
+        "BP_FogDoor_C_UAID_74563C6BC2BDFF5C02_1144987088": true,
+        "BP_FogDoor_C_UAID_74563C6BC2BDFF5C02_1144984087": true,
+        "BP_FogDoor_C_UAID_74563C6BC2BDFF5C02_1144990089": true
+      },
+      "bossRecovery": true,
+      "guardTerrainDefeat": true,
+      "combatHeight": {
+        "min": 32700,
+        "max": 34900
+      },
+      "combatBoundary": [
+        {
+          "X": -197556.514,
+          "Y": -94309.429,
+          "Z": 33232.027
+        },
+        {
+          "X": -197696.848,
+          "Y": -95779.034,
+          "Z": 33232.027
+        },
+        {
+          "X": -198430.996,
+          "Y": -96949.401,
+          "Z": 33232.027
+        },
+        {
+          "X": -196259.581,
+          "Y": -98943.484,
+          "Z": 33232.027
+        },
+        {
+          "X": -195526.95,
+          "Y": -99489.708,
+          "Z": 33232.027
+        },
+        {
+          "X": -193850.042,
+          "Y": -100178.409,
+          "Z": 33232.027
+        },
+        {
+          "X": -192337.649,
+          "Y": -100632.414,
+          "Z": 33232.027
+        },
+        {
+          "X": -190414.284,
+          "Y": -98991.49,
+          "Z": 33232.027
+        },
+        {
+          "X": -190826.232,
+          "Y": -97032.914,
+          "Z": 33232.027
+        },
+        {
+          "X": -191233.818,
+          "Y": -95522.413,
+          "Z": 33232.027
+        },
+        {
+          "X": -191767.781,
+          "Y": -94322.911,
+          "Z": 33232.027
+        },
+        {
+          "X": -192966.326,
+          "Y": -93750.932,
+          "Z": 33232.027
+        },
+        {
+          "X": -196468.701,
+          "Y": -92961.759,
+          "Z": 33232.027
+        }
+      ],
+      "reviveClearance": 1900,
+      "spawnClearance": 1450,
+      "phaseSpawnClearance": 1500,
+      "phaseReturnPoints": [
+        {
+          "X": -195600,
+          "Y": -98950,
+          "Z": 33211.637
+        },
+        {
+          "X": -196150,
+          "Y": -98900,
+          "Z": 33216.458
+        },
+        {
+          "X": -195025,
+          "Y": -99250,
+          "Z": 33209.167
+        }
+      ],
+      "spawnTrace": {
+        "top": 33600,
+        "bottom": 32940,
+        "worldStaticFallback": true,
+        "localGround": true
+      },
+      "spawnPoints": [
+        {
+          "X": -194113.83,
+          "Y": -96920.66,
+          "Z": 33206.215
+        },
+        {
+          "X": -193823.66,
+          "Y": -96391.47,
+          "Z": 33206.215
+        },
+        {
+          "X": -195050,
+          "Y": -97000,
+          "Z": 33207.887
+        },
+        {
+          "X": -192950,
+          "Y": -96700,
+          "Z": 33207.887
+        },
+        {
+          "X": -194700,
+          "Y": -96050,
+          "Z": 33207.887
+        },
+        {
+          "X": -192950,
+          "Y": -97700,
+          "Z": 33207.887
+        }
+      ],
+      "bossSpawnIndex": {
+        "BP_Monster_PowerMan": 1,
+        "BP_Monster_PowerMan_P2": 2
+      },
+      "recommendedEncounters": [
+        "gauntlet_powerman",
+        "BP_Monster_PowerMan",
+        "BP_Monster_PowerMan_P2"
+      ]
+    },
+    {
+      "id": "duanhun_menghua",
+      "name": "大梦倾颓处",
+      "presetSceneId": "night",
+      "loadedLayers": [],
+      "unloadedLayers": [],
+      "anchor": {
+        "X": -193546.77,
+        "Y": -102948.51,
+        "Z": 61516.68
+      },
+      "entryGround": {
+        "X": -193546.77,
+        "Y": -102948.51,
+        "Z": 61385.257
+      },
+      "rotation": {
+        "Pitch": 0.0,
+        "Yaw": 276.44922,
+        "Roll": 0.0
+      },
+      "bellSaveId": "Bell_DH_004",
+      "bellGround": {
+        "X": -193479.6,
+        "Y": -103051.0,
+        "Z": 61386.38
+      },
+      "arenaOnlyBell": true,
+      "entryBeforeCombat": true,
+      "checkpointBell": {
+        "id": "Bell_DH_004",
+        "name": "BP_MelodiousBell_C_UAID_74563CC79724395202_1149600680",
+        "classPath": "/Game/PBZContent/Blueprint/Item/BP_MelodiousBell.BP_MelodiousBell_C"
+      },
+      "retiredBell": "BP_MelodiousBell_C_UAID_74563C6BC2BD3C9B02_1461742006",
+      "blockedPortal": "BP_FlowInteractActor_C_UAID_E89C25A7512089E802_1550419716",
+      "walkIn": true,
+      "roadFogs": [],
+      "openStoryDoors": [],
+      "combatFog": "BP_FogDoor_C_UAID_E89C25A751203AE802_2053642707",
+      "additionalCombatFogs": [
+        "BP_FogDoor_C_UAID_E89C25A751203BE802_1175689884"
+      ],
+      "storySpawners": [
+        "BP_AISpawner_C_UAID_74563C6BC2BDFF5C02_1144912080",
+        "BP_AISpawner_C_UAID_E89C25A754345F6102_1484609467"
+      ],
+      "checkpointActors": {
+        "BP_MobDomain_C_UAID_74563C6BC2BDFF5C02_1144964081": true,
+        "BP_AISpawner_C_UAID_74563C6BC2BDFF5C02_1144912080": true,
+        "BP_AISpawner_C_UAID_E89C25A754345F6102_1484609467": true,
+        "BP_AICombatTriggerVolume_C_UAID_E89C25A75120A8F102_1230427576": true,
+        "BP_AISpawnerTriggerVolume_C_UAID_74563C6BC2BDFF5C02_1144971082": true,
+        "BP_FogDoor_C_UAID_E89C25A751203AE802_2053642707": true,
+        "BP_FogDoor_C_UAID_E89C25A751203BE802_1175689884": true
+      },
+      "combatHeight": {
+        "min": 61850,
+        "max": 64200
+      },
+      "combatBoundary": [
+        {
+          "X": -197810.21,
+          "Y": -118907.49,
+          "Z": 62511.66
+        },
+        {
+          "X": -188602.88,
+          "Y": -118805.32,
+          "Z": 62511.66
+        },
+        {
+          "X": -191016.13,
+          "Y": -106026.72,
+          "Z": 62511.66
+        },
+        {
+          "X": -197673.94,
+          "Y": -106028.74,
+          "Z": 62511.66
+        }
+      ],
+      "reviveClearance": 700,
+      "spawnClearance": 700,
+      "phaseReturnPoints": [
+        {
+          "X": -194355,
+          "Y": -106234,
+          "Z": 62025.365
+        }
+      ],
+      "spawnTrace": {
+        "top": 62400,
+        "bottom": 61500,
+        "localGround": true,
+        "worldStaticFallback": true
+      },
+      "spawnPoints": [
+        {
+          "X": -193264.38,
+          "Y": -112533.234,
+          "Z": 62023.824
+        },
+        {
+          "X": -193800,
+          "Y": -112900,
+          "Z": 62028.48
+        },
+        {
+          "X": -193900,
+          "Y": -111800,
+          "Z": 62017.888
+        },
+        {
+          "X": -193450,
+          "Y": -111550,
+          "Z": 62026.638
+        },
+        {
+          "X": -194250,
+          "Y": -111600,
+          "Z": 62027.049
+        },
+        {
+          "X": -194800,
+          "Y": -112150,
+          "Z": 62027.461
+        }
+      ],
+      "bossSpawnIndex": {
+        "BP_Monster_MengHua": 1
+      },
+      "recommendedEncounters": [
+        "BP_Monster_MengHua"
+      ]
+    }
+  ]
+}

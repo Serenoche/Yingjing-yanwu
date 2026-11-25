@@ -1,4 +1,5 @@
 local SpawnClass = require("SpawnClass")
+local SceneArena = require("SceneArena")
 local Mechanics = {}
 local Session = {}
 Session.__index = Session
@@ -21,6 +22,7 @@ local LEASH = { [ZUO_SHANG] = true, BP_Monster_ZuoShang_P2 = true, [MO_YUAN] = t
 local function log(message) print("[PBZBloodyPalace] " .. message .. "\n") end
 local function valid(object) return object ~= nil and object:IsValid() end
 local function same(a, b) return valid(a) and valid(b) and a:GetAddress() == b:GetAddress() end
+local sameWorld = SceneArena.actorIsInWorld
 local function required(path)
     local object = StaticFindObject(path)
     assert(valid(object), "首领机制接口未就绪：" .. path)
@@ -80,7 +82,7 @@ end
 
 function Session:bind(actor, id, ground)
     if self.ordinary and not LEASH[id] then return end
-    assert(valid(actor) and same(actor:GetWorld(), self.world), "机制首领不属于当前场景")
+    assert(sameWorld(actor, self.world), "机制首领不属于当前场景")
     if self.ordinary then
         self.bosses[actor:GetAddress()] = { actor = actor, id = id, ground = ground }
     else
@@ -137,10 +139,10 @@ function Session:close()
     end
     for index = #self.actors, 1, -1 do
         local actor = self.actors[index]
-        if valid(actor) and same(actor:GetWorld(), self.world) then actor:K2_DestroyActor() end
+        if sameWorld(actor, self.world) then actor:K2_DestroyActor() end
     end
     for _, saved in ipairs(self.borrowed) do
-        if valid(saved.actor) and same(saved.actor:GetWorld(), self.world) then
+        if sameWorld(saved.actor, self.world) then
             local ok, restored = pcall(saved.actor.K2_SetActorLocationAndRotation, saved.actor,
                 saved.location, saved.rotation, false, {}, true)
             if not ok or not restored then log("native anchor restore failed; " .. saved.name) end
@@ -203,7 +205,11 @@ local function createAnchors(self, gameplay, system, scene)
     for _, entry in ipairs(anchors) do
         local actor = gameplay:GetActorOfClass(self.pawn, entry.class)
         if valid(actor) then
-            assert(self.ordinary and same(actor:GetWorld(), self.world), "左殇定位点在当前场景中重复：" .. entry[1])
+            local world = SceneArena.runtimeWorld(actor)
+            if not valid(world) then return false, "等待左殇定位点所在关卡：" .. entry[1] end
+            assert(same(world, self.world), "左殇定位点不属于当前场景：" .. entry[1])
+            if actor:IsActorBeingDestroyed() then return false, "等待左殇定位点完成卸载：" .. entry[1] end
+            assert(not valid(actor:GetOwner()), "左殇定位点已由其他对象占用：" .. entry[1])
             -- The ability resolves the first instance of this class in the world.
             -- In a private arena, relocate that instance for this stage and restore it at teardown.
             local at = actor:K2_GetActorLocation()
@@ -241,7 +247,7 @@ local function createAnchors(self, gameplay, system, scene)
         local ability = context:get()
         local actor = ability:GetAvatarActorFromActorInfo()
         if self.ordinary then
-            if not valid(actor) or not same(actor:GetWorld(), self.world) then return end
+            if not sameWorld(actor, self.world) then return end
             local boss = self.bosses[actor:GetAddress()]
             if not boss or boss.id ~= ZUO_SHANG or not same(actor, boss.actor) then return end
         elseif not same(actor, self.boss) then return end
@@ -250,7 +256,8 @@ local function createAnchors(self, gameplay, system, scene)
             warp:AddOrUpdateWarpTargetFromLocationAndRotation(FName("LandingPoint"), self.landing, rotation)
         end
     end)
-    log(("ZuoShang native snap, landing and domain anchors ready; center=%.1f,%.1f"):format(self.center.X, self.center.Y))
+    log(("ZuoShang native snap, landing and domain anchors ready; center=%.1f,%.1f; scene=%s; reused=%d")
+        :format(self.center.X, self.center.Y, scene.id, #self.borrowed))
     return true
 end
 
@@ -356,9 +363,11 @@ function Mechanics.new(pawn, gameplay, system, scene, stage, hasNextStage, ordin
         end
     end
     if not needsBounds then return end
+    local world = SceneArena.runtimeWorld(pawn)
+    if not valid(world) then return nil, "等待首领机制所在关卡" end
     local leiDang = not ordinary and hasNextStage and id == "BP_Monster_LeiDang"
     local xigu = (not ordinary or scene.id == "xigu") and require("XiguArena") or nil
-    local self = setmetatable({ id = id, pawn = pawn, gameplay = gameplay, world = pawn:GetWorld(),
+    local self = setmetatable({ id = id, pawn = pawn, gameplay = gameplay, world = world,
         actors = {}, borrowed = {}, bosses = {}, hooks = {}, ordinary = ordinary, xigu = xigu,
         scene = scene, system = system }, Session)
     local ok, ready, reason = pcall(function()
@@ -395,7 +404,7 @@ local function outside(center, at)
 end
 
 local function livingInArena(actor, world)
-    return valid(actor) and not actor:IsActorBeingDestroyed() and same(actor:GetWorld(), world) and actor:IsAlive()
+    return valid(actor) and not actor:IsActorBeingDestroyed() and sameWorld(actor, world) and actor:IsAlive()
 end
 
 function Session:recoveryGround(ground, boss)
@@ -424,7 +433,7 @@ end
 function Session:update(now)
     self:preserveLeiDangHealth()
     local pawn = self.pawn
-    if self.closed or now < (self.nextCheck or 0) or not valid(pawn) or not same(pawn:GetWorld(), self.world) then return end
+    if self.closed or now < (self.nextCheck or 0) or not sameWorld(pawn, self.world) then return end
     self.nextCheck = now + .10
     if self.ordinary then
         for _, record in pairs(self.bosses) do

@@ -70,7 +70,7 @@ function Invoke-PbzRuntimeRepair($Prior, [bool] $Shared) {
             $dependencies = Get-PbzSharedDependencies
         }
         Assert-Hash $game $actualGameHash
-        Assert-PbzInstallAccess $true $null $null -RuntimeOnly
+        Assert-PbzInstallAccess $true $null $null
         $script:pbzInstallerStage = 'backup'
         $stamp = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0,8)
         $run = Join-Path $stateRoot "Backups/$stamp"
@@ -81,26 +81,6 @@ function Invoke-PbzRuntimeRepair($Prior, [bool] $Shared) {
         Copy-NewFile $statePath (Join-Path $run 'InstallState.json')
         $script:pbzInstallerStage = 'stage'
         Start-PbzTransaction $run 'Repair'
-        if ($checkpointFlow -eq 'compatibility') {
-            if (!$Prior.privateManifestSha256) {
-                Stop-PbzInstall 'REPAIR_SAVE_REQUIRED' '该版本需要重新准备演武专用槽位。请先清理残留（保留进度），再正常安装。'
-            }
-            # Stage and verify in an owned scratch folder, never promote it.
-            $toolRoot = Initialize-PbzToolWork
-            $sourceHelper,$sourcePresets = $helper,$presets
-            $helper = Join-Path $toolRoot 'Tools/PBZSaveTool.exe'
-            $presets = Join-Path $toolRoot 'PrivatePresets.pbzs'
-            Copy-NewFile $sourceHelper $helper
-            Copy-NewFile $sourcePresets $presets
-            Assert-Hash $helper $toolBuild.sha256
-            Assert-Hash $presets $toolBuild.presetsSha256
-            Ensure-Directory (Join-Path $toolRoot 'Staging')
-            $priorManifest = if ($epic) { '' } else { $Prior.verifiedPrivatePath }
-            $plan = Invoke-SaveTool (Join-Path $run 'Before.sav') (Join-Path $toolRoot 'Staging/Pending.sav') $priorManifest
-            if ($plan.report.sourceSha256 -cne $plan.report.outputSha256) {
-                Stop-PbzInstall 'REPAIR_SAVE_REQUIRED' '当前存档需要重新准备演武槽位。请先清理残留（保留进度），再正常安装。'
-            }
-        }
         Initialize-PbzOwnedProfile
         $stage = Join-Path (Get-PbzTransactionWork) 'Mod'
         $hashes = New-PbzModStage $stage $Shared

@@ -1,6 +1,8 @@
 #pragma once
 #include "win_support.hpp"
 #include "vendor/json.hpp"
+#include "checkpoint_loadout.hpp"
+#include "custom_player.hpp"
 #include <filesystem>
 #include <iterator>
 #include <set>
@@ -30,6 +32,7 @@ struct PreparedPresets {
 
 struct SelectedPreset {
     std::wstring slot, text;
+    bool loadout_projected = false;
 };
 
 // Fragments are disjoint except for the nested game system record.
@@ -128,10 +131,13 @@ inline bool prepare_file(const std::wstring& module_path, const std::string& exp
 }
 
 inline bool select_preset(const PreparedPresets& presets, const std::wstring& slot, int cycle,
-    SelectedPreset& output, std::string& reason) {
+    SelectedPreset& output, std::string& reason, std::string_view loadout = {}) {
     try {
         auto data = Json::object();
-        data[pbz_save::utf8(slot)] = compose(presets, slot, cycle);
+        auto record = compose(presets, slot, cycle);
+        project_custom_player(record, loadout);
+        const auto projected = !loadout.empty() && project_equipment(record, loadout);
+        data[pbz_save::utf8(slot)] = std::move(record);
         const auto bytes = data.dump();
         const auto size = static_cast<int>(bytes.size());
         const int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, bytes.data(), size, nullptr, 0);
@@ -139,7 +145,7 @@ inline bool select_preset(const PreparedPresets& presets, const std::wstring& sl
         std::wstring text(static_cast<std::size_t>(length), L'\0');
         pbz_save::require(MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS,
             bytes.data(), size, text.data(), length) == length, "Composed checkpoint UTF-16 conversion failed");
-        output = {slot, std::move(text)};
+        output = {slot, std::move(text), projected};
         return true;
     } catch (const std::exception& failure) {
         output = {};
